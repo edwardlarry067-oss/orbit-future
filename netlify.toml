@@ -1,0 +1,17 @@
+[build]
+  base = "artifacts"
+  command = "npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/spacex-starlink run build"
+  publish = "artifacts/spacex-starlink/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # Set VITE_API_URL to your Replit backend URL after deploying the backend there.
+  # Example: VITE_API_URL = "https://orbitfuture.yourname.replit.app"
+  VITE_API_URL = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

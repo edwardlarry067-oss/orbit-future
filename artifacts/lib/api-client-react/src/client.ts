@@ -7,7 +7,8 @@ export function setAuthTokenGetter(getter: () => string | null) {
 function getApiBase(): string {
   if (typeof window !== "undefined") {
     const meta = (window as any).__VITE_API_URL__;
-    if (meta) return meta.replace(/\/$/, "");
+    // Ignore the unreplaced Vite placeholder or empty values — fall back to relative URL
+    if (meta && meta !== "%VITE_API_URL%") return meta.replace(/\/$/, "");
   }
   return "";
 }

@@ -65,6 +65,10 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Injected at build time — set VITE_API_URL in Netlify env vars to your Replit backend URL
+      window.__VITE_API_URL__ = "%VITE_API_URL%";
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
