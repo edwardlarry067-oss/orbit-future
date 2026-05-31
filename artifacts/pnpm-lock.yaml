@@ -70,6 +70,8 @@ catalogs:
       specifier: ^3.24.3
       version: 3.25.76
 
+pnpmfileChecksum: sha256-7ywUBB6CNQbBDDYZmd0s0L2v1CoSsX/agye2bOoVa00=
+
 importers:
 
   .: {}
