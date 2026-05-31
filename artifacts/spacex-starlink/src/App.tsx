@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -5,29 +6,33 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { initAuth } from "@/lib/auth";
 
+// Eagerly loaded (above-the-fold critical)
+import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 
-// Main App
-import Home from "@/pages/home";
-import Plans from "@/pages/plans";
-import Checkout from "@/pages/checkout";
-import CheckoutSuccess from "@/pages/checkout-success";
-import Dashboard from "@/pages/dashboard";
-import Contact from "@/pages/contact";
-import Wallet from "@/pages/wallet";
-import Login from "@/pages/login";
+// Lazy loaded pages — reduce initial bundle
+const Plans = lazy(() => import("@/pages/plans"));
+const Checkout = lazy(() => import("@/pages/checkout"));
+const CheckoutSuccess = lazy(() => import("@/pages/checkout-success"));
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const Contact = lazy(() => import("@/pages/contact"));
+const Wallet = lazy(() => import("@/pages/wallet"));
+const Login = lazy(() => import("@/pages/login"));
+const About = lazy(() => import("@/pages/about"));
+const FAQ = lazy(() => import("@/pages/faq"));
+const Coverage = lazy(() => import("@/pages/coverage"));
+const Support = lazy(() => import("@/pages/support"));
 
-// Admin App
-import AdminLogin from "@/pages/admin/login";
-import AdminDashboard from "@/pages/admin/dashboard";
-import AdminPlans from "@/pages/admin/plans";
-import AdminSubscriptions from "@/pages/admin/subscriptions";
-import WhatsAppTemplates from "@/pages/admin/whatsapp-templates";
-import Orders from "@/pages/admin/orders";
-import WhatsAppBot from "@/pages/admin/whatsapp-bot";
-import EnvConfig from "@/pages/admin/env-config";
+// Admin pages — lazy loaded
+const AdminLogin = lazy(() => import("@/pages/admin/login"));
+const AdminDashboard = lazy(() => import("@/pages/admin/dashboard"));
+const AdminPlans = lazy(() => import("@/pages/admin/plans"));
+const AdminSubscriptions = lazy(() => import("@/pages/admin/subscriptions"));
+const WhatsAppTemplates = lazy(() => import("@/pages/admin/whatsapp-templates"));
+const Orders = lazy(() => import("@/pages/admin/orders"));
+const WhatsAppBot = lazy(() => import("@/pages/admin/whatsapp-bot"));
+const EnvConfig = lazy(() => import("@/pages/admin/env-config"));
 
-// Initialize admin auth helper
 initAuth();
 
 const queryClient = new QueryClient({
@@ -39,29 +44,41 @@ const queryClient = new QueryClient({
   },
 });
 
+const PageLoader = () => (
+  <div className="min-h-screen bg-black flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/plans" component={Plans} />
-      <Route path="/checkout" component={Checkout} />
-      <Route path="/checkout/success" component={CheckoutSuccess} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/contact" component={Contact} />
-      <Route path="/wallet" component={Wallet} />
-      <Route path="/login" component={Login} />
+    <Suspense fallback={<PageLoader />}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/plans" component={Plans} />
+        <Route path="/checkout" component={Checkout} />
+        <Route path="/checkout/success" component={CheckoutSuccess} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/contact" component={Contact} />
+        <Route path="/wallet" component={Wallet} />
+        <Route path="/login" component={Login} />
+        <Route path="/about" component={About} />
+        <Route path="/faq" component={FAQ} />
+        <Route path="/coverage" component={Coverage} />
+        <Route path="/support" component={Support} />
 
-      <Route path="/admin" component={AdminLogin} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/admin/plans" component={AdminPlans} />
-      <Route path="/admin/subscriptions" component={AdminSubscriptions} />
-      <Route path="/admin/whatsapp-templates" component={WhatsAppTemplates} />
-      <Route path="/admin/orders" component={Orders} />
-      <Route path="/admin/whatsapp-bot" component={WhatsAppBot} />
-      <Route path="/admin/env-config" component={EnvConfig} />
+        <Route path="/admin" component={AdminLogin} />
+        <Route path="/admin/dashboard" component={AdminDashboard} />
+        <Route path="/admin/plans" component={AdminPlans} />
+        <Route path="/admin/subscriptions" component={AdminSubscriptions} />
+        <Route path="/admin/whatsapp-templates" component={WhatsAppTemplates} />
+        <Route path="/admin/orders" component={Orders} />
+        <Route path="/admin/whatsapp-bot" component={WhatsAppBot} />
+        <Route path="/admin/env-config" component={EnvConfig} />
 
-      <Route component={NotFound} />
-    </Switch>
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 

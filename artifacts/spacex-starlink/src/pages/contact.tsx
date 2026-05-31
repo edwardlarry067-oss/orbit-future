@@ -10,11 +10,11 @@ const EMAIL = "managementstarlinkhq@gmail.com";
 
 const PAYMENT_OPTIONS = [
   {
-    id: "flutterwave",
-    label: "Flutterwave",
-    desc: "Card, Bank Transfer, USSD, Mobile Money, M-Pesa — 150+ countries",
+    id: "stripe",
+    label: "Stripe",
+    desc: "Visa, Mastercard, Amex, Apple Pay, Google Pay — all major cards",
     icon: CreditCard,
-    color: "#F5A623",
+    color: "#635BFF",
   },
   {
     id: "wallet",
@@ -27,7 +27,7 @@ const PAYMENT_OPTIONS = [
 
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", plan: "", message: "" });
-  const [selectedPayment, setSelectedPayment] = useState("flutterwave");
+  const [selectedPayment, setSelectedPayment] = useState("stripe");
   const [sent, setSent] = useState(false);
 
   const handleWhatsApp = () => {
@@ -203,9 +203,9 @@ export default function Contact() {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {[
-                    { key: "name", label: "Full Name", placeholder: "John Adeyemi", type: "text", required: true },
-                    { key: "email", label: "Email Address", placeholder: "you@example.com", type: "email", required: true },
-                    { key: "phone", label: "Phone / WhatsApp Number", placeholder: "+234 800 000 0000", type: "tel", required: false },
+                    { key: "name", label: "Full Name", placeholder: "Your full name", type: "text", required: true },
+                    { key: "email", label: "Email Address", placeholder: "your@email.com", type: "email", required: true },
+                    { key: "phone", label: "Phone / WhatsApp Number", placeholder: "+1 234 567 8900", type: "tel", required: false },
                     { key: "plan", label: "Plan You're Interested In", placeholder: "e.g. Residential, Business, Maritime...", type: "text", required: false },
                   ].map((field) => (
                     <div key={field.key}>

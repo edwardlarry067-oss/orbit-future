@@ -285,7 +285,7 @@ export default function Checkout() {
                       <FormItem>
                         <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="John Smith" className="bg-card h-12" {...field} />
+                          <Input placeholder="Your full name" className="bg-card h-12" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -296,7 +296,7 @@ export default function Checkout() {
                         <FormControl>
                           <Input
                             type="email"
-                            placeholder="you@example.com"
+                            placeholder="your@email.com"
                             className="bg-card h-12"
                             {...field}
                             onChange={e => { field.onChange(e); if (e.target.value.includes("@")) fetchWallet(e.target.value); }}
@@ -309,7 +309,7 @@ export default function Checkout() {
                       <FormItem>
                         <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Installation / Shipping Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Main St, City, Country" className="bg-card h-12" {...field} />
+                          <Input placeholder="Street address, City, Country" className="bg-card h-12" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

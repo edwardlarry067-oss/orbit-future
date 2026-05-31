@@ -2,60 +2,76 @@ import React from "react";
 import { Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Satellite, Zap, Globe, Shield } from "lucide-react";
+import { Satellite, Zap, Globe, Shield, Lock, HeadphonesIcon, CheckCircle2 } from "lucide-react";
 
 export default function Home() {
   return (
     <MainLayout>
       {/* Hero */}
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-black">
+      <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,212,255,0.08)_0%,transparent_70%)]" />
         <div className="container mx-auto px-4 text-center relative z-10 max-w-5xl">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-8 text-xs font-bold uppercase tracking-widest text-primary">
             <Satellite className="w-3.5 h-3.5" />
-            Now Available Worldwide
+            Now Available Worldwide · 100+ Countries
           </div>
-          <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter text-white mb-6 leading-none">
+          <h1 className="text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter text-white mb-6 leading-none">
             Internet<br />
             <span className="text-primary">Anywhere.</span>
           </h1>
-          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
             High-speed satellite internet available anywhere on Earth. Starting at $90/mo. No contracts. 15-min setup.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/plans">
-              <Button size="lg" className="h-14 px-10 text-sm font-bold uppercase tracking-widest shadow-[0_0_40px_rgba(0,212,255,0.2)]">
+              <Button size="lg" className="w-full sm:w-auto h-14 px-10 text-sm font-bold uppercase tracking-widest shadow-[0_0_40px_rgba(0,212,255,0.2)]">
                 <Zap className="w-5 h-5 mr-2" />
-                View Plans
+                Order Starlink Now
               </Button>
             </Link>
             <Link href="/contact">
-              <Button size="lg" variant="outline" className="h-14 px-10 text-sm font-bold uppercase tracking-widest border-white/20 hover:border-white/40">
-                Contact Sales
+              <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-10 text-sm font-bold uppercase tracking-widest border-white/20 hover:border-white/40">
+                Contact Support
               </Button>
             </Link>
+          </div>
+
+          {/* Trust indicators */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+            {[
+              { icon: Shield, label: "Secure Payments" },
+              { icon: Lock, label: "SSL Protected" },
+              { icon: HeadphonesIcon, label: "24/7 Support" },
+              { icon: Globe, label: "Global Coverage" },
+              { icon: CheckCircle2, label: "Verified Checkout" },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <Icon className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] text-gray-500 uppercase tracking-wider font-bold">{label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-24 bg-background">
+      <section className="py-20 md:py-24 bg-background">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white mb-4">
               Why OrbitFuture?
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
               Low-Earth orbit satellites deliver speeds previously impossible from space.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {[
               { icon: Zap, title: "Ultra-Fast Speeds", desc: "Up to 1 Gbps download speeds with low latency for gaming, streaming, and video calls." },
               { icon: Globe, title: "Global Coverage", desc: "Available in 100+ countries. Perfect for rural areas, maritime, and aviation." },
               { icon: Shield, title: "Always Reliable", desc: "99.9% uptime SLA with redundant satellite coverage ensures you stay connected." },
             ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-colors">
+              <div key={title} className="bg-card border border-border rounded-2xl p-6 md:p-8 hover:border-primary/30 transition-colors">
                 <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center mb-6">
                   <Icon className="w-6 h-6 text-primary" />
                 </div>
@@ -67,20 +83,46 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Stats */}
+      <section className="py-16 bg-black border-y border-white/5">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { stat: "4M+", label: "Subscribers" },
+              { stat: "100+", label: "Countries" },
+              { stat: "1 Gbps", label: "Max Speed" },
+              { stat: "99.9%", label: "Uptime SLA" },
+            ].map(({ stat, label }) => (
+              <div key={label}>
+                <div className="text-3xl md:text-4xl font-black text-white mb-1">{stat}</div>
+                <div className="text-gray-500 text-xs uppercase tracking-widest font-bold">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
-      <section className="py-24 bg-black border-t border-white/5">
+      <section className="py-20 md:py-24 bg-black">
         <div className="container mx-auto px-4 text-center max-w-3xl">
-          <h2 className="text-5xl font-black uppercase tracking-tighter text-white mb-6">
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white mb-6">
             Ready to Connect?
           </h2>
           <p className="text-gray-400 mb-10">
-            Join thousands of customers already connected worldwide.
+            Join millions of customers already connected worldwide. Setup takes just 15 minutes.
           </p>
-          <Link href="/plans">
-            <Button size="lg" className="h-14 px-12 text-sm font-bold uppercase tracking-widest">
-              Get Started Today
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/plans">
+              <Button size="lg" className="w-full sm:w-auto h-14 px-12 text-sm font-bold uppercase tracking-widest">
+                View Plans
+              </Button>
+            </Link>
+            <Link href="/support">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-12 text-sm font-bold uppercase tracking-widest border-white/20">
+                Contact Support
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
     </MainLayout>
