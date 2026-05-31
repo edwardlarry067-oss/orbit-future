@@ -72171,12 +72171,14 @@ router10.post("/stripe-plan-pay", async (req, res) => {
     let planName;
     let priceMonthly;
     let planSpeed;
+    let hardwarePrice = 0;
     try {
       const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planId)).limit(1);
       if (dbPlan) {
         planName = dbPlan.name;
         priceMonthly = parseFloat(String(dbPlan.priceMonthly));
         planSpeed = dbPlan.speed;
+        hardwarePrice = dbPlan.hardwarePrice ? parseFloat(String(dbPlan.hardwarePrice)) : 0;
       } else {
         throw new Error("not in db");
       }
@@ -72194,23 +72196,37 @@ router10.post("/stripe-plan-pay", async (req, res) => {
     const safeEmail = encodeURIComponent(email.trim());
     const safeName = encodeURIComponent(name2.trim());
     const safeAddr = encodeURIComponent(address?.trim() ?? "");
+    const lineItems = [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: planName,
+            description: `${planSpeed} \xB7 $${priceMonthly}/month`
+          },
+          unit_amount: Math.round(priceMonthly * 100)
+        },
+        quantity: 1
+      }
+    ];
+    if (hardwarePrice > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `${planName} \u2014 Hardware Kit`,
+            description: "One-time hardware fee (dish, router, cables)"
+          },
+          unit_amount: Math.round(hardwarePrice * 100)
+        },
+        quantity: 1
+      });
+    }
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
       customer_email: email.trim(),
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: planName,
-              description: `${planSpeed} \xB7 $${priceMonthly}/month`
-            },
-            unit_amount: Math.round(priceMonthly * 100)
-          },
-          quantity: 1
-        }
-      ],
+      line_items: lineItems,
       metadata: {
         planId: String(planId),
         planName,

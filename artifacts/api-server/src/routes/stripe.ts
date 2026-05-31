@@ -46,6 +46,7 @@ router.post("/stripe-plan-pay", async (req, res): Promise<void> => {
     let planName: string;
     let priceMonthly: number;
     let planSpeed: string;
+    let hardwarePrice: number = 0;
 
     try {
       const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planId)).limit(1);
@@ -53,6 +54,7 @@ router.post("/stripe-plan-pay", async (req, res): Promise<void> => {
         planName = dbPlan.name;
         priceMonthly = parseFloat(String(dbPlan.priceMonthly));
         planSpeed = dbPlan.speed;
+        hardwarePrice = dbPlan.hardwarePrice ? parseFloat(String(dbPlan.hardwarePrice)) : 0;
       } else {
         throw new Error("not in db");
       }
@@ -70,23 +72,39 @@ router.post("/stripe-plan-pay", async (req, res): Promise<void> => {
     const safeName = encodeURIComponent(name.trim());
     const safeAddr = encodeURIComponent(address?.trim() ?? "");
 
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: planName,
+            description: `${planSpeed} · $${priceMonthly}/month`,
+          },
+          unit_amount: Math.round(priceMonthly * 100),
+        },
+        quantity: 1,
+      },
+    ];
+
+    if (hardwarePrice > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `${planName} — Hardware Kit`,
+            description: "One-time hardware fee (dish, router, cables)",
+          },
+          unit_amount: Math.round(hardwarePrice * 100),
+        },
+        quantity: 1,
+      });
+    }
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
       customer_email: email.trim(),
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: planName,
-              description: `${planSpeed} · $${priceMonthly}/month`,
-            },
-            unit_amount: Math.round(priceMonthly * 100),
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       metadata: {
         planId: String(planId),
         planName,
