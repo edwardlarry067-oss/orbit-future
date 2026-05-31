@@ -5,18 +5,6 @@ import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useAuth } from "@/contexts/AuthContext";
 
-const FOOTER_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Service Plans", href: "/plans" },
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Privacy Policy", href: "#" },
-  { label: "Terms of Service", href: "#" },
-  { label: "Support", href: "#" },
-  { label: "Admin Portal", href: "/admin" },
-];
-
-const REGIONS = ["🇺🇸 USA", "🇬🇧 Europe", "🇳🇬 Africa", "🌏 Global"];
-
 const TOKEN_KEY = "starlink_token";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
@@ -44,22 +32,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col relative dark">
-      {/* Main nav */}
       <header className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-xl border-b border-white/8 shadow-[0_1px_0_rgba(255,255,255,0.04)]">
-        {/* Top ticker bar */}
-        <div className="hidden md:flex bg-[#040404] border-b border-white/5 h-7 items-center px-8">
-          <div className="w-full flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              {REGIONS.map((r) => (
-                <span key={r} className="text-[10px] text-gray-600 font-medium">{r}</span>
-              ))}
-            </div>
-            <div className="flex items-center gap-4">
-              <div id="google_translate_element" />
-              <span className="w-px h-3 bg-white/10" />
-              <span className="text-[10px] text-emerald-500 font-bold">● All Systems Operational</span>
-            </div>
+        {/* Top status bar */}
+        <div className="hidden md:flex bg-[#040404] border-b border-white/5 h-7 items-center px-8 justify-between">
+          <div className="flex items-center gap-2">
+            <Globe className="w-3 h-3 text-primary" />
+            <span className="text-[10px] text-gray-500 font-medium">Available Worldwide · 100+ Countries</span>
           </div>
+          <span className="text-[10px] text-emerald-500 font-bold">● All Systems Operational</span>
         </div>
 
         <div className="container mx-auto px-6 h-14 flex items-center justify-between">
@@ -197,11 +177,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
       <WhatsAppButton />
 
-      {/* Enterprise Footer */}
       <footer className="bg-[#030303] border-t border-white/8 pt-16 pb-8 z-10">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-            {/* Brand */}
             <div className="md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-primary">
@@ -211,7 +189,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 <span className="font-black text-sm tracking-tighter uppercase text-white">OrbitFuture</span>
               </div>
               <p className="text-gray-600 text-xs leading-relaxed mb-4">
-                Production-grade global satellite internet infrastructure. Serving 4M+ subscribers across 100+ countries.
+                Production-grade global satellite internet. Serving 4M+ subscribers across 100+ countries.
               </p>
               <div className="flex items-center gap-1.5">
                 <Globe className="w-3 h-3 text-primary" />
@@ -219,7 +197,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Services */}
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 font-bold mb-4">Services</p>
               <div className="space-y-2.5">
@@ -234,7 +211,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Platform */}
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 font-bold mb-4">Platform</p>
               <div className="space-y-2.5">
@@ -249,7 +225,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Contact */}
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 font-bold mb-4">Contact Us</p>
               <div className="space-y-3">
@@ -263,20 +238,17 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span className="break-all">managementstarlinkhq@gmail.com</span>
                 </a>
-                <Link href="/contact" className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
-                  <span>Contact Page</span>
-                </Link>
+                <Link href="/contact" className="block text-xs text-gray-500 hover:text-white transition-colors">Contact Page</Link>
                 <Link href="#" className="block text-xs text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
                 <Link href="#" className="block text-xs text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
               </div>
             </div>
           </div>
 
-          {/* Payment logos */}
           <div className="border-t border-white/5 pt-6 mb-6">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               <span className="text-[10px] text-gray-600 uppercase tracking-widest">We Accept:</span>
-              {["Flutterwave", "Orbit Wallet", "Visa", "Mastercard", "Bank Transfer", "USSD", "M-Pesa", "Mobile Money"].map((p) => (
+              {["Stripe", "Visa", "Mastercard", "Amex", "Apple Pay", "Google Pay", "Orbit Wallet"].map((p) => (
                 <span key={p} className="text-[10px] text-gray-500 font-bold uppercase tracking-widest border border-white/8 rounded px-2 py-1 bg-white/2">{p}</span>
               ))}
             </div>
@@ -284,7 +256,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
           <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
             <p className="text-xs text-gray-700">
-              © {new Date().getFullYear()} OrbitFuture Ltd. All rights reserved. · orbitfuture.com
+              © {new Date().getFullYear()} OrbitFuture Ltd. All rights reserved.
             </p>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />

@@ -12,8 +12,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import {
-  AlertCircle, ShieldCheck, Coins, CheckCircle2, Lock,
-  ArrowRight, RefreshCw, Zap
+  AlertCircle, ShieldCheck, CheckCircle2, Lock,
+  ArrowRight, RefreshCw, Zap, Package, Wifi, CreditCard, ExternalLink
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,12 +29,13 @@ export default function Checkout() {
   const planIdParam = urlParams.get("planId");
   const planId = planIdParam ? parseInt(planIdParam, 10) : 0;
 
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [, navigate] = useLocation();
 
+  const [paying, setPaying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "wallet">("stripe");
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
-  const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -73,34 +74,49 @@ export default function Checkout() {
     if (emailValue && emailValue.includes("@")) fetchWallet(emailValue);
   }, [emailValue, fetchWallet]);
 
-  const priceTokens = plan ? Math.ceil(plan.priceMonthly) : 0;
+  const priceMonthly = plan ? parseFloat(String((plan as any).priceMonthly ?? 0)) : 0;
+  const hardwarePrice = plan ? parseFloat(String((plan as any).hardwarePrice ?? 0)) : 0;
+  const firstMonthTotal = priceMonthly + hardwarePrice;
+  const priceTokens = Math.ceil(firstMonthTotal);
   const hasSufficientTokens = walletBalance !== null && walletBalance >= priceTokens;
 
   const onSubmit = async (data: z.infer<typeof checkoutSchema>) => {
     if (!plan) return;
     setError("");
     setPaying(true);
+
     try {
-      const res = await fetch("/api/checkout/wallet-pay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId: plan.id,
-          email: data.email,
-          name: data.name,
-          address: data.address,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        if (res.status === 402) {
-          setError(`You need ${json.required} tokens but only have ${json.available}. Please top up your wallet first.`);
+      if (paymentMethod === "stripe") {
+        const res = await fetch("/api/stripe-plan-pay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address }),
+        });
+        const json = await res.json();
+        if (json.paymentLink) {
+          localStorage.setItem("orbit_name", data.name);
+          localStorage.setItem("orbit_email", data.email);
+          window.location.href = json.paymentLink;
         } else {
-          setError(json.error || "Payment failed. Please try again.");
+          setError(json.error || "Failed to create checkout session. Please try again.");
         }
       } else {
-        setSuccess(true);
-        setTimeout(() => navigate("/dashboard"), 2500);
+        const res = await fetch("/api/checkout/wallet-pay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          if (res.status === 402) {
+            setError(`You need ${json.required} tokens but only have ${json.available}. Please top up your wallet.`);
+          } else {
+            setError(json.error || "Payment failed. Please try again.");
+          }
+        } else {
+          setSuccess(true);
+          setTimeout(() => navigate("/dashboard"), 2500);
+        }
       }
     } catch {
       setError("Network error. Please try again.");
@@ -134,13 +150,8 @@ export default function Checkout() {
               <CheckCircle2 className="w-12 h-12 text-emerald-400" />
               <div className="absolute inset-0 bg-emerald-400/10 rounded-full animate-ping" />
             </div>
-            <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-3">
-              Subscription Active!
-            </h2>
-            <p className="text-gray-400 mb-2">
-              <span className="font-black text-white">{priceTokens} tokens</span> were deducted from your wallet.
-            </p>
-            <p className="text-gray-500 text-sm mb-6">Your {plan?.name} plan is now live.</p>
+            <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-3">Subscription Active!</h2>
+            <p className="text-gray-400 mb-6">Your {plan?.name} plan is now live.</p>
             <div className="flex items-center justify-center gap-2 text-primary text-sm">
               <RefreshCw className="w-4 h-4 animate-spin" />
               Redirecting to your dashboard…
@@ -156,11 +167,11 @@ export default function Checkout() {
       <div className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="mb-10 text-center">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4 text-xs font-bold uppercase tracking-widest text-primary">
-            <Coins className="w-3.5 h-3.5" />
-            Token-Powered Checkout
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Secure Checkout
           </div>
           <h1 className="text-4xl font-black uppercase tracking-tighter mb-2">Complete Your Order</h1>
-          <p className="text-muted-foreground">Pay instantly using your Orbit Wallet tokens</p>
+          <p className="text-muted-foreground">Everything included — no hidden fees</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -174,62 +185,97 @@ export default function Checkout() {
                 <AlertDescription>
                   {error}
                   {error.includes("top up") && (
-                    <a href="/wallet" className="block mt-2 text-primary font-bold hover:underline">
-                      → Top up your wallet now
-                    </a>
+                    <a href="/wallet" className="block mt-2 text-primary font-bold hover:underline">→ Top up your wallet now</a>
                   )}
                 </AlertDescription>
               </Alert>
             )}
 
-            {/* Wallet status banner */}
-            <div className={`rounded-xl border p-5 flex items-center gap-4 ${
-              hasSufficientTokens
-                ? "border-emerald-500/20 bg-emerald-500/5"
-                : walletBalance !== null && walletBalance > 0
-                ? "border-orange-500/20 bg-orange-500/5"
-                : "border-white/10 bg-white/2"
-            }`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                hasSufficientTokens ? "bg-emerald-500/20" : "bg-white/5"
-              }`}>
-                <Coins className={`w-5 h-5 ${hasSufficientTokens ? "text-emerald-400" : "text-gray-500"}`} />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-black uppercase tracking-widest text-white">
-                    {walletLoading ? "Checking balance…" : "Orbit Wallet Balance"}
+            {/* Payment method selector */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Payment Method</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("stripe")}
+                  className={`rounded-xl border p-4 flex flex-col gap-2 text-left transition-all ${
+                    paymentMethod === "stripe"
+                      ? "border-primary/50 bg-primary/5 shadow-[0_0_20px_rgba(0,212,255,0.08)]"
+                      : "border-white/10 bg-card hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <CreditCard className={`w-4 h-4 ${paymentMethod === "stripe" ? "text-primary" : "text-gray-500"}`} />
+                    <span className="text-xs font-black uppercase tracking-widest text-white">Card / Stripe</span>
+                    {paymentMethod === "stripe" && <span className="ml-auto w-2 h-2 bg-primary rounded-full" />}
+                  </div>
+                  <p className="text-[10px] text-gray-500">Visa, Mastercard, Amex, Apple Pay, Google Pay</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("wallet")}
+                  className={`rounded-xl border p-4 flex flex-col gap-2 text-left transition-all ${
+                    paymentMethod === "wallet"
+                      ? "border-primary/50 bg-primary/5 shadow-[0_0_20px_rgba(0,212,255,0.08)]"
+                      : "border-white/10 bg-card hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm ${paymentMethod === "wallet" ? "text-primary" : "text-gray-500"}`}>🪙</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-white">Orbit Wallet</span>
+                    {paymentMethod === "wallet" && <span className="ml-auto w-2 h-2 bg-primary rounded-full" />}
+                  </div>
+                  <p className="text-[10px] text-gray-500">
+                    {walletBalance !== null ? `Balance: ${walletBalance.toLocaleString()} tokens` : "Use your token balance"}
                   </p>
-                  {walletLoading && <RefreshCw className="w-3.5 h-3.5 text-primary animate-spin" />}
-                </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className={`text-2xl font-black tabular-nums ${
-                    hasSufficientTokens ? "text-emerald-400" : walletBalance === null ? "text-gray-600" : "text-orange-400"
-                  }`}>
-                    {walletBalance !== null ? walletBalance.toLocaleString() : "—"}
-                  </span>
-                  <span className="text-xs text-gray-500 font-bold">TOKENS AVAILABLE</span>
-                  {hasSufficientTokens && (
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2.5 py-0.5">
-                      ✓ Ready
-                    </span>
-                  )}
-                </div>
-                {!hasSufficientTokens && walletBalance !== null && priceTokens > 0 && (
-                  <p className="text-xs text-orange-400 mt-1">
-                    Need {(priceTokens - walletBalance).toLocaleString()} more tokens.{" "}
-                    <a href="/wallet" className="font-bold underline hover:text-orange-300">Top up now →</a>
-                  </p>
-                )}
+                </button>
               </div>
             </div>
+
+            {/* Wallet status if wallet selected */}
+            {paymentMethod === "wallet" && (
+              <div className={`rounded-xl border p-4 flex items-center gap-4 ${
+                hasSufficientTokens
+                  ? "border-emerald-500/20 bg-emerald-500/5"
+                  : walletBalance !== null && walletBalance > 0
+                  ? "border-orange-500/20 bg-orange-500/5"
+                  : "border-white/10 bg-white/2"
+              }`}>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black uppercase tracking-widest text-white">
+                      {walletLoading ? "Checking balance…" : "Orbit Wallet Balance"}
+                    </p>
+                    {walletLoading && <RefreshCw className="w-3.5 h-3.5 text-primary animate-spin" />}
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className={`text-2xl font-black ${
+                      hasSufficientTokens ? "text-emerald-400" : walletBalance === null ? "text-gray-600" : "text-orange-400"
+                    }`}>
+                      {walletBalance !== null ? walletBalance.toLocaleString() : "—"}
+                    </span>
+                    <span className="text-xs text-gray-500 font-bold">TOKENS</span>
+                    {hasSufficientTokens && (
+                      <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2.5 py-0.5">✓ Ready</span>
+                    )}
+                  </div>
+                  {!hasSufficientTokens && walletBalance !== null && priceTokens > 0 && (
+                    <p className="text-xs text-orange-400 mt-1">
+                      Need {(priceTokens - walletBalance).toLocaleString()} more tokens.{" "}
+                      <a href="/wallet" className="font-bold underline">Top up now →</a>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Details form */}
             <Card className="bg-background border-border">
               <CardHeader className="border-b border-border bg-card/50">
                 <CardTitle className="text-lg uppercase tracking-wider flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-primary" />
-                  Service & Delivery Details
+                  Delivery & Contact Details
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
@@ -239,39 +285,31 @@ export default function Checkout() {
                       <FormItem>
                         <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="John Adeyemi" className="bg-card h-12" {...field} />
+                          <Input placeholder="John Smith" className="bg-card h-12" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
-
                     <FormField control={form.control} name="email" render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">
-                          Email Address
-                          <span className="text-gray-600 normal-case ml-1">(must match your wallet email)</span>
-                        </FormLabel>
+                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Email Address</FormLabel>
                         <FormControl>
                           <Input
                             type="email"
                             placeholder="you@example.com"
                             className="bg-card h-12"
                             {...field}
-                            onChange={e => {
-                              field.onChange(e);
-                              if (e.target.value.includes("@")) fetchWallet(e.target.value);
-                            }}
+                            onChange={e => { field.onChange(e); if (e.target.value.includes("@")) fetchWallet(e.target.value); }}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
-
                     <FormField control={form.control} name="address" render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Shipping / Installation Address</FormLabel>
+                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Installation / Shipping Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Main St, Lagos, Nigeria" className="bg-card h-12" {...field} />
+                          <Input placeholder="123 Main St, City, Country" className="bg-card h-12" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -288,7 +326,7 @@ export default function Checkout() {
                   <p className="text-xs font-bold text-white mb-0.5">Sign in for faster checkout</p>
                   <p className="text-[11px] text-gray-500">
                     <a href="/login?redirect=/checkout" className="text-primary hover:underline font-bold">Create an account</a>{" "}
-                    to auto-fill your details and wallet balance instantly.
+                    to auto-fill your details instantly.
                   </p>
                 </div>
               </div>
@@ -301,7 +339,7 @@ export default function Checkout() {
               <CardHeader className="border-b border-border">
                 <CardTitle className="text-lg uppercase tracking-wider">Order Summary</CardTitle>
               </CardHeader>
-              <CardContent className="pt-6 space-y-5">
+              <CardContent className="pt-6 space-y-4">
                 {isLoadingPlan ? (
                   <div className="space-y-3">
                     <Skeleton className="h-6 w-full" />
@@ -309,61 +347,56 @@ export default function Checkout() {
                   </div>
                 ) : plan ? (
                   <>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-base uppercase tracking-wide">{plan.name}</h3>
-                        <p className="text-xs text-muted-foreground capitalize">{(plan as any).category ?? ""} · {plan.speed}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-white">${plan.priceMonthly}/mo</div>
-                      </div>
+                    <div>
+                      <h3 className="font-bold text-base uppercase tracking-wide text-white">{plan.name}</h3>
+                      <p className="text-xs text-muted-foreground capitalize mt-0.5">{(plan as any).category} · {plan.speed}</p>
                     </div>
 
-                    <div className="flex justify-between items-center pt-4 border-t border-border/50">
-                      <p className="text-sm text-muted-foreground font-bold uppercase tracking-wider">Shipping</p>
-                      <p className="text-sm font-bold text-emerald-500">Free</p>
-                    </div>
+                    {/* Line items */}
+                    <div className="space-y-2.5 border-t border-border/50 pt-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Wifi className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-gray-400">Monthly service</span>
+                        </div>
+                        <span className="font-bold text-white">${priceMonthly}/mo</span>
+                      </div>
 
-                    {/* Token cost breakdown */}
-                    <div className="border border-primary/20 rounded-xl bg-primary/5 p-4 space-y-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Coins className="w-4 h-4 text-primary" />
-                        <p className="text-xs font-black uppercase tracking-widest text-primary">Token Payment</p>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Monthly plan cost</span>
-                        <span className="font-bold text-white">{priceTokens} tokens</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Your balance</span>
-                        <span className={`font-bold ${hasSufficientTokens ? "text-emerald-400" : walletBalance !== null ? "text-orange-400" : "text-gray-500"}`}>
-                          {walletLoading ? "…" : walletBalance !== null ? `${walletBalance.toLocaleString()} tokens` : "Enter email above"}
-                        </span>
-                      </div>
-                      {walletBalance !== null && (
-                        <div className="flex justify-between text-sm border-t border-white/10 pt-2">
-                          <span className="text-gray-400">After payment</span>
-                          <span className="font-bold text-gray-300">
-                            {Math.max(0, walletBalance - priceTokens).toLocaleString()} tokens
-                          </span>
+                      {hardwarePrice > 0 && (
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <Package className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-gray-400">Hardware kit</span>
+                            <span className="text-[9px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5 uppercase font-bold">One-time</span>
+                          </div>
+                          <span className="font-bold text-amber-400">${hardwarePrice}</span>
                         </div>
                       )}
-                      {!hasSufficientTokens && walletBalance !== null && (
-                        <a
-                          href="/wallet"
-                          className="flex items-center justify-center gap-2 w-full mt-1 text-xs font-black uppercase tracking-widest text-black bg-primary rounded-lg py-2.5 hover:bg-primary/90 transition-colors"
-                        >
-                          <Coins className="w-3.5 h-3.5" />
-                          Top Up {priceTokens - walletBalance} Tokens
-                        </a>
+
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Shipping</span>
+                        <span className="font-bold text-emerald-500">Free</span>
+                      </div>
+
+                      <div className="border-t border-border/50 pt-3 flex items-center justify-between">
+                        <span className="text-sm font-bold uppercase tracking-wider text-white">
+                          {hardwarePrice > 0 ? "First Month Total" : "Monthly Total"}
+                        </span>
+                        <span className="text-2xl font-black text-white">${firstMonthTotal}</span>
+                      </div>
+
+                      {hardwarePrice > 0 && (
+                        <p className="text-[10px] text-gray-600">
+                          Then ${priceMonthly}/mo from month 2 onwards. Hardware is a one-time fee.
+                        </p>
                       )}
                     </div>
 
                     {/* Features */}
                     {(plan as any).features?.length > 0 && (
-                      <div className="space-y-2 pt-2">
-                        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Included</p>
-                        {((plan as any).features as string[]).slice(0, 4).map((f: string) => (
+                      <div className="space-y-1.5 pt-2 border-t border-border/50">
+                        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">What's Included</p>
+                        {((plan as any).features as string[]).slice(0, 5).map((f: string) => (
                           <div key={f} className="flex items-center gap-2">
                             <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                             <span className="text-xs text-gray-400">{f}</span>
@@ -376,42 +409,43 @@ export default function Checkout() {
               </CardContent>
 
               <CardFooter className="flex-col pt-2 pb-6 border-t border-border bg-background/50">
-                <div className="w-full flex justify-between items-center py-4 mb-3">
-                  <div className="uppercase font-bold tracking-wider text-sm">Tokens Required</div>
-                  <div className="text-3xl font-black text-white tabular-nums">{priceTokens}</div>
-                </div>
-
                 <Button
                   type="submit"
                   form="checkout-form"
-                  className="w-full h-14 text-sm font-bold uppercase tracking-widest shadow-[0_0_30px_rgba(0,212,255,0.15)]"
+                  className="w-full h-14 text-sm font-bold uppercase tracking-widest shadow-[0_0_30px_rgba(0,212,255,0.15)] mt-4"
                   disabled={
                     isLoadingPlan ||
                     paying ||
-                    (walletBalance !== null && !hasSufficientTokens)
+                    (paymentMethod === "wallet" && walletBalance !== null && !hasSufficientTokens)
                   }
                 >
                   {paying ? (
                     <span className="flex items-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Processing Payment…
+                      {paymentMethod === "stripe" ? "Opening Stripe…" : "Processing…"}
+                    </span>
+                  ) : paymentMethod === "stripe" ? (
+                    <span className="flex items-center gap-2">
+                      <CreditCard className="w-5 h-5" />
+                      Pay ${firstMonthTotal} with Stripe
+                      <ExternalLink className="w-4 h-4" />
                     </span>
                   ) : !hasSufficientTokens && walletBalance !== null ? (
                     <span className="flex items-center gap-2">
-                      <Coins className="w-5 h-5" />
+                      <span>🪙</span>
                       Insufficient Tokens
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
                       <Zap className="w-5 h-5" />
-                      Activate with {priceTokens} Tokens
+                      Pay {priceTokens} Tokens
                       <ArrowRight className="w-4 h-4" />
                     </span>
                   )}
                 </Button>
 
-                <div className="flex items-center justify-center gap-4 mt-4">
-                  {["Instant activation", "No card needed", "Cancel anytime"].map(t => (
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+                  {["Secure", "No hidden fees", "Cancel anytime"].map(t => (
                     <span key={t} className="flex items-center gap-1 text-[10px] text-gray-600 uppercase tracking-widest font-bold">
                       <CheckCircle2 className="w-3 h-3 text-primary" />
                       {t}
