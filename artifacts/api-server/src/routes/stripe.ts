@@ -1,8 +1,10 @@
 import { Router } from "express";
 import Stripe from "stripe";
 import { db } from "@workspace/db";
-import { subscriptionsTable, plansTable } from "@workspace/db";
+import { subscriptionsTable, plansTable, walletsTable, walletTransactionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { BUNDLES } from "../utils/bundleMapper";
+import { requireAuth } from "./auth";
 
 const router = Router();
 
@@ -21,6 +23,130 @@ const PLAN_PRICES: Record<number, { name: string; priceMonthly: number; speed: s
   8: { name: "Starlink Enterprise", priceMonthly: 1500, speed: "500 Mbps–1 Gbps" },
   9: { name: "Starlink Global Elite", priceMonthly: 3000, speed: "1 Gbps+" },
 };
+
+// ── Token wallet helpers ───────────────────────────────────────────────────────
+
+async function getOrCreateWallet(email: string) {
+  const [existing] = await db.select().from(walletsTable).where(eq(walletsTable.email, email)).limit(1);
+  if (existing) return existing;
+  const [created] = await db.insert(walletsTable).values({ email, balance: 0 }).returning();
+  return created;
+}
+
+async function creditTokensViaStripe(email: string, tokens: number, bundleName: string, sessionId: string) {
+  const wallet = await getOrCreateWallet(email);
+  const [updated] = await db
+    .update(walletsTable)
+    .set({ balance: wallet.balance + tokens, updatedAt: new Date() })
+    .where(eq(walletsTable.id, wallet.id))
+    .returning();
+  await db.insert(walletTransactionsTable).values({
+    walletId: wallet.id,
+    type: "credit",
+    amount: tokens,
+    description: `Stripe: ${bundleName} bundle — ${tokens} tokens`,
+    reference: sessionId,
+    status: "completed",
+    metadata: { source: "stripe", bundleName, sessionId },
+  });
+  return updated.balance;
+}
+
+// POST /api/stripe-token-buy
+router.post("/stripe-token-buy", requireAuth, async (req: any, res): Promise<void> => {
+  try {
+    const { bundleId } = req.body as { bundleId: string };
+    if (!bundleId) { res.status(400).json({ error: "bundleId is required" }); return; }
+
+    const stripeKey = process.env["STRIPE_SECRET_KEY"];
+    if (!stripeKey) { res.status(503).json({ error: "Payment gateway not configured." }); return; }
+
+    const bundle = BUNDLES.find((b) => b.id === bundleId);
+    if (!bundle) { res.status(400).json({ error: "Invalid bundleId" }); return; }
+
+    const amountUsd = bundle.prices["USD"];
+    const stripe = getStripe();
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      customer_email: req.user.email,
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Orbit Wallet — ${bundle.name} Bundle`,
+              description: `${bundle.tokens.toLocaleString()} tokens added to your Orbit Wallet`,
+            },
+            unit_amount: Math.round(amountUsd * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        type: "token_bundle",
+        bundleId: bundle.id,
+        bundleName: bundle.name,
+        tokens: String(bundle.tokens),
+        userId: String(req.user.userId),
+        customerEmail: req.user.email,
+      },
+      success_url: `${APP_URL}/wallet?stripe_token_success=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL}/wallet?stripe_token_cancel=1`,
+    });
+
+    res.json({ paymentLink: session.url, sessionId: session.id });
+  } catch (err) {
+    req.log?.error?.({ err }, "stripe-token-buy error");
+    res.status(500).json({ error: "Failed to create checkout session" });
+  }
+});
+
+// POST /api/stripe-token-verify
+router.post("/stripe-token-verify", requireAuth, async (req: any, res): Promise<void> => {
+  try {
+    const { session_id } = req.body as { session_id: string };
+    if (!session_id) { res.status(400).json({ error: "session_id is required" }); return; }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status !== "paid") {
+      res.status(400).json({ error: "Payment not completed", status: session.payment_status });
+      return;
+    }
+
+    const meta = session.metadata ?? {};
+    if (meta.type !== "token_bundle") {
+      res.status(400).json({ error: "Invalid session type" });
+      return;
+    }
+
+    // Idempotency: check if this session was already processed
+    const [existing] = await db
+      .select()
+      .from(walletTransactionsTable)
+      .where(eq(walletTransactionsTable.reference, session_id))
+      .limit(1);
+
+    const tokens = parseInt(meta.tokens ?? "0") || 0;
+    const bundleName = meta.bundleName ?? "Bundle";
+    const email = meta.customerEmail ?? req.user.email;
+
+    if (existing) {
+      const wallet = await getOrCreateWallet(email);
+      res.json({ success: true, tokensAdded: tokens, newBalance: wallet.balance, alreadyProcessed: true });
+      return;
+    }
+
+    const newBalance = await creditTokensViaStripe(email, tokens, bundleName, session_id);
+    res.json({ success: true, tokensAdded: tokens, newBalance });
+  } catch (err) {
+    req.log?.error?.({ err }, "stripe-token-verify error");
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
 
 // POST /api/stripe-plan-pay
 router.post("/stripe-plan-pay", async (req, res): Promise<void> => {
@@ -222,6 +348,31 @@ router.post("/stripe-webhook", async (req, res): Promise<void> => {
     if (session.payment_status !== "paid") return;
 
     const meta = session.metadata ?? {};
+
+    // Token bundle purchase
+    if (meta.type === "token_bundle") {
+      const email = meta.customerEmail ?? session.customer_email ?? "";
+      const tokens = parseInt(meta.tokens ?? "0") || 0;
+      const bundleName = meta.bundleName ?? "Bundle";
+      if (email && tokens > 0) {
+        try {
+          // Idempotency: skip if already credited
+          const [existing] = await db
+            .select()
+            .from(walletTransactionsTable)
+            .where(eq(walletTransactionsTable.reference, session.id))
+            .limit(1);
+          if (!existing) {
+            await creditTokensViaStripe(email, tokens, bundleName, session.id);
+          }
+        } catch (err) {
+          req.log?.error?.({ err }, "Stripe webhook: token credit failed");
+        }
+      }
+      return;
+    }
+
+    // Plan subscription purchase
     const planIdNum = parseInt(meta.planId ?? "0") || 0;
     const customerEmail = meta.customerEmail ?? session.customer_email ?? "";
     const customerName = meta.customerName ?? "";

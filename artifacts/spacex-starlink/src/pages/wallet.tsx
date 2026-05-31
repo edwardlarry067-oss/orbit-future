@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Coins, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Zap } from "lucide-react";
+import { Coins, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Zap, CheckCircle2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 type Transaction = {
@@ -36,42 +36,86 @@ export default function Wallet() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login?redirect=/wallet");
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    if (!user) return;
-    const email = user.email;
+  const refreshWallet = useCallback((email: string) => {
     fetch(`/api/wallet/${encodeURIComponent(email)}`)
       .then((r) => r.json())
       .then(setWallet)
       .catch(() => {});
-
     fetch(`/api/wallet/${encodeURIComponent(email)}/transactions`)
       .then((r) => r.json())
       .then((data) => { setTransactions(data.transactions || []); setTxLoading(false); })
       .catch(() => setTxLoading(false));
-  }, [user]);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    refreshWallet(user.email);
+  }, [user, refreshWallet]);
+
+  // Handle Stripe return after token purchase
+  useEffect(() => {
+    if (!user || !token) return;
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get("stripe_token_success");
+    const sessionId = params.get("session_id");
+    const cancelled = params.get("stripe_token_cancel");
+
+    if (cancelled) {
+      setToastMsg({ type: "error", text: "Payment cancelled." });
+      window.history.replaceState({}, "", "/wallet");
+      return;
+    }
+
+    if (success && sessionId) {
+      window.history.replaceState({}, "", "/wallet");
+      fetch("/api/stripe-token-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ session_id: sessionId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            setToastMsg({ type: "success", text: `+${data.tokensAdded} tokens added to your wallet!` });
+            refreshWallet(user.email);
+          } else {
+            setToastMsg({ type: "error", text: data.error || "Verification failed." });
+          }
+        })
+        .catch(() => setToastMsg({ type: "error", text: "Could not verify payment. Contact support." }));
+    }
+  }, [user, token, refreshWallet]);
+
+  // Auto-dismiss toast after 5 seconds
+  useEffect(() => {
+    if (!toastMsg) return;
+    const t = setTimeout(() => setToastMsg(null), 5000);
+    return () => clearTimeout(t);
+  }, [toastMsg]);
 
   const handleBuyBundle = async (bundleId: string) => {
     if (!token) return;
     setPaymentLoading(bundleId);
     try {
-      const res = await fetch("/api/flutterwave-init", {
+      const res = await fetch("/api/stripe-token-buy", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ bundleId, currency: "USD" }),
+        body: JSON.stringify({ bundleId }),
       });
       const data = await res.json();
       if (data.paymentLink) {
         window.location.href = data.paymentLink;
       } else {
-        alert(data.error || "Failed to initiate payment");
+        setToastMsg({ type: "error", text: data.error || "Failed to initiate payment." });
       }
     } catch {
-      alert("Payment failed. Please try again.");
+      setToastMsg({ type: "error", text: "Payment failed. Please try again." });
     }
     setPaymentLoading(null);
   };
@@ -87,6 +131,21 @@ export default function Wallet() {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-12 max-w-5xl">
+
+        {/* Toast notification */}
+        {toastMsg && (
+          <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl px-5 py-3.5 shadow-2xl text-sm font-bold border transition-all ${
+            toastMsg.type === "success"
+              ? "bg-emerald-950 border-emerald-500/40 text-emerald-300"
+              : "bg-red-950 border-red-500/40 text-red-300"
+          }`}>
+            {toastMsg.type === "success"
+              ? <CheckCircle2 className="w-4 h-4 shrink-0" />
+              : <XCircle className="w-4 h-4 shrink-0" />}
+            {toastMsg.text}
+          </div>
+        )}
+
         <div className="mb-10">
           <h1 className="text-4xl font-black uppercase tracking-tighter text-white">Orbit Wallet</h1>
           <p className="text-gray-400 mt-1">Buy tokens to subscribe to Starlink plans</p>

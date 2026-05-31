@@ -72142,6 +72142,130 @@ var stripe_esm_node_default = Stripe;
 init_src2();
 init_src2();
 init_drizzle_orm();
+
+// src/utils/bundleMapper.ts
+var BUNDLES = [
+  {
+    id: "starter",
+    name: "Starter",
+    tokens: 100,
+    prices: {
+      USD: 5,
+      GBP: 4,
+      EUR: 5,
+      CAD: 7,
+      AUD: 8,
+      NGN: 5e3,
+      KES: 650,
+      GHS: 75,
+      ZAR: 95,
+      EGP: 155,
+      UGX: 18500,
+      ZMW: 135,
+      TZS: 12500,
+      INR: 420,
+      XOF: 3e3
+    }
+  },
+  {
+    id: "basic",
+    name: "Basic",
+    tokens: 250,
+    prices: {
+      USD: 10,
+      GBP: 8,
+      EUR: 9,
+      CAD: 14,
+      AUD: 16,
+      NGN: 1e4,
+      KES: 1300,
+      GHS: 150,
+      ZAR: 190,
+      EGP: 310,
+      UGX: 37e3,
+      ZMW: 270,
+      TZS: 25e3,
+      INR: 840,
+      XOF: 6e3
+    }
+  },
+  {
+    id: "standard",
+    name: "Standard",
+    tokens: 700,
+    badge: "Best Value",
+    prices: {
+      USD: 25,
+      GBP: 20,
+      EUR: 23,
+      CAD: 34,
+      AUD: 39,
+      NGN: 25e3,
+      KES: 3250,
+      GHS: 375,
+      ZAR: 475,
+      EGP: 775,
+      UGX: 92e3,
+      ZMW: 675,
+      TZS: 62500,
+      INR: 2100,
+      XOF: 15e3
+    }
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    tokens: 1500,
+    badge: "Popular",
+    prices: {
+      USD: 50,
+      GBP: 40,
+      EUR: 46,
+      CAD: 68,
+      AUD: 78,
+      NGN: 5e4,
+      KES: 6500,
+      GHS: 750,
+      ZAR: 950,
+      EGP: 1550,
+      UGX: 185e3,
+      ZMW: 1350,
+      TZS: 125e3,
+      INR: 4200,
+      XOF: 3e4
+    }
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    tokens: 3500,
+    badge: "Most Tokens",
+    prices: {
+      USD: 100,
+      GBP: 80,
+      EUR: 92,
+      CAD: 136,
+      AUD: 156,
+      NGN: 1e5,
+      KES: 13e3,
+      GHS: 1500,
+      ZAR: 1900,
+      EGP: 3100,
+      UGX: 37e4,
+      ZMW: 2700,
+      TZS: 25e4,
+      INR: 8400,
+      XOF: 6e4
+    }
+  }
+];
+function getBundleByAmount(amount, currency) {
+  const bundle = BUNDLES.find((b2) => b2.prices[currency] === amount);
+  if (!bundle) return null;
+  return { name: bundle.name, tokens: bundle.tokens };
+}
+
+// src/routes/stripe.ts
 var router10 = (0, import_express10.Router)();
 var getStripe = () => new stripe_esm_node_default(process.env["STRIPE_SECRET_KEY"] ?? "", { apiVersion: "2025-04-30.basil" });
 var APP_URL = process.env["APP_URL"] ?? "https://www.spacexstarlink.com";
@@ -72156,6 +72280,113 @@ var PLAN_PRICES = {
   8: { name: "Starlink Enterprise", priceMonthly: 1500, speed: "500 Mbps\u20131 Gbps" },
   9: { name: "Starlink Global Elite", priceMonthly: 3e3, speed: "1 Gbps+" }
 };
+async function getOrCreateWallet2(email) {
+  const [existing] = await db.select().from(walletsTable).where(eq(walletsTable.email, email)).limit(1);
+  if (existing) return existing;
+  const [created] = await db.insert(walletsTable).values({ email, balance: 0 }).returning();
+  return created;
+}
+async function creditTokensViaStripe(email, tokens, bundleName, sessionId) {
+  const wallet = await getOrCreateWallet2(email);
+  const [updated] = await db.update(walletsTable).set({ balance: wallet.balance + tokens, updatedAt: /* @__PURE__ */ new Date() }).where(eq(walletsTable.id, wallet.id)).returning();
+  await db.insert(walletTransactionsTable).values({
+    walletId: wallet.id,
+    type: "credit",
+    amount: tokens,
+    description: `Stripe: ${bundleName} bundle \u2014 ${tokens} tokens`,
+    reference: sessionId,
+    status: "completed",
+    metadata: { source: "stripe", bundleName, sessionId }
+  });
+  return updated.balance;
+}
+router10.post("/stripe-token-buy", requireAuth, async (req, res) => {
+  try {
+    const { bundleId } = req.body;
+    if (!bundleId) {
+      res.status(400).json({ error: "bundleId is required" });
+      return;
+    }
+    const stripeKey = process.env["STRIPE_SECRET_KEY"];
+    if (!stripeKey) {
+      res.status(503).json({ error: "Payment gateway not configured." });
+      return;
+    }
+    const bundle = BUNDLES.find((b2) => b2.id === bundleId);
+    if (!bundle) {
+      res.status(400).json({ error: "Invalid bundleId" });
+      return;
+    }
+    const amountUsd = bundle.prices["USD"];
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      customer_email: req.user.email,
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Orbit Wallet \u2014 ${bundle.name} Bundle`,
+              description: `${bundle.tokens.toLocaleString()} tokens added to your Orbit Wallet`
+            },
+            unit_amount: Math.round(amountUsd * 100)
+          },
+          quantity: 1
+        }
+      ],
+      metadata: {
+        type: "token_bundle",
+        bundleId: bundle.id,
+        bundleName: bundle.name,
+        tokens: String(bundle.tokens),
+        userId: String(req.user.userId),
+        customerEmail: req.user.email
+      },
+      success_url: `${APP_URL}/wallet?stripe_token_success=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL}/wallet?stripe_token_cancel=1`
+    });
+    res.json({ paymentLink: session.url, sessionId: session.id });
+  } catch (err) {
+    req.log?.error?.({ err }, "stripe-token-buy error");
+    res.status(500).json({ error: "Failed to create checkout session" });
+  }
+});
+router10.post("/stripe-token-verify", requireAuth, async (req, res) => {
+  try {
+    const { session_id } = req.body;
+    if (!session_id) {
+      res.status(400).json({ error: "session_id is required" });
+      return;
+    }
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    if (session.payment_status !== "paid") {
+      res.status(400).json({ error: "Payment not completed", status: session.payment_status });
+      return;
+    }
+    const meta = session.metadata ?? {};
+    if (meta.type !== "token_bundle") {
+      res.status(400).json({ error: "Invalid session type" });
+      return;
+    }
+    const [existing] = await db.select().from(walletTransactionsTable).where(eq(walletTransactionsTable.reference, session_id)).limit(1);
+    const tokens = parseInt(meta.tokens ?? "0") || 0;
+    const bundleName = meta.bundleName ?? "Bundle";
+    const email = meta.customerEmail ?? req.user.email;
+    if (existing) {
+      const wallet = await getOrCreateWallet2(email);
+      res.json({ success: true, tokensAdded: tokens, newBalance: wallet.balance, alreadyProcessed: true });
+      return;
+    }
+    const newBalance = await creditTokensViaStripe(email, tokens, bundleName, session_id);
+    res.json({ success: true, tokensAdded: tokens, newBalance });
+  } catch (err) {
+    req.log?.error?.({ err }, "stripe-token-verify error");
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
 router10.post("/stripe-plan-pay", async (req, res) => {
   try {
     const { planId, email, name: name2, address } = req.body;
@@ -72318,6 +72549,22 @@ router10.post("/stripe-webhook", async (req, res) => {
     const session = event.data.object;
     if (session.payment_status !== "paid") return;
     const meta = session.metadata ?? {};
+    if (meta.type === "token_bundle") {
+      const email = meta.customerEmail ?? session.customer_email ?? "";
+      const tokens = parseInt(meta.tokens ?? "0") || 0;
+      const bundleName = meta.bundleName ?? "Bundle";
+      if (email && tokens > 0) {
+        try {
+          const [existing] = await db.select().from(walletTransactionsTable).where(eq(walletTransactionsTable.reference, session.id)).limit(1);
+          if (!existing) {
+            await creditTokensViaStripe(email, tokens, bundleName, session.id);
+          }
+        } catch (err) {
+          req.log?.error?.({ err }, "Stripe webhook: token credit failed");
+        }
+      }
+      return;
+    }
     const planIdNum = parseInt(meta.planId ?? "0") || 0;
     const customerEmail = meta.customerEmail ?? session.customer_email ?? "";
     const customerName = meta.customerName ?? "";
@@ -72422,130 +72669,6 @@ var import_express12 = __toESM(require_express2(), 1);
 init_src2();
 init_src2();
 init_drizzle_orm();
-
-// src/utils/bundleMapper.ts
-var BUNDLES = [
-  {
-    id: "starter",
-    name: "Starter",
-    tokens: 100,
-    prices: {
-      USD: 5,
-      GBP: 4,
-      EUR: 5,
-      CAD: 7,
-      AUD: 8,
-      NGN: 5e3,
-      KES: 650,
-      GHS: 75,
-      ZAR: 95,
-      EGP: 155,
-      UGX: 18500,
-      ZMW: 135,
-      TZS: 12500,
-      INR: 420,
-      XOF: 3e3
-    }
-  },
-  {
-    id: "basic",
-    name: "Basic",
-    tokens: 250,
-    prices: {
-      USD: 10,
-      GBP: 8,
-      EUR: 9,
-      CAD: 14,
-      AUD: 16,
-      NGN: 1e4,
-      KES: 1300,
-      GHS: 150,
-      ZAR: 190,
-      EGP: 310,
-      UGX: 37e3,
-      ZMW: 270,
-      TZS: 25e3,
-      INR: 840,
-      XOF: 6e3
-    }
-  },
-  {
-    id: "standard",
-    name: "Standard",
-    tokens: 700,
-    badge: "Best Value",
-    prices: {
-      USD: 25,
-      GBP: 20,
-      EUR: 23,
-      CAD: 34,
-      AUD: 39,
-      NGN: 25e3,
-      KES: 3250,
-      GHS: 375,
-      ZAR: 475,
-      EGP: 775,
-      UGX: 92e3,
-      ZMW: 675,
-      TZS: 62500,
-      INR: 2100,
-      XOF: 15e3
-    }
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    tokens: 1500,
-    badge: "Popular",
-    prices: {
-      USD: 50,
-      GBP: 40,
-      EUR: 46,
-      CAD: 68,
-      AUD: 78,
-      NGN: 5e4,
-      KES: 6500,
-      GHS: 750,
-      ZAR: 950,
-      EGP: 1550,
-      UGX: 185e3,
-      ZMW: 1350,
-      TZS: 125e3,
-      INR: 4200,
-      XOF: 3e4
-    }
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    tokens: 3500,
-    badge: "Most Tokens",
-    prices: {
-      USD: 100,
-      GBP: 80,
-      EUR: 92,
-      CAD: 136,
-      AUD: 156,
-      NGN: 1e5,
-      KES: 13e3,
-      GHS: 1500,
-      ZAR: 1900,
-      EGP: 3100,
-      UGX: 37e4,
-      ZMW: 2700,
-      TZS: 25e4,
-      INR: 8400,
-      XOF: 6e4
-    }
-  }
-];
-function getBundleByAmount(amount, currency) {
-  const bundle = BUNDLES.find((b2) => b2.prices[currency] === amount);
-  if (!bundle) return null;
-  return { name: bundle.name, tokens: bundle.tokens };
-}
-
-// src/routes/flutterwave.ts
 var router12 = (0, import_express12.Router)();
 var FLW_SECRET = () => process.env["FLW_SECRET_KEY"] ?? "";
 var FLW_API = "https://api.flutterwave.com/v3";
@@ -72564,14 +72687,14 @@ async function flwPost(path, body) {
   });
   return r.json();
 }
-async function getOrCreateWallet2(email) {
+async function getOrCreateWallet3(email) {
   const [existing] = await db.select().from(walletsTable).where(eq(walletsTable.email, email)).limit(1);
   if (existing) return existing;
   const [created] = await db.insert(walletsTable).values({ email, balance: 0 }).returning();
   return created;
 }
 async function creditTokens(userId, email, tokens, txRef, bundleName, amount, currency, flwRef) {
-  const wallet = await getOrCreateWallet2(email);
+  const wallet = await getOrCreateWallet3(email);
   const [updatedWallet] = await db.update(walletsTable).set({ balance: wallet.balance + tokens, updatedAt: /* @__PURE__ */ new Date() }).where(eq(walletsTable.id, wallet.id)).returning();
   await db.insert(walletTransactionsTable).values({
     walletId: wallet.id,
@@ -72658,7 +72781,7 @@ router12.get("/flutterwave-verify", requireAuth, async (req, res) => {
     const flwRef = txData.flw_ref;
     const [existing] = await db.select().from(flutterwaveTransactionsTable).where(eq(flutterwaveTransactionsTable.txRef, txRef)).limit(1);
     if (existing?.status === "successful") {
-      const wallet = await getOrCreateWallet2(req.user.email);
+      const wallet = await getOrCreateWallet3(req.user.email);
       res.json({ success: true, tokensAdded: existing.tokens, newBalance: wallet.balance, alreadyProcessed: true });
       return;
     }
@@ -72884,7 +73007,7 @@ router12.post("/flutterwave-plan-verify", async (req, res) => {
 });
 router12.get("/user/token-balance", requireAuth, async (req, res) => {
   try {
-    const wallet = await getOrCreateWallet2(req.user.email);
+    const wallet = await getOrCreateWallet3(req.user.email);
     const transactions = await db.select().from(flutterwaveTransactionsTable).where(eq(flutterwaveTransactionsTable.userId, req.user.userId)).orderBy(desc(flutterwaveTransactionsTable.createdAt)).limit(10);
     res.json({
       balance: wallet.balance,
