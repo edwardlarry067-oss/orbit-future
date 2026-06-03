@@ -47,4 +47,4 @@ waitForPort = 5000
 [userenv.shared]
 NODE_ENV = "development"
 LOG_LEVEL = "info"
-APP_URL = "https://919f5ad5-63e6-417f-a233-cd5db7afc8b1-00-85820hjo0ee9.spock.replit.dev"
+APP_URL = "https://orbitfuture.com"
