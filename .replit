@@ -12,11 +12,7 @@ externalPort = 80
 
 [[ports]]
 localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 5001
-externalPort = 3000
+externalPort = 5000
 
 [workflows]
 runButton = "Project"
@@ -50,4 +46,6 @@ LOG_LEVEL = "info"
 APP_URL = "https://orbitfuture.com"
 
 [deployment]
-deploymentTarget = "cloudrun"
+deploymentTarget = "autoscale"
+run = ["bash", "-c", "PORT=5000 NODE_ENV=production node --enable-source-maps artifacts/api-server/dist/index.mjs"]
+build = ["bash", "-c", "cd artifacts && pnpm install --frozen-lockfile && cd api-server && pnpm run build && cd ../spacex-starlink && pnpm run build"]
