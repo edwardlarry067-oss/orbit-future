@@ -48,3 +48,6 @@ waitForPort = 5000
 NODE_ENV = "development"
 LOG_LEVEL = "info"
 APP_URL = "https://orbitfuture.com"
+
+[deployment]
+deploymentTarget = "cloudrun"
