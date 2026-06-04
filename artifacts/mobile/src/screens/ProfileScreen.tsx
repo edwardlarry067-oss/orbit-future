@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput, KeyboardAvoidingView, Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { apiRequest } from "../lib/api";
 import { Colors, Spacing, Radius } from "../theme";
@@ -64,6 +65,7 @@ export default function ProfileScreen({ navigation }: any) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top"]}>
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView style={s.container} contentContainerStyle={s.content}>
         <Text style={s.pageTitle}>My <Text style={{ color: Colors.primary }}>Profile</Text></Text>
@@ -165,6 +167,7 @@ export default function ProfileScreen({ navigation }: any) {
         <Text style={s.version}>ORBITFUTURE v1.0.0 · com.orbitfuture.app</Text>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

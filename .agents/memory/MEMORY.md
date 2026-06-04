@@ -1,4 +1,5 @@
 - [Support Ticket System](support-tickets.md) — Full ticket lifecycle: POST /api/support/tickets (public), GET with email/ref, admin PATCH/DELETE + email reply via sendSupportReply.
+- [Mobile app setup](mobile-expo.md) — Expo SDK 51, expo-router, SafeAreaProvider in root layout, SafeAreaView(edges=["top"]) on all tab screens; modal routes use useSafeAreaInsets; app.json apiUrl must be updated to current Replit dev URL each session.
 - [Auth context pattern](auth-context.md) — AuthContext exposes updateProfile()/refreshUser() not setUser; dashboard profile form uses these, not direct fetch.
 - [Stripe idempotency](stripe-idempotency.md) — stripe-plan-verify now checks for existing sub by stripeSubscriptionId before insert; sends confirmation + receipt emails on first process only.
 - [Cancel subscription](cancel-endpoint.md) — POST /api/subscriptions/:id/cancel added alongside existing PATCH; dashboard uses POST /cancel, admin uses PATCH with status body.

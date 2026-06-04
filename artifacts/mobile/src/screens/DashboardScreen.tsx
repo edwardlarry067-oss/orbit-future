@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, RefreshControl } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Colors, Spacing, Radius } from "../theme";
@@ -81,6 +82,7 @@ export default function DashboardScreen({ navigation }: any) {
   const activeSub = subs.find(s => s.status === "active");
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top"]}>
     <ScrollView
       style={s.container}
       contentContainerStyle={s.content}
@@ -201,6 +203,7 @@ export default function DashboardScreen({ navigation }: any) {
         <Text style={s.signOutText}>Sign Out</Text>
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

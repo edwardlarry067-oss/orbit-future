@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import {
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  Linking, TextInput, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator
+} from "react-native";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Colors, Spacing, Radius } from "../theme";
@@ -8,43 +12,53 @@ export default function SupportScreen() {
   const { user } = useAuth();
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [name, setName] = useState(user?.name ?? "");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [ticketRef, setTicketRef] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!subject.trim() || !message.trim()) {
       Alert.alert("Missing fields", "Please fill in both subject and message.");
       return;
     }
+    if (!email.trim() || !name.trim()) {
+      Alert.alert("Missing fields", "Please enter your name and email.");
+      return;
+    }
     setSending(true);
-    // Route the ticket via email since the API doesn't expose a /api/support endpoint.
-    // We open the system email composer with the ticket pre-filled.
     try {
-      const body = encodeURIComponent(
-        `Name: ${user?.name ?? "Anonymous"}\nEmail: ${user?.email ?? "N/A"}\n\n${message.trim()}`
+      const res = await apiRequest<{ ticket?: { referenceNumber?: string; id?: number } }>(
+        "POST",
+        "support/tickets",
+        {
+          name: name.trim(),
+          email: email.trim(),
+          subject: subject.trim(),
+          message: message.trim(),
+          category: "general",
+        }
       );
-      const mailUrl = `mailto:support@orbitfuture.com?subject=${encodeURIComponent(`[Support Ticket] ${subject.trim()}`)}&body=${body}`;
-      const { Linking } = await import("react-native");
-      const canOpen = await Linking.canOpenURL(mailUrl);
-      if (canOpen) {
-        await Linking.openURL(mailUrl);
-        setSent(true);
-        setSubject("");
-        setMessage("");
-      } else {
-        // Fall back to WhatsApp with ticket content
-        const waText = encodeURIComponent(
-          `Hi! I need support.\n\nSubject: ${subject.trim()}\n\n${message.trim()}`
-        );
-        await Linking.openURL(`https://wa.me/16206123994?text=${waText}`);
-        setSent(true);
-        setSubject("");
-        setMessage("");
-      }
+      setTicketRef(res?.ticket?.referenceNumber ?? null);
+      setSent(true);
+      setSubject("");
+      setMessage("");
     } catch (e: any) {
+      // Fallback: open WhatsApp with the ticket content
+      const waText = encodeURIComponent(
+        `Hi! I need support.\n\nName: ${name.trim()}\nEmail: ${email.trim()}\nSubject: ${subject.trim()}\n\n${message.trim()}`
+      );
       Alert.alert(
-        "Could not send ticket",
-        "Please contact us directly:\n📧 support@orbitfuture.com\n💬 WhatsApp: +1 (620) 612-3994"
+        "Sending via WhatsApp",
+        "We couldn't reach the support server directly. Opening WhatsApp instead.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open WhatsApp",
+            onPress: () => Linking.openURL(`https://wa.me/16206123994?text=${waText}`),
+          },
+        ]
       );
     } finally {
       setSending(false);
@@ -54,128 +68,162 @@ export default function SupportScreen() {
   return (
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView style={s.container} contentContainerStyle={s.content}>
-        <Text style={s.title}>Support <Text style={{ color: Colors.primary }}>Center</Text></Text>
-        <Text style={s.subtitle}>We're here 24/7. Average response under 5 minutes.</Text>
+          <Text style={s.title}>Support <Text style={{ color: Colors.primary }}>Center</Text></Text>
+          <Text style={s.subtitle}>We're here 24/7. Average response under 5 minutes.</Text>
 
-        {/* WhatsApp */}
-        <TouchableOpacity
-          style={[s.card, { borderColor: "#25D36640" }]}
-          onPress={() => Linking.openURL("https://wa.me/16206123994?text=Hi!%20I%20need%20support%20with%20my%20ORBITFUTURE%20service.")}
-        >
-          <View style={[s.iconWrap, { backgroundColor: "#25D36620" }]}>
-            <Text style={s.cardIcon}>💬</Text>
-          </View>
-          <View style={s.cardBody}>
-            <Text style={s.cardTitle}>WhatsApp</Text>
-            <Text style={s.cardDesc}>Fastest — typically under 5 minutes</Text>
-            <Text style={[s.cardLink, { color: "#25D366" }]}>+1 (620) 612-3994 →</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Email */}
-        <TouchableOpacity
-          style={s.card}
-          onPress={() => Linking.openURL("mailto:support@orbitfuture.com?subject=ORBITFUTURE%20Support%20Request")}
-        >
-          <View style={[s.iconWrap, { backgroundColor: Colors.primaryDim }]}>
-            <Text style={s.cardIcon}>📧</Text>
-          </View>
-          <View style={s.cardBody}>
-            <Text style={s.cardTitle}>Email Support</Text>
-            <Text style={s.cardDesc}>Detailed inquiries — reply within 2 hours</Text>
-            <Text style={[s.cardLink, { color: Colors.primary }]}>support@orbitfuture.com →</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Hours */}
-        <View style={[s.card, { borderColor: Colors.border }]}>
-          <View style={[s.iconWrap, { backgroundColor: "#ffffff08" }]}>
-            <Text style={s.cardIcon}>🕐</Text>
-          </View>
-          <View style={s.cardBody}>
-            <Text style={s.cardTitle}>Support Hours</Text>
-            <Text style={s.cardDesc}>WhatsApp: 24 / 7</Text>
-            <Text style={s.cardDesc}>Email: 24 / 7</Text>
-            <Text style={s.cardDesc}>Average response: {"<"} 5 minutes</Text>
-          </View>
-        </View>
-
-        {/* Ticket form */}
-        <View style={s.ticketSection}>
-          <Text style={s.sectionTitle}>Submit a Ticket</Text>
-          <Text style={s.sectionSub}>We'll reply to your registered email address</Text>
-
-          {sent ? (
-            <View style={s.successCard}>
-              <Text style={s.successIcon}>✅</Text>
-              <Text style={s.successTitle}>Ticket Submitted!</Text>
-              <Text style={s.successText}>Our team will respond within 2 hours. Check your email for updates.</Text>
-              <TouchableOpacity onPress={() => setSent(false)} style={s.newTicketBtn}>
-                <Text style={s.newTicketText}>Submit Another Ticket</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={s.formCard}>
-              <View style={s.formField}>
-                <Text style={s.formLabel}>Subject</Text>
-                <TextInput
-                  style={s.formInput}
-                  value={subject}
-                  onChangeText={setSubject}
-                  placeholder="e.g. Connection issue, billing question…"
-                  placeholderTextColor={Colors.muted}
-                />
-              </View>
-              <View style={s.formField}>
-                <Text style={s.formLabel}>Message</Text>
-                <TextInput
-                  style={[s.formInput, s.formTextarea]}
-                  value={message}
-                  onChangeText={setMessage}
-                  placeholder="Describe your issue in detail…"
-                  placeholderTextColor={Colors.muted}
-                  multiline
-                  numberOfLines={5}
-                  textAlignVertical="top"
-                />
-              </View>
-              <TouchableOpacity
-                style={[s.submitBtn, sending && s.submitBtnDisabled]}
-                onPress={handleSubmit}
-                disabled={sending}
-              >
-                {sending
-                  ? <ActivityIndicator color="#000" size="small" />
-                  : <Text style={s.submitText}>Send Ticket</Text>
-                }
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Quick help */}
-        <Text style={s.sectionTitle}>Quick Help Topics</Text>
-        {[
-          { icon: "⚡", topic: "Getting Started", hint: "Setup guides and first-time configuration" },
-          { icon: "📡", topic: "Connection Issues", hint: "Troubleshoot speed or connectivity problems" },
-          { icon: "💳", topic: "Billing & Payments", hint: "Invoices, refunds, and subscription changes" },
-          { icon: "👤", topic: "Account & Dashboard", hint: "Login, profile, and subscription management" },
-          { icon: "📦", topic: "Hardware & Shipping", hint: "Track your kit or report missing items" },
-          { icon: "🔧", topic: "Installation Help", hint: "Step-by-step setup assistance from our team" },
-        ].map(({ icon, topic, hint }) => (
+          {/* WhatsApp */}
           <TouchableOpacity
-            key={topic}
-            style={s.topicRow}
-            onPress={() => { setSubject(topic); setMessage(`I need help with: ${topic}\n\n`); }}
+            style={[s.card, { borderColor: "#25D36640" }]}
+            onPress={() => Linking.openURL("https://wa.me/16206123994?text=Hi!%20I%20need%20support%20with%20my%20ORBITFUTURE%20service.")}
           >
-            <Text style={s.topicIcon}>{icon}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={s.topicTitle}>{topic}</Text>
-              <Text style={s.topicHint}>{hint}</Text>
+            <View style={[s.iconWrap, { backgroundColor: "#25D36620" }]}>
+              <Text style={s.cardIcon}>💬</Text>
             </View>
-            <Text style={{ color: Colors.muted, fontSize: 14 }}>→</Text>
+            <View style={s.cardBody}>
+              <Text style={s.cardTitle}>WhatsApp</Text>
+              <Text style={s.cardDesc}>Fastest — typically under 5 minutes</Text>
+              <Text style={[s.cardLink, { color: "#25D366" }]}>+1 (620) 612-3994 →</Text>
+            </View>
           </TouchableOpacity>
-        ))}
+
+          {/* Email */}
+          <TouchableOpacity
+            style={s.card}
+            onPress={() => Linking.openURL("mailto:support@orbitfuture.com?subject=ORBITFUTURE%20Support%20Request")}
+          >
+            <View style={[s.iconWrap, { backgroundColor: Colors.primaryDim }]}>
+              <Text style={s.cardIcon}>📧</Text>
+            </View>
+            <View style={s.cardBody}>
+              <Text style={s.cardTitle}>Email Support</Text>
+              <Text style={s.cardDesc}>Detailed inquiries — reply within 2 hours</Text>
+              <Text style={[s.cardLink, { color: Colors.primary }]}>support@orbitfuture.com →</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Hours */}
+          <View style={[s.card, { borderColor: Colors.border }]}>
+            <View style={[s.iconWrap, { backgroundColor: "#ffffff08" }]}>
+              <Text style={s.cardIcon}>🕐</Text>
+            </View>
+            <View style={s.cardBody}>
+              <Text style={s.cardTitle}>Support Hours</Text>
+              <Text style={s.cardDesc}>WhatsApp: 24 / 7</Text>
+              <Text style={s.cardDesc}>Email: 24 / 7</Text>
+              <Text style={s.cardDesc}>Average response: {"<"} 5 minutes</Text>
+            </View>
+          </View>
+
+          {/* Ticket form */}
+          <View style={s.ticketSection}>
+            <Text style={s.sectionTitle}>Submit a Ticket</Text>
+            <Text style={s.sectionSub}>Our team will reply to your email address within 2 hours</Text>
+
+            {sent ? (
+              <View style={s.successCard}>
+                <Text style={s.successIcon}>✅</Text>
+                <Text style={s.successTitle}>Ticket Submitted!</Text>
+                {ticketRef && (
+                  <View style={s.refPill}>
+                    <Text style={s.refText}>Ref: {ticketRef}</Text>
+                  </View>
+                )}
+                <Text style={s.successText}>
+                  Our team will respond within 2 hours. Check your email for updates.
+                </Text>
+                <TouchableOpacity onPress={() => { setSent(false); setTicketRef(null); }} style={s.newTicketBtn}>
+                  <Text style={s.newTicketText}>Submit Another Ticket</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={s.formCard}>
+                {!user && (
+                  <>
+                    <View style={s.formField}>
+                      <Text style={s.formLabel}>Your Name *</Text>
+                      <TextInput
+                        style={s.formInput}
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="Full name"
+                        placeholderTextColor={Colors.muted}
+                        autoCapitalize="words"
+                      />
+                    </View>
+                    <View style={s.formField}>
+                      <Text style={s.formLabel}>Email Address *</Text>
+                      <TextInput
+                        style={s.formInput}
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="your@email.com"
+                        placeholderTextColor={Colors.muted}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                      />
+                    </View>
+                  </>
+                )}
+                <View style={s.formField}>
+                  <Text style={s.formLabel}>Subject *</Text>
+                  <TextInput
+                    style={s.formInput}
+                    value={subject}
+                    onChangeText={setSubject}
+                    placeholder="e.g. Connection issue, billing question…"
+                    placeholderTextColor={Colors.muted}
+                  />
+                </View>
+                <View style={s.formField}>
+                  <Text style={s.formLabel}>Message *</Text>
+                  <TextInput
+                    style={[s.formInput, s.formTextarea]}
+                    value={message}
+                    onChangeText={setMessage}
+                    placeholder="Describe your issue in detail…"
+                    placeholderTextColor={Colors.muted}
+                    multiline
+                    numberOfLines={5}
+                    textAlignVertical="top"
+                  />
+                </View>
+                <TouchableOpacity
+                  style={[s.submitBtn, sending && s.submitBtnDisabled]}
+                  onPress={handleSubmit}
+                  disabled={sending}
+                >
+                  {sending
+                    ? <ActivityIndicator color="#000" size="small" />
+                    : <Text style={s.submitText}>Send Ticket</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* Quick help */}
+          <Text style={s.sectionTitle}>Quick Help Topics</Text>
+          {[
+            { icon: "⚡", topic: "Getting Started", hint: "Setup guides and first-time configuration" },
+            { icon: "📡", topic: "Connection Issues", hint: "Troubleshoot speed or connectivity problems" },
+            { icon: "💳", topic: "Billing & Payments", hint: "Invoices, refunds, and subscription changes" },
+            { icon: "👤", topic: "Account & Dashboard", hint: "Login, profile, and subscription management" },
+            { icon: "📦", topic: "Hardware & Shipping", hint: "Track your kit or report missing items" },
+            { icon: "🔧", topic: "Installation Help", hint: "Step-by-step setup assistance from our team" },
+          ].map(({ icon, topic, hint }) => (
+            <TouchableOpacity
+              key={topic}
+              style={s.topicRow}
+              onPress={() => { setSubject(topic); setMessage(`I need help with: ${topic}\n\n`); }}
+            >
+              <Text style={s.topicIcon}>{icon}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.topicTitle}>{topic}</Text>
+                <Text style={s.topicHint}>{hint}</Text>
+              </View>
+              <Text style={{ color: Colors.muted, fontSize: 14 }}>→</Text>
+            </TouchableOpacity>
+          ))}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -200,6 +248,8 @@ const s = StyleSheet.create({
   successCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.primaryBorder, padding: Spacing.xxl, alignItems: "center", gap: Spacing.md },
   successIcon: { fontSize: 48 },
   successTitle: { color: Colors.text, fontSize: 18, fontWeight: "900", textTransform: "uppercase" },
+  refPill: { backgroundColor: Colors.primaryDim, borderRadius: Radius.full, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: Colors.primaryBorder },
+  refText: { color: Colors.primary, fontSize: 12, fontWeight: "800", letterSpacing: 1 },
   successText: { color: Colors.muted, fontSize: 13, textAlign: "center", lineHeight: 20 },
   newTicketBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border },
   newTicketText: { color: Colors.muted, fontSize: 12, fontWeight: "600" },

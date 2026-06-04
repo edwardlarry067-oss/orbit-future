@@ -35,8 +35,8 @@
     "scheme": "orbitfuture",
     "plugins": ["expo-router"],
     "extra": {
-      "apiUrl": "https://orbitfuture.replit.app",
-      "apiUrlDev": "https://919f5ad5-63e6-417f-a233-cd5db7afc8b1-00-85820hjo0ee9.spock.replit.dev"
+      "apiUrl": "https://2f11234b-91da-4b7f-8bcf-a9f6d820ca3d-00-dtn113b17jlu.janeway.replit.dev",
+      "apiUrlProd": "https://orbitfuture.replit.app"
     }
   }
 }

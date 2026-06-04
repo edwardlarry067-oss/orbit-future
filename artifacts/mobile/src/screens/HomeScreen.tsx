@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { Colors, Spacing, Radius } from "../theme";
 
@@ -7,6 +8,7 @@ export default function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top"]}>
     <ScrollView style={s.container} contentContainerStyle={s.content}>
       {/* Header row */}
       <View style={s.topRow}>
@@ -114,6 +116,7 @@ export default function HomeScreen({ navigation }: any) {
         <Text style={s.waBtnText}>💬  Chat on WhatsApp — Fastest Response</Text>
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

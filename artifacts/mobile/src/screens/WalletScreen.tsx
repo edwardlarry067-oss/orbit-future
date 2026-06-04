@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, RefreshControl } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -98,6 +99,7 @@ export default function WalletScreen({ navigation }: any) {
   if (loading) return <LoadingSpinner message="Loading wallet…" />;
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top"]}>
     <ScrollView
       style={s.container}
       contentContainerStyle={s.content}
@@ -166,6 +168,7 @@ export default function WalletScreen({ navigation }: any) {
         </Text>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
