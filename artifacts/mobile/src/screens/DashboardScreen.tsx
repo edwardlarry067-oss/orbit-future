@@ -45,7 +45,7 @@ export default function DashboardScreen({ navigation }: any) {
     if (!user) { setLoading(false); return; }
     const [subsRes, walletRes] = await Promise.allSettled([
       apiRequest<{ subscriptions?: Subscription[]; data?: Subscription[] } | Subscription[]>("GET", `subscriptions?email=${encodeURIComponent(user.email)}`),
-      apiRequest<Wallet>("GET", "wallet"),
+      apiRequest<Wallet>("GET", `wallet/${encodeURIComponent(user.email)}`),
     ]);
     if (subsRes.status === "fulfilled") {
       const v = subsRes.value as any;

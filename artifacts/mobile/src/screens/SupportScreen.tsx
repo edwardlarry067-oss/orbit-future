@@ -17,22 +17,35 @@ export default function SupportScreen() {
       return;
     }
     setSending(true);
+    // Route the ticket via email since the API doesn't expose a /api/support endpoint.
+    // We open the system email composer with the ticket pre-filled.
     try {
-      await apiRequest("POST", "support", {
-        subject: subject.trim(),
-        message: message.trim(),
-        email: user?.email ?? "anonymous",
-        name: user?.name ?? "Anonymous",
-      });
-      setSent(true);
-      setSubject("");
-      setMessage("");
-    } catch {
-      Alert.alert(
-        "Ticket submitted",
-        "Your request has been noted. Our team will reach out via WhatsApp or email shortly."
+      const body = encodeURIComponent(
+        `Name: ${user?.name ?? "Anonymous"}\nEmail: ${user?.email ?? "N/A"}\n\n${message.trim()}`
       );
-      setSent(true);
+      const mailUrl = `mailto:support@orbitfuture.com?subject=${encodeURIComponent(`[Support Ticket] ${subject.trim()}`)}&body=${body}`;
+      const { Linking } = await import("react-native");
+      const canOpen = await Linking.canOpenURL(mailUrl);
+      if (canOpen) {
+        await Linking.openURL(mailUrl);
+        setSent(true);
+        setSubject("");
+        setMessage("");
+      } else {
+        // Fall back to WhatsApp with ticket content
+        const waText = encodeURIComponent(
+          `Hi! I need support.\n\nSubject: ${subject.trim()}\n\n${message.trim()}`
+        );
+        await Linking.openURL(`https://wa.me/16206123994?text=${waText}`);
+        setSent(true);
+        setSubject("");
+        setMessage("");
+      }
+    } catch (e: any) {
+      Alert.alert(
+        "Could not send ticket",
+        "Please contact us directly:\n📧 support@orbitfuture.com\n💬 WhatsApp: +1 (620) 612-3994"
+      );
     } finally {
       setSending(false);
     }
