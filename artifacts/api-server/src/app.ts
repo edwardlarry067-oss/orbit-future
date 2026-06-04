@@ -32,6 +32,8 @@ app.use(
       : (origin, cb) => {
           if (!origin) return cb(null, true);
           const allowed = [
+            "https://orbitfuture.store",
+            "https://www.orbitfuture.store",
             "https://orbitfuture.com",
             "https://www.orbitfuture.com",
             "https://fairy-2ff969.netlify.app",
