@@ -151,3 +151,9 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+[data-testid="replit-badge"],
+.replit-badge,
+a[href*="replit.com/site/about"] {
+  display: none !important;
+}
