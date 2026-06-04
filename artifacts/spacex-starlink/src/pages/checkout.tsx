@@ -47,6 +47,7 @@ export default function Checkout() {
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: { name: "", email: "", address: "" },
+    mode: "onTouched",
   });
 
   useEffect(() => {
