@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { getApiBase } from "@workspace/api-client-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +100,7 @@ export default function Plans() {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    fetch("/api/plans")
+    fetch(`${getApiBase()}/api/plans`)
       .then((r) => r.json())
       .then((data) => { setPlans(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -126,7 +127,7 @@ export default function Plans() {
         setPayingPlanId(null);
         return;
       }
-      const res = await fetch("/api/stripe-plan-pay", {
+      const res = await fetch(`${getApiBase()}/api/stripe-plan-pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId: plan.id, email, name }),

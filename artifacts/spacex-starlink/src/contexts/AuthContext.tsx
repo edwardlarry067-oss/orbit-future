@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { getApiBase } from "@workspace/api-client-react";
 
 export interface AuthUser {
   id: number;
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchMe = useCallback(async (tok: string) => {
-    const res = await fetch("/api/auth/me", {
+    const res = await fetch(`${getApiBase()}/api/auth/me`, {
       headers: { Authorization: `Bearer ${tok}` },
     });
     if (!res.ok) throw new Error("Invalid session");
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchMe]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch(`${getApiBase()}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
-    const res = await fetch("/api/auth/register", {
+    const res = await fetch(`${getApiBase()}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = useCallback(async (data: Partial<{ name: string; phone: string; address: string; password: string; newPassword: string }>) => {
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch("/api/auth/me", {
+    const res = await fetch(`${getApiBase()}/api/auth/me`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),

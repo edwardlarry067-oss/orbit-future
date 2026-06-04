@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useLocation } from "wouter";
+import { getApiBase } from "@workspace/api-client-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,11 +44,11 @@ export default function Wallet() {
   }, [user, loading, navigate]);
 
   const refreshWallet = useCallback((email: string) => {
-    fetch(`/api/wallet/${encodeURIComponent(email)}`)
+    fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}`)
       .then((r) => r.json())
       .then(setWallet)
       .catch(() => {});
-    fetch(`/api/wallet/${encodeURIComponent(email)}/transactions`)
+    fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}/transactions`)
       .then((r) => r.json())
       .then((data) => { setTransactions(data.transactions || []); setTxLoading(false); })
       .catch(() => setTxLoading(false));
@@ -74,7 +75,7 @@ export default function Wallet() {
 
     if (success && sessionId) {
       window.history.replaceState({}, "", "/wallet");
-      fetch("/api/stripe-token-verify", {
+      fetch(`${getApiBase()}/api/stripe-token-verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ session_id: sessionId }),
@@ -103,7 +104,7 @@ export default function Wallet() {
     if (!token) return;
     setPaymentLoading(bundleId);
     try {
-      const res = await fetch("/api/stripe-token-buy", {
+      const res = await fetch(`${getApiBase()}/api/stripe-token-buy`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ bundleId }),

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getApiBase } from "@workspace/api-client-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,7 @@ export default function Support() {
     e.preventDefault();
     setTicketState({ phase: "submitting" });
     try {
-      const res = await fetch("/api/support/tickets", {
+      const res = await fetch(`${getApiBase()}/api/support/tickets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +99,7 @@ export default function Support() {
     try {
       const isRef = /^ORB-/i.test(q);
       const param = isRef ? `ref=${encodeURIComponent(q.toUpperCase())}` : `email=${encodeURIComponent(q)}`;
-      const res = await fetch(`/api/support/tickets?${param}`);
+      const res = await fetch(`${getApiBase()}/api/support/tickets?${param}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to fetch tickets");
       setTrackedTickets(data.tickets ?? []);

@@ -22,6 +22,9 @@ export default defineConfig(async () => {
 
   return {
     plugins,
+    define: {
+      "window.__VITE_API_URL__": JSON.stringify(process.env.VITE_API_URL ?? ""),
+    },
     resolve: {
       alias: {
         "@": path.resolve(import.meta.dirname, "src"),
