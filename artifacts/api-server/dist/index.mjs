@@ -72037,7 +72037,7 @@ app.use(
         "https://fairy-2ff969.netlify.app",
         ...ALLOWED_ORIGINS
       ];
-      if (origin.endsWith(".replit.app") || allowed.some((o) => origin.startsWith(o))) {
+      if (origin.endsWith(".replit.app") || origin.endsWith(".netlify.app") || allowed.some((o) => origin.startsWith(o))) {
         cb(null, true);
       } else {
         cb(new Error("CORS: origin not allowed"));

@@ -1,13 +1,15 @@
 [build]
-  base = "artifacts"
-  command = "npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/spacex-starlink run build"
+  command = "cd artifacts && npm install -g pnpm 2>/dev/null; pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/spacex-starlink run build"
   publish = "artifacts/spacex-starlink/dist"
 
 [build.environment]
   NODE_VERSION = "20"
-  # Required: set this in the Netlify UI → Site Settings → Environment Variables
-  # Value should be your deployed API backend URL, e.g. https://your-api.replit.app
-  # VITE_API_URL = "https://your-api.replit.app"
+  # VITE_API_URL — leave empty so API calls go to the same Netlify domain via the /api/* redirect
+  VITE_API_URL = ""
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 [[headers]]
   for = "/*"

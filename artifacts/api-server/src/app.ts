@@ -37,9 +37,10 @@ app.use(
             "https://fairy-2ff969.netlify.app",
             ...ALLOWED_ORIGINS,
           ];
-          // Allow any replit.app subdomain
+          // Allow any replit.app or netlify.app subdomain
           if (
             origin.endsWith(".replit.app") ||
+            origin.endsWith(".netlify.app") ||
             allowed.some((o) => origin.startsWith(o))
           ) {
             cb(null, true);
