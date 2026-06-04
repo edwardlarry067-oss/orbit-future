@@ -1,14 +1,18 @@
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 
-const API_URL =
+const API_URL: string =
   Constants.expoConfig?.extra?.apiUrl ??
   "https://919f5ad5-63e6-417f-a233-cd5db7afc8b1-00-85820hjo0ee9.spock.replit.dev";
 
 const TOKEN_KEY = "orbitfuture_token";
 
 export async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  try {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export async function setToken(token: string): Promise<void> {
@@ -16,7 +20,11 @@ export async function setToken(token: string): Promise<void> {
 }
 
 export async function removeToken(): Promise<void> {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
+  try {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 export async function apiRequest<T>(
@@ -27,6 +35,7 @@ export async function apiRequest<T>(
   const token = await getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "Accept": "application/json",
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -37,9 +46,27 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({ error: response.statusText }));
-    throw new Error(err.error ?? `HTTP ${response.status}`);
+    let errorMessage = `HTTP ${response.status}`;
+    try {
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        const err = await response.json();
+        errorMessage = err.error ?? err.message ?? errorMessage;
+      } else {
+        errorMessage = response.statusText || errorMessage;
+      }
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(errorMessage);
   }
 
-  return response.json() as Promise<T>;
+  // Handle empty 204 responses
+  if (response.status === 204) return {} as T;
+
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return {} as T;
+  }
 }

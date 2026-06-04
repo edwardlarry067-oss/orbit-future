@@ -1,82 +1,154 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Linking } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking, RefreshControl } from "react-native";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
+import { Colors, Spacing, Radius } from "../theme";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { EmptyState } from "../components/ui/EmptyState";
 
-const C = { bg: "#000", card: "#0d0d0d", border: "#1a1a1a", primary: "#00D4FF", text: "#fff", muted: "#6b7280" };
+const C = Colors;
 
+// Must match backend bundleMapper.ts bundle IDs exactly
 const BUNDLES = [
-  { tokens: 500, price: 50, label: "Starter" },
-  { tokens: 1200, price: 100, label: "Standard" },
-  { tokens: 2500, price: 180, label: "Pro" },
-  { tokens: 5000, price: 320, label: "Enterprise" },
-];
+  { id: "starter",    name: "Starter",    tokens: 100,  price: 5,   badge: undefined },
+  { id: "basic",      name: "Basic",      tokens: 250,  price: 10,  badge: undefined },
+  { id: "standard",   name: "Standard",   tokens: 700,  price: 25,  badge: "Best Value" },
+  { id: "premium",    name: "Premium",    tokens: 1500, price: 50,  badge: "Popular" },
+  { id: "enterprise", name: "Enterprise", tokens: 3500, price: 100, badge: "Most Tokens" },
+] as const;
 
-export default function WalletScreen() {
+interface Transaction {
+  id: number;
+  type: "credit" | "debit";
+  amount: number;
+  description: string;
+  createdAt: string;
+  status: string;
+}
+
+export default function WalletScreen({ navigation }: any) {
   const { user } = useAuth();
   const [balance, setBalance] = useState<number | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [buying, setBuying] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [buying, setBuying] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
-    apiRequest<{ balance: number }>("GET", "user/token-balance")
-      .then((d) => setBalance(d.balance))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    try {
+      const [walletRes, txRes] = await Promise.allSettled([
+        apiRequest<{ balance: number }>("GET", "wallet"),
+        apiRequest<Transaction[]>("GET", "wallet/transactions"),
+      ]);
+      if (walletRes.status === "fulfilled") setBalance((walletRes.value as any).balance ?? 0);
+      if (txRes.status === "fulfilled") setTransactions(Array.isArray(txRes.value) ? txRes.value : []);
+    } catch (e) {
+      // partial load is fine
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [user]);
 
-  const handleBuy = async (bundle: typeof BUNDLES[0]) => {
+  useEffect(() => { load(); }, [load]);
+
+  const handleBuy = async (bundle: typeof BUNDLES[number]) => {
     if (!user) { Alert.alert("Sign in required", "Please sign in to buy tokens."); return; }
-    setBuying(true);
+    setBuying(bundle.id);
     try {
-      const res = await apiRequest<{ url: string }>("POST", "stripe-token-buy", {
-        tokens: bundle.tokens,
-        amount: bundle.price,
-      });
-      if ((res as any).url) Linking.openURL((res as any).url);
+      const res = await apiRequest<{ url: string }>("POST", "stripe-token-buy", { bundleId: bundle.id });
+      if ((res as any).url) {
+        Linking.openURL((res as any).url);
+      } else {
+        Alert.alert("Error", "No checkout URL returned. Please try again.");
+      }
     } catch (e: any) {
-      Alert.alert("Error", e.message ?? "Could not start purchase.");
+      Alert.alert("Purchase failed", e.message ?? "Could not start purchase. Please try again.");
     } finally {
-      setBuying(false);
+      setBuying(null);
     }
   };
 
-  if (!user) return (
-    <View style={s.center}>
-      <Text style={s.emptyTitle}>Sign in to view{"\n"}your wallet</Text>
-    </View>
-  );
+  if (!user) {
+    return (
+      <View style={s.container}>
+        <EmptyState icon="🪙" title="Sign in to use your wallet" actionLabel="Sign In" onAction={() => navigation.navigate("Profile")} />
+      </View>
+    );
+  }
 
-  if (loading) return (
-    <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>
-  );
+  if (loading) return <LoadingSpinner message="Loading wallet…" />;
 
   return (
-    <ScrollView style={s.container} contentContainerStyle={s.content}>
+    <ScrollView
+      style={s.container}
+      contentContainerStyle={s.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={C.primary} />}
+    >
       <Text style={s.title}>Orbit <Text style={{ color: C.primary }}>Wallet</Text></Text>
-      <View style={s.balCard}>
-        <Text style={s.balLabel}>🪙 Current Balance</Text>
-        <Text style={s.balVal}>{balance?.toLocaleString() ?? "—"}</Text>
-        <Text style={s.balSub}>tokens</Text>
-      </View>
 
-      <Text style={s.section}>Buy Token Bundle</Text>
-      <Text style={s.sectionSub}>Tokens can be used to activate or renew plans instantly.</Text>
+      {/* Balance card */}
+      <Card highlight style={s.balCard}>
+        <Text style={s.balLabel}>🪙 Current Balance</Text>
+        <Text style={s.balVal}>{balance?.toLocaleString() ?? "0"}</Text>
+        <Text style={s.balSub}>tokens</Text>
+        <Text style={s.balHint}>Use tokens to activate or renew satellite plans instantly</Text>
+      </Card>
+
+      {/* Buy bundles */}
+      <Text style={s.sectionTitle}>Top Up Wallet</Text>
+      <Text style={s.sectionSub}>All payments secured by Stripe. Tokens credited instantly.</Text>
+
       {BUNDLES.map((bundle) => (
-        <View key={bundle.tokens} style={s.bundleCard}>
-          <View>
-            <Text style={s.bundleLabel}>{bundle.label}</Text>
+        <View key={bundle.id} style={s.bundleCard}>
+          <View style={s.bundleLeft}>
+            {bundle.badge && (
+              <View style={s.badgePill}>
+                <Text style={s.badgeText}>{bundle.badge}</Text>
+              </View>
+            )}
+            <Text style={s.bundleName}>{bundle.name}</Text>
             <Text style={s.bundleTokens}>{bundle.tokens.toLocaleString()} tokens</Text>
           </View>
-          <TouchableOpacity style={s.buyBtn} onPress={() => handleBuy(bundle)} disabled={buying}>
+          <TouchableOpacity
+            style={[s.buyBtn, buying === bundle.id && s.buyBtnDisabled]}
+            onPress={() => handleBuy(bundle)}
+            disabled={buying !== null}
+          >
             <Text style={s.buyBtnText}>${bundle.price}</Text>
           </TouchableOpacity>
         </View>
       ))}
 
+      {/* Transaction history */}
+      {transactions.length > 0 && (
+        <>
+          <Text style={[s.sectionTitle, { marginTop: Spacing.xl }]}>Transaction History</Text>
+          {transactions.slice(0, 10).map((tx) => (
+            <View key={tx.id} style={s.txRow}>
+              <View style={[s.txIcon, { backgroundColor: tx.type === "credit" ? C.greenDim : "#ef444420" }]}>
+                <Text style={s.txIconText}>{tx.type === "credit" ? "+" : "−"}</Text>
+              </View>
+              <View style={s.txBody}>
+                <Text style={s.txDesc} numberOfLines={1}>{tx.description}</Text>
+                <Text style={s.txTime}>{new Date(tx.createdAt).toLocaleDateString()}</Text>
+              </View>
+              <Text style={[s.txAmount, { color: tx.type === "credit" ? C.green : C.red }]}>
+                {tx.type === "credit" ? "+" : "−"}{Math.abs(tx.amount).toLocaleString()} tkn
+              </Text>
+            </View>
+          ))}
+        </>
+      )}
+
       <View style={s.notice}>
-        <Text style={s.noticeText}>🔒 All payments secured by Stripe. Tokens credited instantly after payment.</Text>
+        <Text style={s.noticeText}>
+          🔒 Payments processed securely via Stripe. Tokens never expire.
+          Need help? Contact support via the Support tab.
+        </Text>
       </View>
     </ScrollView>
   );
@@ -84,21 +156,41 @@ export default function WalletScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  content: { padding: 20, paddingBottom: 40 },
-  center: { flex: 1, backgroundColor: C.bg, alignItems: "center", justifyContent: "center" },
-  emptyTitle: { color: C.muted, fontSize: 18, textAlign: "center" },
-  title: { color: C.text, fontSize: 28, fontWeight: "900", textTransform: "uppercase", letterSpacing: -1, marginBottom: 20 },
-  balCard: { backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 24, alignItems: "center", marginBottom: 28 },
-  balLabel: { color: C.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 },
-  balVal: { color: C.primary, fontSize: 52, fontWeight: "900", lineHeight: 56 },
-  balSub: { color: C.muted, fontSize: 13 },
-  section: { color: C.text, fontWeight: "900", fontSize: 16, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
-  sectionSub: { color: C.muted, fontSize: 12, marginBottom: 16 },
-  bundleCard: { backgroundColor: C.card, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
-  bundleLabel: { color: C.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 },
-  bundleTokens: { color: C.text, fontWeight: "800", fontSize: 18 },
-  buyBtn: { backgroundColor: C.primary, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 20 },
-  buyBtnText: { color: "#000", fontWeight: "900", fontSize: 14 },
-  notice: { backgroundColor: "#ffffff08", borderRadius: 12, borderWidth: 1, borderColor: "#ffffff10", padding: 14, marginTop: 8 },
-  noticeText: { color: C.muted, fontSize: 11, textAlign: "center", lineHeight: 16 },
+  content: { padding: Spacing.xl, paddingBottom: 48 },
+  title: { color: C.text, fontSize: 28, fontWeight: "900", textTransform: "uppercase", letterSpacing: -1, marginBottom: Spacing.xl },
+  balCard: { alignItems: "center", paddingVertical: Spacing.xxxl, marginBottom: Spacing.xxl },
+  balLabel: { color: C.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, marginBottom: Spacing.sm },
+  balVal: { color: C.primary, fontSize: 60, fontWeight: "900", lineHeight: 64 },
+  balSub: { color: C.muted, fontSize: 14, marginBottom: Spacing.sm },
+  balHint: { color: C.muted, fontSize: 11, textAlign: "center", paddingHorizontal: Spacing.lg, lineHeight: 16 },
+  sectionTitle: { color: C.text, fontWeight: "900", fontSize: 16, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: Spacing.xs },
+  sectionSub: { color: C.muted, fontSize: 12, marginBottom: Spacing.lg },
+  bundleCard: {
+    backgroundColor: C.card,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.sm,
+  },
+  bundleLeft: { gap: 3 },
+  badgePill: { backgroundColor: C.primaryDim, borderRadius: Radius.full, paddingHorizontal: 8, paddingVertical: 2, alignSelf: "flex-start", marginBottom: 2 },
+  badgeText: { color: C.primary, fontSize: 9, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1 },
+  bundleName: { color: C.mutedLight, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 },
+  bundleTokens: { color: C.text, fontWeight: "900", fontSize: 20 },
+  buyBtn: { backgroundColor: C.primary, borderRadius: Radius.md, paddingVertical: 13, paddingHorizontal: Spacing.xl },
+  buyBtnDisabled: { opacity: 0.5 },
+  buyBtnText: { color: "#000", fontWeight: "900", fontSize: 15 },
+  txRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: C.border },
+  txIcon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
+  txIconText: { color: C.text, fontWeight: "900", fontSize: 16 },
+  txBody: { flex: 1, gap: 2 },
+  txDesc: { color: C.textSecondary, fontSize: 13, fontWeight: "500" },
+  txTime: { color: C.muted, fontSize: 11 },
+  txAmount: { fontWeight: "800", fontSize: 13 },
+  notice: { backgroundColor: "#ffffff06", borderRadius: Radius.md, borderWidth: 1, borderColor: C.borderLight, padding: Spacing.lg, marginTop: Spacing.xl },
+  noticeText: { color: C.muted, fontSize: 11, textAlign: "center", lineHeight: 18 },
 });

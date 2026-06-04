@@ -1,11 +1,13 @@
 {
   "expo": {
-    "name": "OrbitFuture",
+    "name": "ORBITFUTURE",
     "slug": "orbitfuture",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#000000",
+    "primaryColor": "#00D4FF",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -13,22 +15,27 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.orbitfuture.app"
+      "bundleIdentifier": "com.orbitfuture.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Not used",
+        "NSLocationWhenInUseUsageDescription": "Not used"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.orbitfuture.app"
+      "package": "com.orbitfuture.app",
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router"],
     "scheme": "orbitfuture",
     "extra": {
-      "apiUrl": "https://919f5ad5-63e6-417f-a233-cd5db7afc8b1-00-85820hjo0ee9.spock.replit.dev"
+      "apiUrl": "https://orbitfuture.replit.app",
+      "apiUrlDev": "https://919f5ad5-63e6-417f-a233-cd5db7afc8b1-00-85820hjo0ee9.spock.replit.dev"
     }
   }
 }

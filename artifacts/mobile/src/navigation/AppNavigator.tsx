@@ -1,41 +1,106 @@
 import React from "react";
+import { View, Text } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text } from "react-native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { useAuth } from "../contexts/AuthContext";
+import { Colors } from "../theme";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
 import HomeScreen from "../screens/HomeScreen";
 import PlansScreen from "../screens/PlansScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import WalletScreen from "../screens/WalletScreen";
-import SupportScreen from "../screens/SupportScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import SupportScreen from "../screens/SupportScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
+import LoginScreen from "../screens/LoginScreen";
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-const icon = (emoji: string) => ({ focused }: { focused: boolean }) => (
-  <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
-);
+const HEADER_OPTS = {
+  headerStyle: { backgroundColor: "#000", borderBottomWidth: 1, borderBottomColor: "#1a1a2e" },
+  headerTitleStyle: { color: "#fff", fontWeight: "900" as const, fontSize: 13, letterSpacing: 2 },
+  headerTintColor: Colors.primary,
+};
+
+const TAB_ICON_MAP: Record<string, string> = {
+  Home: "🏠",
+  Plans: "📡",
+  Wallet: "🪙",
+  Dashboard: "📊",
+  Profile: "👤",
+};
+
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  return (
+    <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.45 }}>
+      {TAB_ICON_MAP[name] ?? "●"}
+    </Text>
+  );
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        ...HEADER_OPTS,
+        tabBarStyle: {
+          backgroundColor: "#000",
+          borderTopWidth: 1,
+          borderTopColor: "#1a1a2e",
+          height: 72,
+          paddingBottom: 12,
+          paddingTop: 4,
+        },
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: "#4b5563",
+        tabBarLabelStyle: { fontSize: 9, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
+        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
+      })}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: "ORBITFUTURE" }} />
+      <Tab.Screen name="Plans" component={PlansScreen} options={{ title: "SERVICE PLANS" }} />
+      <Tab.Screen name="Wallet" component={WalletScreen} options={{ title: "ORBIT WALLET" }} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: "DASHBOARD" }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "PROFILE" }} />
+    </Tab.Navigator>
+  );
+}
+
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ ...HEADER_OPTS, headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function RootStack() {
+  return (
+    <Stack.Navigator screenOptions={{ ...HEADER_OPTS, presentation: "card" }}>
+      <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: "NOTIFICATIONS" }} />
+      <Stack.Screen name="Support" component={SupportScreen} options={{ title: "SUPPORT" }} />
+    </Stack.Navigator>
+  );
+}
 
 export default function AppNavigator() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.bg }}>
+        <LoadingSpinner message="Loading…" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          headerStyle: { backgroundColor: "#000", borderBottomWidth: 1, borderBottomColor: "#1a1a1a" },
-          headerTitleStyle: { color: "#fff", fontWeight: "900", fontSize: 14, letterSpacing: 2, textTransform: "uppercase" },
-          tabBarStyle: { backgroundColor: "#000", borderTopWidth: 1, borderTopColor: "#1a1a1a", height: 70, paddingBottom: 10 },
-          tabBarActiveTintColor: "#00D4FF",
-          tabBarInactiveTintColor: "#6b7280",
-          tabBarLabelStyle: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase" },
-        }}
-      >
-        <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: icon("🏠"), title: "OrbitFuture" }} />
-        <Tab.Screen name="Plans" component={PlansScreen} options={{ tabBarIcon: icon("📡"), title: "Service Plans" }} />
-        <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarIcon: icon("📊"), title: "Dashboard" }} />
-        <Tab.Screen name="Wallet" component={WalletScreen} options={{ tabBarIcon: icon("🪙"), title: "Orbit Wallet" }} />
-        <Tab.Screen name="Support" component={SupportScreen} options={{ tabBarIcon: icon("💬"), title: "Support" }} />
-        <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: icon("👤"), title: "Profile" }} />
-      </Tab.Navigator>
+      <RootStack />
     </NavigationContainer>
   );
 }
