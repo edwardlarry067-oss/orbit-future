@@ -1,17 +1,10 @@
 {
   "version": 2,
-  "installCommand": "npm install && npm install -g pnpm 2>/dev/null; cd artifacts && pnpm install --frozen-lockfile",
-  "buildCommand": "cd artifacts && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/spacex-starlink run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "artifacts/spacex-starlink/dist",
-  "functions": {
-    "api/index.mjs": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 30
-    }
-  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/:path*", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -22,9 +15,5 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     }
-  ],
-  "env": {
-    "VITE_API_URL": "",
-    "NODE_VERSION": "20"
-  }
+  ]
 }

@@ -4,7 +4,7 @@
   "description": "SpaceX Starlink subscription platform.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm install -g pnpm && cd artifacts && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/spacex-starlink run build"
   },
   "keywords": [],
   "author": "",
