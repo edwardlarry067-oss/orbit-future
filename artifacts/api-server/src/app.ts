@@ -65,11 +65,10 @@ app.use(
   })
 );
 
-// Redirect non-www to www for spacexstarlink.com
-app.use((req, res, next) => {
-  const host = req.headers.host ?? "";
-  if (host === "spacexstarlink.com" || host === "spacexstarlink.com:443") {
-    res.redirect(301, `https://www.spacexstarlink.com${req.url}`);
+// Security: reject requests that look like HTTP parameter pollution
+app.use((req, _res, next) => {
+  if (req.url && req.url.includes("%00")) {
+    _res.status(400).json({ error: "Bad request" });
     return;
   }
   next();

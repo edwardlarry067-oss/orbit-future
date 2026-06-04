@@ -148,7 +148,7 @@ export default function EnvConfig() {
           Environment Config
         </h1>
         <p className="text-muted-foreground mt-2">
-          Add your API keys here. Each key is saved securely to Netlify — never stored locally.
+          Add your API keys here. Each key is saved securely to the database and applied immediately — no redeploy needed.
         </p>
       </div>
 
@@ -266,15 +266,15 @@ export default function EnvConfig() {
           className="w-full h-12 text-sm font-black uppercase tracking-widest bg-primary text-black hover:bg-primary/90 disabled:opacity-40"
         >
           {status === "loading" ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving to Netlify...</>
+            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving settings...</>
           ) : (
-            `Save ${filledCount > 0 ? filledCount : ""} Key${filledCount !== 1 ? "s" : ""} to Netlify`
+            `Save ${filledCount > 0 ? filledCount : ""} Setting${filledCount !== 1 ? "s" : ""}`
           )}
         </Button>
 
         <p className="text-xs text-gray-700 text-center">
-          Only fill in the keys you want to update. Empty fields are ignored.
-          After saving, trigger a redeploy from the Netlify dashboard.
+          Only fill in the settings you want to update. Empty fields are ignored.
+          Changes are applied immediately to the running server.
         </p>
       </div>
     </AdminLayout>

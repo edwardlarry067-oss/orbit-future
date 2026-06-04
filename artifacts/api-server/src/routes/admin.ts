@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { plansTable, subscriptionsTable, siteSettingsTable } from "@workspace/db";
-import { eq, desc, count, gte, sql } from "drizzle-orm";
+import { plansTable, subscriptionsTable, siteSettingsTable, usersTable } from "@workspace/db";
+import { eq, desc, count, gte, sql, ilike, or } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { adminAuth, ADMIN_PASSWORD, JWT_SECRET } from "../middlewares/adminAuth";
 
@@ -311,6 +311,68 @@ router.post("/admin/set-env", adminAuth, async (req, res): Promise<void> => {
   }
 });
 
+
+// ── Admin: Users ──────────────────────────────────────────────────────────────
+
+router.get("/admin/users", adminAuth, async (req, res): Promise<void> => {
+  try {
+    const rows = await db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        name: usersTable.name,
+        phone: usersTable.phone,
+        address: usersTable.address,
+        createdAt: usersTable.createdAt,
+        updatedAt: usersTable.updatedAt,
+      })
+      .from(usersTable)
+      .orderBy(desc(usersTable.createdAt));
+
+    const subCounts = await db
+      .select({
+        email: subscriptionsTable.email,
+        count: count(),
+      })
+      .from(subscriptionsTable)
+      .groupBy(subscriptionsTable.email);
+
+    const subMap = new Map(subCounts.map(r => [r.email, Number(r.count)]));
+
+    res.json(
+      rows.map(u => ({
+        ...u,
+        subscriptionCount: subMap.get(u.email) ?? 0,
+        walletBalance: 0,
+      }))
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to list users");
+    res.status(500).json({ error: "Failed to list users" });
+  }
+});
+
+router.delete("/admin/users/:id", adminAuth, async (req, res): Promise<void> => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const [deleted] = await db
+      .delete(usersTable)
+      .where(eq(usersTable.id, id))
+      .returning({ id: usersTable.id });
+    if (!deleted) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete user");
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
 
 // ── Seed default plans ─────────────────────────────────────────────────────────
 // POST /api/admin/seed-plans

@@ -54001,122 +54001,77 @@ function getResend() {
   const { Resend } = require_dist4();
   return new Resend(key);
 }
-var FROM_EMAIL = process.env.EMAIL_FROM ?? "SpaceXStarlink <noreply@spacexstarlink.com>";
-function confirmationHtml(data) {
-  const featuresHtml = data.features.map(
-    (f) => `<tr><td style="padding:6px 0;color:#a0aec0;font-size:14px;">
-          <span style="color:#00D4FF;margin-right:8px;">\u2726</span>${f}
-        </td></tr>`
-  ).join("");
+var FROM_EMAIL = process.env.EMAIL_FROM ?? "ORBITFUTURE <noreply@orbitfuture.com>";
+var BRAND_COLOR = "#00D4FF";
+var SUPPORT_EMAIL = "support@orbitfuture.com";
+var APP_URL = process.env.APP_URL ?? "https://orbitfuture.com";
+var baseStyles = `
+  body{margin:0;padding:0;background:#050D1A;font-family:'Helvetica Neue',Arial,sans-serif;}
+  @media only screen and (max-width:600px){
+    .email-wrapper{padding:20px 12px!important;}
+    .email-card{padding:28px 20px!important;}
+    .hero-title{font-size:26px!important;}
+  }
+`;
+function emailWrapper(content) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Welcome to SpaceXStarlink</title>
+  <style>${baseStyles}</style>
 </head>
-<body style="margin:0;padding:0;background:#050D1A;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#050D1A;padding:40px 20px;">
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" class="email-wrapper" style="background:#050D1A;padding:40px 20px;">
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 
-        <!-- Header -->
+        <!-- Header / Logo -->
         <tr><td style="padding-bottom:32px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
-                <span style="font-size:20px;font-weight:800;letter-spacing:2px;color:#ffffff;">
-                  SPACEX<span style="color:#00D4FF;">STARLINK</span>
-                </span>
+                <a href="${APP_URL}" style="text-decoration:none;">
+                  <span style="font-size:20px;font-weight:900;letter-spacing:3px;color:#ffffff;text-transform:uppercase;">
+                    ORBIT<span style="color:${BRAND_COLOR};">FUTURE</span>
+                  </span>
+                </a>
+              </td>
+              <td align="right">
+                <span style="font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:2px;">Satellite Internet</span>
               </td>
             </tr>
           </table>
         </td></tr>
 
-        <!-- Hero -->
-        <tr><td style="background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 100%);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;margin-bottom:24px;">
-          <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:#00D4FF;text-transform:uppercase;">Subscription Confirmed</p>
-          <h1 style="margin:0 0 16px;font-size:32px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">You're connected<br/>to the future.</h1>
-          <p style="margin:0;font-size:16px;color:#a0aec0;line-height:1.6;">
-            Welcome, ${data.customerName}. Your <strong style="color:#ffffff;">${data.planName}</strong> subscription is now active.
-            You're joining a global constellation of satellite internet users.
-          </p>
-        </td></tr>
-
-        <!-- Plan Details -->
-        <tr><td style="padding-top:24px;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;">
-            <tr>
-              <td style="padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);">
-                <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#00D4FF;text-transform:uppercase;">Your Plan</p>
-                <p style="margin:0;font-size:22px;font-weight:800;color:#ffffff;">${data.planName}</p>
-                <p style="margin:4px 0 0;font-size:14px;color:#a0aec0;text-transform:capitalize;">${data.planCategory} \xB7 ${data.planSpeed}</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding-top:20px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);">
-                <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#00D4FF;text-transform:uppercase;">Monthly Rate</p>
-                <p style="margin:0;font-size:28px;font-weight:800;color:#ffffff;">$${data.priceMonthly}<span style="font-size:16px;color:#a0aec0;font-weight:400;">/mo</span></p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding-top:20px;">
-                <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:2px;color:#00D4FF;text-transform:uppercase;">Key Features</p>
-                <table width="100%" cellpadding="0" cellspacing="0">${featuresHtml}</table>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-
-        <!-- Next Steps -->
-        <tr><td style="padding-top:24px;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;">
-            <tr><td style="padding-bottom:16px;">
-              <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:#00D4FF;text-transform:uppercase;">Next Steps</p>
-            </td></tr>
-            <tr><td>
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="padding:8px 0;">
-                    <span style="display:inline-block;background:rgba(0,212,255,0.1);color:#00D4FF;font-size:12px;font-weight:700;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;margin-right:12px;">1</span>
-                    <span style="font-size:14px;color:#e2e8f0;">Your hardware kit will be shipped within 3\u20135 business days</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:8px 0;">
-                    <span style="display:inline-block;background:rgba(0,212,255,0.1);color:#00D4FF;font-size:12px;font-weight:700;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;margin-right:12px;">2</span>
-                    <span style="font-size:14px;color:#e2e8f0;">Follow the plug & play setup instructions included in your kit</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:8px 0;">
-                    <span style="display:inline-block;background:rgba(0,212,255,0.1);color:#00D4FF;font-size:12px;font-weight:700;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;margin-right:12px;">3</span>
-                    <span style="font-size:14px;color:#e2e8f0;">You're online \u2014 enjoy high-speed satellite internet anywhere</span>
-                  </td>
-                </tr>
-              </table>
-            </td></tr>
-          </table>
-        </td></tr>
-
-        <!-- Subscription ID -->
-        <tr><td style="padding-top:24px;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:16px 20px;">
-            <tr>
-              <td>
-                <p style="margin:0;font-size:12px;color:#a0aec0;">
-                  Subscription ID: <span style="color:#00D4FF;font-family:monospace;">#SXS-${String(data.subscriptionId).padStart(6, "0")}</span>
-                  &nbsp;&nbsp;\xB7&nbsp;&nbsp; Keep this for your records
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
+        ${content}
 
         <!-- Footer -->
-        <tr><td style="padding-top:40px;text-align:center;">
-          <p style="margin:0 0 8px;font-size:13px;color:#4a5568;">Questions? Contact us at support@spacexstarlink.com</p>
-          <p style="margin:0;font-size:12px;color:#2d3748;">\xA9 2026 SpaceXStarlink \xB7 High-Speed Satellite Internet</p>
+        <tr><td style="padding-top:40px;border-top:1px solid rgba(255,255,255,0.06);margin-top:32px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="text-align:center;padding-bottom:16px;">
+                <a href="${APP_URL}" style="font-size:16px;font-weight:900;letter-spacing:3px;color:#ffffff;text-decoration:none;text-transform:uppercase;">
+                  ORBIT<span style="color:${BRAND_COLOR};">FUTURE</span>
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;padding-bottom:8px;">
+                <a href="${APP_URL}/plans" style="font-size:12px;color:#4a5568;text-decoration:none;margin:0 12px;">Plans</a>
+                <a href="${APP_URL}/support" style="font-size:12px;color:#4a5568;text-decoration:none;margin:0 12px;">Support</a>
+                <a href="${APP_URL}/faq" style="font-size:12px;color:#4a5568;text-decoration:none;margin:0 12px;">FAQ</a>
+                <a href="mailto:${SUPPORT_EMAIL}" style="font-size:12px;color:#4a5568;text-decoration:none;margin:0 12px;">Contact</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;">
+                <p style="margin:8px 0 0;font-size:11px;color:#2d3748;">Questions? <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND_COLOR};">${SUPPORT_EMAIL}</a></p>
+                <p style="margin:6px 0 0;font-size:11px;color:#2d3748;">\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ORBITFUTURE Ltd. All rights reserved.</p>
+                <p style="margin:6px 0 0;font-size:10px;color:#1e293b;">High-Speed Global Satellite Internet \xB7 orbitfuture.com</p>
+              </td>
+            </tr>
+          </table>
         </td></tr>
 
       </table>
@@ -54125,39 +54080,160 @@ function confirmationHtml(data) {
 </body>
 </html>`;
 }
-function cancellationHtml(data) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"/><title>Subscription Cancelled</title></head>
-<body style="margin:0;padding:0;background:#050D1A;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#050D1A;padding:40px 20px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
-        <tr><td style="padding-bottom:32px;">
-          <span style="font-size:20px;font-weight:800;letter-spacing:2px;color:#ffffff;">
-            SPACEX<span style="color:#00D4FF;">STARLINK</span>
-          </span>
+function confirmationHtml(data) {
+  const featuresHtml = data.features.map((f) => `<tr><td style="padding:6px 0;color:#a0aec0;font-size:14px;"><span style="color:${BRAND_COLOR};margin-right:8px;">\u2726</span>${f}</td></tr>`).join("");
+  return emailWrapper(`
+    <!-- Hero -->
+    <tr><td style="background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 100%);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;margin-bottom:24px;" class="email-card">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:${BRAND_COLOR};text-transform:uppercase;">\u2705 Subscription Confirmed</p>
+      <h1 class="hero-title" style="margin:0 0 16px;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">You're connected<br/>to the future.</h1>
+      <p style="margin:0;font-size:16px;color:#a0aec0;line-height:1.6;">
+        Welcome, <strong style="color:#ffffff;">${data.customerName}</strong>. Your <strong style="color:#ffffff;">${data.planName}</strong> subscription is now active.
+        You're joining a global constellation of satellite internet users.
+      </p>
+    </td></tr>
+
+    <!-- Plan Details -->
+    <tr><td style="padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
+        <tr>
+          <td style="padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">Your Plan</p>
+            <p style="margin:0;font-size:22px;font-weight:900;color:#ffffff;">${data.planName}</p>
+            <p style="margin:4px 0 0;font-size:14px;color:#a0aec0;text-transform:capitalize;">${data.planCategory} \xB7 ${data.planSpeed}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top:20px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">Monthly Rate</p>
+            <p style="margin:0;font-size:28px;font-weight:900;color:#ffffff;">$${data.priceMonthly}<span style="font-size:16px;color:#a0aec0;font-weight:400;">/mo</span></p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top:20px;">
+            <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">Key Features</p>
+            <table width="100%" cellpadding="0" cellspacing="0">${featuresHtml}</table>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- Next Steps -->
+    <tr><td style="padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
+        <tr><td style="padding-bottom:16px;">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">What Happens Next</p>
         </td></tr>
-        <tr><td style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:40px;">
-          <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:#a0aec0;text-transform:uppercase;">Subscription Cancelled</p>
-          <h1 style="margin:0 0 16px;font-size:28px;font-weight:800;color:#ffffff;">We're sorry to see you go</h1>
-          <p style="margin:0 0 24px;font-size:15px;color:#a0aec0;line-height:1.6;">
-            Hi ${data.customerName}, your <strong style="color:#ffffff;">${data.planName}</strong> subscription ($${data.priceMonthly}/mo) has been cancelled successfully.
-            You'll retain access until the end of your current billing period.
-          </p>
-          <p style="margin:0;font-size:14px;color:#a0aec0;">
-            If you cancelled by mistake or want to reactivate, visit our website or contact support at
-            <a href="mailto:support@spacexstarlink.com" style="color:#00D4FF;">support@spacexstarlink.com</a>.
-          </p>
-        </td></tr>
-        <tr><td style="padding-top:32px;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#2d3748;">\xA9 2026 SpaceXStarlink \xB7 High-Speed Satellite Internet</p>
+        <tr><td>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${[
+    "Your hardware kit will be shipped within 3\u20135 business days",
+    "You'll receive a shipping confirmation email with tracking info",
+    "Follow the plug & play setup guide included in your kit",
+    "Contact our 24/7 support team if you need installation help",
+    "You're online \u2014 enjoy high-speed satellite internet anywhere"
+  ].map((step, i) => `
+              <tr>
+                <td style="padding:8px 0;">
+                  <span style="display:inline-block;background:rgba(0,212,255,0.1);color:${BRAND_COLOR};font-size:12px;font-weight:700;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;margin-right:12px;">${i + 1}</span>
+                  <span style="font-size:14px;color:#e2e8f0;">${step}</span>
+                </td>
+              </tr>
+            `).join("")}
+          </table>
         </td></tr>
       </table>
     </td></tr>
-  </table>
-</body>
-</html>`;
+
+    <!-- Reference -->
+    <tr><td style="padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:16px 20px;">
+        <tr>
+          <td>
+            <p style="margin:0;font-size:12px;color:#a0aec0;">
+              Subscription ID: <span style="color:${BRAND_COLOR};font-family:monospace;font-weight:700;">#ORB-${String(data.subscriptionId).padStart(6, "0")}</span>
+              &nbsp;\xB7&nbsp; Keep this for your records
+            </p>
+          </td>
+          <td align="right">
+            <a href="${APP_URL}/dashboard" style="font-size:12px;color:${BRAND_COLOR};text-decoration:none;font-weight:700;">View Dashboard \u2192</a>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  `);
+}
+function welcomeHtml(data) {
+  return emailWrapper(`
+    <!-- Hero -->
+    <tr><td style="background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 100%);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;" class="email-card">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:${BRAND_COLOR};text-transform:uppercase;">\u{1F680} Welcome Aboard</p>
+      <h1 class="hero-title" style="margin:0 0 16px;font-size:32px;font-weight:900;color:#ffffff;">Welcome to<br/>ORBITFUTURE</h1>
+      <p style="margin:0;font-size:16px;color:#a0aec0;line-height:1.6;">
+        Hi <strong style="color:#ffffff;">${data.customerName}</strong>, your account has been created successfully.
+        You now have access to the fastest global satellite internet service.
+      </p>
+    </td></tr>
+
+    <!-- Get Started -->
+    <tr><td style="padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
+        <tr><td style="padding-bottom:20px;">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">Get Started</p>
+        </td></tr>
+        <tr><td>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${[
+    { icon: "\u{1F6F0}\uFE0F", title: "Browse Plans", desc: "Choose from Residential, Business, Roam, Maritime, and Aviation plans." },
+    { icon: "\u{1FA99}", title: "Orbit Wallet", desc: "Load your wallet with tokens for instant plan activations." },
+    { icon: "\u{1F4CA}", title: "Dashboard", desc: "Track your subscriptions, usage, and installation status." },
+    { icon: "\u{1F4AC}", title: "24/7 Support", desc: "Our team is always available via WhatsApp or email." }
+  ].map(({ icon, title, desc: desc2 }) => `
+              <tr>
+                <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <span style="font-size:20px;margin-right:12px;">${icon}</span>
+                  <strong style="color:#ffffff;font-size:14px;">${title}</strong>
+                  <p style="margin:4px 0 0 32px;font-size:13px;color:#a0aec0;">${desc2}</p>
+                </td>
+              </tr>
+            `).join("")}
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <!-- CTA -->
+    <tr><td style="padding-top:28px;text-align:center;">
+      <a href="${APP_URL}/plans" style="display:inline-block;background:${BRAND_COLOR};color:#000000;font-size:13px;font-weight:900;letter-spacing:2px;text-decoration:none;padding:14px 36px;border-radius:6px;text-transform:uppercase;">
+        Browse Plans \u2192
+      </a>
+    </td></tr>
+  `);
+}
+function cancellationHtml(data) {
+  return emailWrapper(`
+    <!-- Hero -->
+    <tr><td style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:40px;" class="email-card">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:#a0aec0;text-transform:uppercase;">Subscription Cancelled</p>
+      <h1 class="hero-title" style="margin:0 0 16px;font-size:28px;font-weight:900;color:#ffffff;">We're sorry to see you go</h1>
+      <p style="margin:0 0 24px;font-size:15px;color:#a0aec0;line-height:1.6;">
+        Hi <strong style="color:#ffffff;">${data.customerName}</strong>, your <strong style="color:#ffffff;">${data.planName}</strong>
+        subscription ($${data.priceMonthly}/mo) has been cancelled successfully.
+        You'll retain access until the end of your current billing period.
+      </p>
+      <p style="margin:0;font-size:14px;color:#a0aec0;">
+        If you cancelled by mistake or want to reactivate, visit our website or contact support at
+        <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND_COLOR};">${SUPPORT_EMAIL}</a>.
+      </p>
+    </td></tr>
+
+    <!-- Reactivate CTA -->
+    <tr><td style="padding-top:24px;text-align:center;">
+      <a href="${APP_URL}/plans" style="display:inline-block;border:1px solid ${BRAND_COLOR};color:${BRAND_COLOR};font-size:13px;font-weight:700;letter-spacing:2px;text-decoration:none;padding:14px 36px;border-radius:6px;text-transform:uppercase;">
+        View Plans Again \u2192
+      </a>
+    </td></tr>
+  `);
 }
 async function sendSubscriptionConfirmation(data) {
   const resend = getResend();
@@ -54169,12 +54245,30 @@ async function sendSubscriptionConfirmation(data) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: data.customerEmail,
-      subject: `Welcome to SpaceXStarlink \u2014 Your ${data.planName} is Active`,
+      subject: `Welcome to ORBITFUTURE \u2014 Your ${data.planName} is Active`,
       html: confirmationHtml(data)
     });
     logger.info({ email: data.customerEmail, planName: data.planName }, "Subscription confirmation email sent");
   } catch (err) {
     logger.error({ err, email: data.customerEmail }, "Failed to send confirmation email");
+  }
+}
+async function sendWelcomeEmail(data) {
+  const resend = getResend();
+  if (!resend) {
+    logger.info({ email: data.customerEmail }, "Welcome email skipped \u2014 RESEND_API_KEY not configured");
+    return;
+  }
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.customerEmail,
+      subject: `Welcome to ORBITFUTURE \u2014 Your Account is Ready`,
+      html: welcomeHtml(data)
+    });
+    logger.info({ email: data.customerEmail }, "Welcome email sent");
+  } catch (err) {
+    logger.error({ err, email: data.customerEmail }, "Failed to send welcome email");
   }
 }
 async function sendCancellationEmail(data) {
@@ -54187,7 +54281,7 @@ async function sendCancellationEmail(data) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: data.customerEmail,
-      subject: `Your SpaceXStarlink Subscription Has Been Cancelled`,
+      subject: `Your ORBITFUTURE Subscription Has Been Cancelled`,
       html: cancellationHtml(data)
     });
     logger.info({ email: data.customerEmail }, "Cancellation email sent");
@@ -54697,6 +54791,52 @@ router5.post("/admin/set-env", adminAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to save settings" });
   }
 });
+router5.get("/admin/users", adminAuth, async (req, res) => {
+  try {
+    const rows = await db.select({
+      id: usersTable.id,
+      email: usersTable.email,
+      name: usersTable.name,
+      phone: usersTable.phone,
+      address: usersTable.address,
+      createdAt: usersTable.createdAt,
+      updatedAt: usersTable.updatedAt
+    }).from(usersTable).orderBy(desc(usersTable.createdAt));
+    const subCounts = await db.select({
+      email: subscriptionsTable.email,
+      count: count()
+    }).from(subscriptionsTable).groupBy(subscriptionsTable.email);
+    const subMap = new Map(subCounts.map((r) => [r.email, Number(r.count)]));
+    res.json(
+      rows.map((u) => ({
+        ...u,
+        subscriptionCount: subMap.get(u.email) ?? 0,
+        walletBalance: 0
+      }))
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to list users");
+    res.status(500).json({ error: "Failed to list users" });
+  }
+});
+router5.delete("/admin/users/:id", adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const [deleted] = await db.delete(usersTable).where(eq(usersTable.id, id)).returning({ id: usersTable.id });
+    if (!deleted) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete user");
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
 router5.post("/admin/seed-plans", adminAuth, async (req, res) => {
   try {
     const existing = await db.select({ id: plansTable.id }).from(plansTable).limit(1);
@@ -54937,10 +55077,7 @@ function rateLimit(maxAttempts, windowMs) {
     if (record.attempts >= maxAttempts) {
       const retryAfterSec = Math.ceil((record.resetAt - now) / 1e3);
       res.setHeader("Retry-After", String(retryAfterSec));
-      res.status(429).json({
-        error: "Too many attempts. Please try again later.",
-        retryAfter: retryAfterSec
-      });
+      res.status(429).json({ error: "Too many attempts. Please try again later.", retryAfter: retryAfterSec });
       return;
     }
     record.attempts += 1;
@@ -54959,6 +55096,12 @@ function hashPassword(password) {
 function signToken(payload) {
   return import_jsonwebtoken4.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
+function sanitizeString(input) {
+  return input.trim().replace(/[<>]/g, "");
+}
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
+}
 function requireAuth(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) {
@@ -54975,28 +55118,47 @@ function requireAuth(req, res, next) {
 }
 router7.post("/auth/register", rateLimit(5, 15 * 60 * 1e3), async (req, res) => {
   try {
-    const { name: name2, email, password, phone, address } = req.body;
+    const rawBody = req.body;
+    const name2 = typeof rawBody.name === "string" ? sanitizeString(rawBody.name) : "";
+    const email = typeof rawBody.email === "string" ? rawBody.email.trim().toLowerCase() : "";
+    const password = typeof rawBody.password === "string" ? rawBody.password : "";
+    const phone = typeof rawBody.phone === "string" ? sanitizeString(rawBody.phone) : void 0;
+    const address = typeof rawBody.address === "string" ? sanitizeString(rawBody.address) : void 0;
     if (!name2 || !email || !password) {
       res.status(400).json({ error: "name, email, and password are required" });
       return;
     }
-    if (password.length < 6) {
-      res.status(400).json({ error: "Password must be at least 6 characters" });
+    if (name2.length < 2 || name2.length > 100) {
+      res.status(400).json({ error: "Name must be 2\u2013100 characters" });
       return;
     }
-    const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+    if (!isValidEmail(email)) {
+      res.status(400).json({ error: "Please provide a valid email address" });
+      return;
+    }
+    if (password.length < 8) {
+      res.status(400).json({ error: "Password must be at least 8 characters" });
+      return;
+    }
+    if (password.length > 128) {
+      res.status(400).json({ error: "Password too long" });
+      return;
+    }
+    const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
     if (existing) {
       res.status(409).json({ error: "An account with this email already exists" });
       return;
     }
     const [user] = await db.insert(usersTable).values({
       name: name2,
-      email: email.toLowerCase(),
+      email,
       passwordHash: hashPassword(password),
       phone: phone ?? null,
       address: address ?? null
     }).returning();
     const token = signToken({ userId: user.id, email: user.email });
+    sendWelcomeEmail({ customerName: user.name, customerEmail: user.email }).catch(() => {
+    });
     res.status(201).json({
       token,
       user: {
@@ -55015,12 +55177,18 @@ router7.post("/auth/register", rateLimit(5, 15 * 60 * 1e3), async (req, res) => 
 });
 router7.post("/auth/login", rateLimit(10, 15 * 60 * 1e3), async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const rawBody = req.body;
+    const email = typeof rawBody.email === "string" ? rawBody.email.trim().toLowerCase() : "";
+    const password = typeof rawBody.password === "string" ? rawBody.password : "";
     if (!email || !password) {
       res.status(400).json({ error: "email and password are required" });
       return;
     }
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+    if (!isValidEmail(email)) {
+      res.status(400).json({ error: "Invalid email address" });
+      return;
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
     if (!user || user.passwordHash !== hashPassword(password)) {
       res.status(401).json({ error: "Invalid email or password" });
       return;
@@ -55064,23 +55232,40 @@ router7.get("/auth/me", requireAuth, async (req, res) => {
 });
 router7.patch("/auth/me", requireAuth, async (req, res) => {
   try {
-    const { name: name2, phone, address, password, newPassword } = req.body;
+    const rawBody = req.body;
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user.userId)).limit(1);
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
     }
     const updateData = { updatedAt: /* @__PURE__ */ new Date() };
-    if (name2) updateData.name = name2;
-    if (phone !== void 0) updateData.phone = phone;
-    if (address !== void 0) updateData.address = address;
-    if (newPassword) {
-      if (!password || user.passwordHash !== hashPassword(password)) {
+    if (rawBody.name !== void 0) {
+      const name2 = typeof rawBody.name === "string" ? sanitizeString(rawBody.name) : "";
+      if (!name2 || name2.length < 2 || name2.length > 100) {
+        res.status(400).json({ error: "Name must be 2\u2013100 characters" });
+        return;
+      }
+      updateData.name = name2;
+    }
+    if (rawBody.phone !== void 0) {
+      updateData.phone = typeof rawBody.phone === "string" ? sanitizeString(rawBody.phone).slice(0, 30) : null;
+    }
+    if (rawBody.address !== void 0) {
+      updateData.address = typeof rawBody.address === "string" ? sanitizeString(rawBody.address).slice(0, 500) : null;
+    }
+    if (rawBody.newPassword !== void 0) {
+      const currentPassword = typeof rawBody.password === "string" ? rawBody.password : "";
+      const newPassword = typeof rawBody.newPassword === "string" ? rawBody.newPassword : "";
+      if (!currentPassword || user.passwordHash !== hashPassword(currentPassword)) {
         res.status(400).json({ error: "Current password is incorrect" });
         return;
       }
-      if (newPassword.length < 6) {
-        res.status(400).json({ error: "New password must be at least 6 characters" });
+      if (newPassword.length < 8) {
+        res.status(400).json({ error: "New password must be at least 8 characters" });
+        return;
+      }
+      if (newPassword.length > 128) {
+        res.status(400).json({ error: "New password too long" });
         return;
       }
       updateData.passwordHash = hashPassword(newPassword);
@@ -72814,7 +72999,7 @@ function getBundleByAmount(amount, currency) {
 // src/routes/stripe.ts
 var router10 = (0, import_express10.Router)();
 var getStripe = () => new stripe_esm_node_default(process.env["STRIPE_SECRET_KEY"] ?? "", { apiVersion: "2025-04-30.basil" });
-var APP_URL = process.env["APP_URL"] ?? "https://www.spacexstarlink.com";
+var APP_URL2 = process.env["APP_URL"] ?? "https://www.spacexstarlink.com";
 var PLAN_PRICES = {
   1: { name: "Starlink Best Effort", priceMonthly: 90, speed: "5\u2013100 Mbps" },
   2: { name: "Starlink Standard", priceMonthly: 120, speed: "50\u2013250 Mbps" },
@@ -72890,8 +73075,8 @@ router10.post("/stripe-token-buy", requireAuth, async (req, res) => {
         userId: String(req.user.userId),
         customerEmail: req.user.email
       },
-      success_url: `${APP_URL}/wallet?stripe_token_success=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/wallet?stripe_token_cancel=1`
+      success_url: `${APP_URL2}/wallet?stripe_token_success=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL2}/wallet?stripe_token_cancel=1`
     });
     res.json({ paymentLink: session.url, sessionId: session.id });
   } catch (err) {
@@ -73012,8 +73197,8 @@ router10.post("/stripe-plan-pay", async (req, res) => {
         customerEmail: email.trim(),
         address: address?.trim() ?? ""
       },
-      success_url: `${APP_URL}/plans?stripe_success=1&plan_id=${planId}&email=${safeEmail}&name=${safeName}&address=${safeAddr}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/plans?stripe_cancel=1`
+      success_url: `${APP_URL2}/plans?stripe_success=1&plan_id=${planId}&email=${safeEmail}&name=${safeName}&address=${safeAddr}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL2}/plans?stripe_cancel=1`
     });
     res.json({ paymentLink: session.url, sessionId: session.id });
   } catch (err) {
@@ -73218,7 +73403,7 @@ init_drizzle_orm();
 var router12 = (0, import_express12.Router)();
 var FLW_SECRET = () => process.env["FLW_SECRET_KEY"] ?? "";
 var FLW_API = "https://api.flutterwave.com/v3";
-var APP_URL2 = process.env["APP_URL"] ?? "https://www.spacexstarlink.com";
+var APP_URL3 = process.env["APP_URL"] ?? "https://www.spacexstarlink.com";
 async function flwGet(path2) {
   const r = await fetch(`${FLW_API}${path2}`, {
     headers: { Authorization: `Bearer ${FLW_SECRET()}`, "Content-Type": "application/json" }
@@ -73287,13 +73472,13 @@ router12.post("/flutterwave-init", requireAuth, async (req, res) => {
       tx_ref: txRef,
       amount,
       currency: cur,
-      redirect_url: `${APP_URL2}/wallet?verify=true`,
+      redirect_url: `${APP_URL3}/wallet?verify=true`,
       customer: { email: req.user.email },
       meta: { userId: req.user.userId, bundleId, tokens: bundle.tokens },
       customizations: {
         title: "Starlink HQ \u2014 Token Purchase",
         description: `${bundle.tokens} ${bundle.name} Tokens`,
-        logo: `${APP_URL2}/favicon.ico`
+        logo: `${APP_URL3}/favicon.ico`
       }
     };
     const data = await flwPost("/payments", payload);
@@ -73458,7 +73643,7 @@ router12.post("/flutterwave-plan-pay", async (req, res) => {
     const safeEmail = encodeURIComponent(email.trim());
     const safeName = encodeURIComponent(name2.trim());
     const safeAddr = encodeURIComponent(address?.trim() ?? "");
-    const redirectUrl = `${APP_URL2}/plans?flw_verify=1&plan_id=${planId}&email=${safeEmail}&name=${safeName}&address=${safeAddr}`;
+    const redirectUrl = `${APP_URL3}/plans?flw_verify=1&plan_id=${planId}&email=${safeEmail}&name=${safeName}&address=${safeAddr}`;
     const payload = {
       tx_ref: txRef,
       amount: priceMonthly,
@@ -73469,7 +73654,7 @@ router12.post("/flutterwave-plan-pay", async (req, res) => {
       customizations: {
         title: `Starlink \u2014 ${planName}`,
         description: `${planSpeed} \xB7 $${priceMonthly}/month`,
-        logo: `${APP_URL2}/favicon.ico`
+        logo: `${APP_URL3}/favicon.ico`
       }
     };
     const data = await flwPost("/payments", payload);
@@ -73633,10 +73818,9 @@ app.use(
     }
   })
 );
-app.use((req, res, next) => {
-  const host = req.headers.host ?? "";
-  if (host === "spacexstarlink.com" || host === "spacexstarlink.com:443") {
-    res.redirect(301, `https://www.spacexstarlink.com${req.url}`);
+app.use((req, _res, next) => {
+  if (req.url && req.url.includes("%00")) {
+    _res.status(400).json({ error: "Bad request" });
     return;
   }
   next();
