@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "bash", "postgresql-16"]
+modules = ["nodejs-20", "web", "bash"]
 [agent]
 expertMode = true
 stack = "BEST_EFFORT_FALLBACK"
@@ -43,8 +43,9 @@ waitForPort = 5000
 [userenv.shared]
 NODE_ENV = "development"
 LOG_LEVEL = "info"
-APP_URL = "https://orbitfuture.com"
+APP_URL = "https://orbitfuture.store"
 PORT = "3001"
+EMAIL_FROM = "managementstarlinkhq@gmail.com"
 
 [deployment]
 deploymentTarget = "autoscale"
