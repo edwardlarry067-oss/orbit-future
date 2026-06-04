@@ -2,3 +2,6 @@
 - [Auth context pattern](auth-context.md) — AuthContext exposes updateProfile()/refreshUser() not setUser; dashboard profile form uses these, not direct fetch.
 - [Stripe idempotency](stripe-idempotency.md) — stripe-plan-verify now checks for existing sub by stripeSubscriptionId before insert; sends confirmation + receipt emails on first process only.
 - [Cancel subscription](cancel-endpoint.md) — POST /api/subscriptions/:id/cancel added alongside existing PATCH; dashboard uses POST /cancel, admin uses PATCH with status body.
+- [Admin role check security](admin-role-check.md) — adminAuth middleware must check decoded.role==="admin"; missing this means any valid user JWT passes admin routes (was a real bug, now fixed).
+- [Rate limit bypass for tests](rate-limit-bypass.md) — rateLimit() in auth.ts checks X-Test-Bypass header against SESSION_SECRET; test-suite.mjs sends this header to bypass in-memory rate limits during CI/test runs.
+- [Stripe key validation](stripe-key-validation.md) — stripe-plan-pay and stripe-token-buy routes check if STRIPE_SECRET_KEY starts with "pk_" and return 503 with helpful message; getStripe() also throws descriptively.

@@ -31,7 +31,11 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
     return;
   }
   try {
-    jwt.verify(auth.slice(7), JWT_SECRET);
+    const decoded = jwt.verify(auth.slice(7), JWT_SECRET) as Record<string, unknown>;
+    if (decoded.role !== "admin") {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
     next();
   } catch {
     res.status(401).json({ error: "Invalid token" });

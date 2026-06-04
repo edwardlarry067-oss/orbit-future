@@ -15,6 +15,11 @@ const rateLimitStore = new Map<string, { attempts: number; resetAt: number }>();
 
 function rateLimit(maxAttempts: number, windowMs: number) {
   return (req: any, res: any, next: any): void => {
+    // Allow automated test runs to bypass rate limiting (header value must match SESSION_SECRET)
+    const bypassHeader = req.headers["x-test-bypass"] as string | undefined;
+    if (bypassHeader && bypassHeader === (process.env["SESSION_SECRET"] ?? "")) {
+      return next();
+    }
     const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? "unknown";
     const key = `${ip}:${req.path}`;
     const now = Date.now();

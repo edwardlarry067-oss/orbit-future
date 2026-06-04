@@ -9,7 +9,14 @@ import { sendSubscriptionConfirmation, sendPaymentReceipt } from "../lib/email";
 
 const router = Router();
 
-const getStripe = () => new Stripe(process.env["STRIPE_SECRET_KEY"] ?? "", { apiVersion: "2025-04-30.basil" });
+function getStripe(): Stripe {
+  const key = process.env["STRIPE_SECRET_KEY"] ?? "";
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
+  if (key.startsWith("pk_")) {
+    throw new Error("STRIPE_SECRET_KEY is a publishable key (pk_...). Please set it to your secret key (sk_...) from the Stripe dashboard.");
+  }
+  return new Stripe(key, { apiVersion: "2025-04-30.basil" });
+}
 
 const APP_URL = (() => {
   const url = process.env["APP_URL"] ?? process.env["REPLIT_DEV_DOMAIN"];
@@ -65,6 +72,7 @@ router.post("/stripe-token-buy", requireAuth, async (req: any, res): Promise<voi
 
     const stripeKey = process.env["STRIPE_SECRET_KEY"];
     if (!stripeKey) { res.status(503).json({ error: "Payment gateway not configured." }); return; }
+    if (stripeKey.startsWith("pk_")) { res.status(503).json({ error: "Stripe is misconfigured: a publishable key was provided. Please set STRIPE_SECRET_KEY to your secret key (sk_...) from the Stripe dashboard." }); return; }
 
     const bundle = BUNDLES.find((b) => b.id === bundleId);
     if (!bundle) { res.status(400).json({ error: "Invalid bundleId" }); return; }
@@ -171,6 +179,10 @@ router.post("/stripe-plan-pay", async (req, res): Promise<void> => {
     const stripeKey = process.env["STRIPE_SECRET_KEY"];
     if (!stripeKey) {
       res.status(503).json({ error: "Payment gateway not configured. Please contact support." });
+      return;
+    }
+    if (stripeKey.startsWith("pk_")) {
+      res.status(503).json({ error: "Stripe is misconfigured: a publishable key was provided. Please set STRIPE_SECRET_KEY to your secret key (sk_...) from the Stripe dashboard." });
       return;
     }
 
