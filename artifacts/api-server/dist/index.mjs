@@ -20653,27 +20653,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router14;
+    module.exports = Router15;
     module.exports.Route = Route;
-    function Router14(options) {
-      if (!(this instanceof Router14)) {
-        return new Router14(options);
+    function Router15(options) {
+      if (!(this instanceof Router15)) {
+        return new Router15(options);
       }
       const opts = options || {};
-      function router14(req, res, next) {
-        router14.handle(req, res, next);
+      function router15(req, res, next) {
+        router15.handle(req, res, next);
       }
-      Object.setPrototypeOf(router14, this);
-      router14.caseSensitive = opts.caseSensitive;
-      router14.mergeParams = opts.mergeParams;
-      router14.params = {};
-      router14.strict = opts.strict;
-      router14.stack = [];
-      return router14;
+      Object.setPrototypeOf(router15, this);
+      router15.caseSensitive = opts.caseSensitive;
+      router15.mergeParams = opts.mergeParams;
+      router15.params = {};
+      router15.strict = opts.strict;
+      router15.stack = [];
+      return router15;
     }
-    Router14.prototype = function() {
+    Router15.prototype = function() {
     };
-    Router14.prototype.param = function param2(name2, fn) {
+    Router15.prototype.param = function param2(name2, fn) {
       if (!name2) {
         throw new TypeError("argument name is required");
       }
@@ -20693,7 +20693,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router14.prototype.handle = function handle(req, res, callback) {
+    Router15.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20820,7 +20820,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router14.prototype.use = function use(handler) {
+    Router15.prototype.use = function use(handler) {
       let offset = 0;
       let path2 = "/";
       if (typeof handler !== "function") {
@@ -20853,7 +20853,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router14.prototype.route = function route(path2) {
+    Router15.prototype.route = function route(path2) {
       const route2 = new Route(path2);
       const layer = new Layer(path2, {
         sensitive: this.caseSensitive,
@@ -20868,7 +20868,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router14.prototype[method] = function(path2) {
+      Router15.prototype[method] = function(path2) {
         const route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21051,13 +21051,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router14 = require_router();
+    var Router15 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router14 = null;
+      var router15 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21066,13 +21066,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router14 === null) {
-            router14 = new Router14({
+          if (router15 === null) {
+            router15 = new Router15({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router14;
+          return router15;
         }
       });
     };
@@ -21143,15 +21143,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router14 = this.router;
+      var router15 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router14.use(path2, fn2);
+          return router15.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router14.use(path2, function mounted_app(req, res, next) {
+        router15.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23724,7 +23724,7 @@ var require_express = __commonJS({
     var EventEmitter2 = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router14 = require_router();
+    var Router15 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23746,8 +23746,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router14.Route;
-    exports.Router = Router14;
+    exports.Route = Router15.Route;
+    exports.Router = Router15;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -38976,12 +38976,13 @@ __export(schema_exports, {
   plansTable: () => plansTable,
   siteSettingsTable: () => siteSettingsTable,
   subscriptionsTable: () => subscriptionsTable,
+  supportTicketsTable: () => supportTicketsTable,
   usersTable: () => usersTable,
   walletTransactionsTable: () => walletTransactionsTable,
   walletsTable: () => walletsTable,
   whatsappOrdersTable: () => whatsappOrdersTable
 });
-var plansTable, subscriptionsTable, usersTable, walletsTable, walletTransactionsTable, flutterwaveTransactionsTable, whatsappOrdersTable, siteSettingsTable;
+var plansTable, subscriptionsTable, usersTable, walletsTable, walletTransactionsTable, flutterwaveTransactionsTable, whatsappOrdersTable, siteSettingsTable, supportTicketsTable;
 var init_schema2 = __esm({
   "../lib/db/src/schema.ts"() {
     "use strict";
@@ -39081,6 +39082,20 @@ var init_schema2 = __esm({
       createdAt: timestamp("created_at").notNull().defaultNow(),
       updatedAt: timestamp("updated_at").notNull().defaultNow()
     });
+    supportTicketsTable = pgTable("support_tickets", {
+      id: serial("id").primaryKey(),
+      ticketRef: text("ticket_ref").notNull().unique(),
+      customerName: text("customer_name").notNull(),
+      customerEmail: text("customer_email").notNull(),
+      subject: text("subject").notNull(),
+      message: text("message").notNull(),
+      status: text("status").notNull().default("open"),
+      priority: text("priority").notNull().default("normal"),
+      adminReply: text("admin_reply"),
+      adminRepliedAt: timestamp("admin_replied_at"),
+      createdAt: timestamp("created_at").notNull().defaultNow(),
+      updatedAt: timestamp("updated_at").notNull().defaultNow()
+    });
   }
 });
 
@@ -39092,6 +39107,7 @@ __export(src_exports, {
   plansTable: () => plansTable,
   siteSettingsTable: () => siteSettingsTable,
   subscriptionsTable: () => subscriptionsTable,
+  supportTicketsTable: () => supportTicketsTable,
   usersTable: () => usersTable,
   walletTransactionsTable: () => walletTransactionsTable,
   walletsTable: () => walletsTable,
@@ -49308,7 +49324,7 @@ var require_jsonwebtoken = __commonJS({
 });
 
 // src/app.ts
-var import_express14 = __toESM(require_express2(), 1);
+var import_express15 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // ../node_modules/.pnpm/helmet@8.2.0/node_modules/helmet/index.mjs
@@ -49859,7 +49875,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/routes/index.ts
-var import_express13 = __toESM(require_express2(), 1);
+var import_express14 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -54210,6 +54226,84 @@ function welcomeHtml(data) {
     </td></tr>
   `);
 }
+function paymentReceiptHtml(data) {
+  return emailWrapper(`
+    <!-- Hero -->
+    <tr><td style="background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 100%);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;" class="email-card">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:#10b981;text-transform:uppercase;">\u2705 Payment Received</p>
+      <h1 class="hero-title" style="margin:0 0 16px;font-size:32px;font-weight:900;color:#ffffff;">Payment<br/>Confirmed</h1>
+      <p style="margin:0;font-size:16px;color:#a0aec0;line-height:1.6;">
+        Hi <strong style="color:#ffffff;">${data.customerName}</strong>, we've received your payment of
+        <strong style="color:#ffffff;">${data.currency} ${data.amountPaid.toFixed(2)}</strong> for <strong style="color:#ffffff;">${data.planName}</strong>.
+      </p>
+    </td></tr>
+
+    <!-- Receipt Details -->
+    <tr><td style="padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
+        <tr><td style="padding-bottom:20px;">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">Receipt Details</p>
+        </td></tr>
+        ${[
+    ["Plan", data.planName],
+    ["Amount Paid", `${data.currency} ${data.amountPaid.toFixed(2)}`],
+    ["Date", data.date],
+    ["Transaction ID", data.transactionId]
+  ].map(([label, value]) => `
+          <tr>
+            <td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+              <span style="font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:1px;">${label}</span>
+              <span style="float:right;font-size:14px;color:#ffffff;font-weight:700;">${value}</span>
+            </td>
+          </tr>
+        `).join("")}
+      </table>
+    </td></tr>
+
+    <!-- Dashboard Link -->
+    <tr><td style="padding-top:28px;text-align:center;">
+      <a href="${APP_URL}/dashboard" style="display:inline-block;background:${BRAND_COLOR};color:#000000;font-size:13px;font-weight:900;letter-spacing:2px;text-decoration:none;padding:14px 36px;border-radius:6px;text-transform:uppercase;">
+        View Dashboard \u2192
+      </a>
+    </td></tr>
+  `);
+}
+function supportReplyHtml(data) {
+  return emailWrapper(`
+    <!-- Hero -->
+    <tr><td style="background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 100%);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;" class="email-card">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:${BRAND_COLOR};text-transform:uppercase;">\u{1F4AC} Support Reply</p>
+      <h1 class="hero-title" style="margin:0 0 16px;font-size:28px;font-weight:900;color:#ffffff;">We've responded<br/>to your ticket</h1>
+      <p style="margin:0;font-size:16px;color:#a0aec0;line-height:1.6;">
+        Hi <strong style="color:#ffffff;">${data.customerName}</strong>, ${data.agentName} from ORBITFUTURE Support has replied to your ticket.
+      </p>
+    </td></tr>
+
+    <!-- Ticket Info -->
+    <tr><td style="padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
+        <tr>
+          <td style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <p style="margin:0;font-size:11px;color:#718096;text-transform:uppercase;letter-spacing:1px;">Ticket #${data.ticketId} \xB7 ${data.subject}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top:20px;">
+            <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:1px;color:${BRAND_COLOR};text-transform:uppercase;">Reply from ${data.agentName}</p>
+            <p style="margin:0;font-size:15px;color:#e2e8f0;line-height:1.7;white-space:pre-wrap;">${data.message}</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- Reply CTA -->
+    <tr><td style="padding-top:28px;text-align:center;">
+      <a href="mailto:${SUPPORT_EMAIL}?subject=Re: Ticket #${data.ticketId} - ${data.subject}" style="display:inline-block;border:1px solid ${BRAND_COLOR};color:${BRAND_COLOR};font-size:13px;font-weight:700;letter-spacing:2px;text-decoration:none;padding:14px 36px;border-radius:6px;text-transform:uppercase;">
+        Reply to Support \u2192
+      </a>
+    </td></tr>
+  `);
+}
 function cancellationHtml(data) {
   return emailWrapper(`
     <!-- Hero -->
@@ -54269,6 +54363,42 @@ async function sendWelcomeEmail(data) {
     logger.info({ email: data.customerEmail }, "Welcome email sent");
   } catch (err) {
     logger.error({ err, email: data.customerEmail }, "Failed to send welcome email");
+  }
+}
+async function sendPaymentReceipt(data) {
+  const resend = getResend();
+  if (!resend) {
+    logger.info({ email: data.customerEmail }, "Payment receipt email skipped \u2014 RESEND_API_KEY not configured");
+    return;
+  }
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.customerEmail,
+      subject: `ORBITFUTURE Payment Receipt \u2014 ${data.currency} ${data.amountPaid.toFixed(2)}`,
+      html: paymentReceiptHtml(data)
+    });
+    logger.info({ email: data.customerEmail }, "Payment receipt email sent");
+  } catch (err) {
+    logger.error({ err, email: data.customerEmail }, "Failed to send payment receipt email");
+  }
+}
+async function sendSupportReply(data) {
+  const resend = getResend();
+  if (!resend) {
+    logger.info({ email: data.customerEmail }, "Support reply email skipped \u2014 RESEND_API_KEY not configured");
+    return;
+  }
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.customerEmail,
+      subject: `Re: [Ticket #${data.ticketId}] ${data.subject} \u2014 ORBITFUTURE Support`,
+      html: supportReplyHtml(data)
+    });
+    logger.info({ email: data.customerEmail, ticketId: data.ticketId }, "Support reply email sent");
+  } catch (err) {
+    logger.error({ err, email: data.customerEmail }, "Failed to send support reply email");
   }
 }
 async function sendCancellationEmail(data) {
@@ -54456,6 +54586,64 @@ router3.patch("/subscriptions/:id", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Failed to update subscription");
     res.status(500).json({ error: "Failed to update subscription" });
+  }
+});
+router3.post("/subscriptions/:id/cancel", async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  let userEmail = null;
+  let isAdmin = false;
+  try {
+    const decoded = import_jsonwebtoken2.default.verify(auth.slice(7), JWT_SECRET);
+    if (decoded.role === "admin") {
+      isAdmin = true;
+    } else if (typeof decoded.email === "string") {
+      userEmail = decoded.email;
+    } else {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+    return;
+  }
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const [existing] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.id, id)).limit(1);
+    if (!existing) {
+      res.status(404).json({ error: "Subscription not found" });
+      return;
+    }
+    if (!isAdmin && existing.email.toLowerCase() !== (userEmail ?? "").toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    if (existing.status === "cancelled") {
+      res.status(400).json({ error: "Subscription is already cancelled" });
+      return;
+    }
+    const [updated] = await db.update(subscriptionsTable).set({ status: "cancelled", cancelledAt: /* @__PURE__ */ new Date() }).where(eq(subscriptionsTable.id, id)).returning();
+    const [plan] = await db.select().from(plansTable).where(eq(plansTable.id, updated.planId));
+    if (plan) {
+      sendCancellationEmail({
+        customerName: updated.name,
+        customerEmail: updated.email,
+        planName: plan.name,
+        priceMonthly: parseFloat(plan.priceMonthly)
+      }).catch(() => {
+      });
+    }
+    res.json({ success: true, subscription: formatSub(updated, plan ?? null) });
+  } catch (err) {
+    req.log.error({ err }, "Failed to cancel subscription");
+    res.status(500).json({ error: "Failed to cancel subscription" });
   }
 });
 var subscriptions_default = router3;
@@ -72999,7 +73187,11 @@ function getBundleByAmount(amount, currency) {
 // src/routes/stripe.ts
 var router10 = (0, import_express10.Router)();
 var getStripe = () => new stripe_esm_node_default(process.env["STRIPE_SECRET_KEY"] ?? "", { apiVersion: "2025-04-30.basil" });
-var APP_URL2 = process.env["APP_URL"] ?? "https://www.spacexstarlink.com";
+var APP_URL2 = (() => {
+  const url = process.env["APP_URL"] ?? process.env["REPLIT_DEV_DOMAIN"];
+  if (url) return url.startsWith("http") ? url : `https://${url}`;
+  return "https://www.orbitfuture.com";
+})();
 var PLAN_PRICES = {
   1: { name: "Starlink Best Effort", priceMonthly: 90, speed: "5\u2013100 Mbps" },
   2: { name: "Starlink Standard", priceMonthly: 120, speed: "50\u2013250 Mbps" },
@@ -73227,19 +73419,48 @@ router10.post("/stripe-plan-verify", async (req, res) => {
     const planName = meta.planName ?? PLAN_PRICES[planIdNum]?.name ?? "Starlink Plan";
     const planSpeed = meta.planSpeed ?? PLAN_PRICES[planIdNum]?.speed ?? "";
     const amountPaid = (session.amount_total ?? 0) / 100;
-    let subscriptionId = null;
-    try {
-      const [sub] = await db.insert(subscriptionsTable).values({
-        email: customerEmail,
-        name: customerName,
-        planId: planIdNum,
-        status: "active",
-        address: customerAddress,
-        amountPaid: String(amountPaid),
-        stripeSubscriptionId: session.payment_intent ?? session_id
-      }).returning();
-      subscriptionId = sub?.id ?? null;
-    } catch {
+    const [existingSub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.stripeSubscriptionId, session.payment_intent ?? session_id)).limit(1);
+    let subscriptionId = existingSub?.id ?? null;
+    if (!existingSub) {
+      try {
+        const [sub] = await db.insert(subscriptionsTable).values({
+          email: customerEmail,
+          name: customerName,
+          planId: planIdNum,
+          status: "active",
+          address: customerAddress,
+          amountPaid: String(amountPaid),
+          stripeSubscriptionId: session.payment_intent ?? session_id
+        }).returning();
+        subscriptionId = sub?.id ?? null;
+        if (sub) {
+          const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planIdNum)).limit(1);
+          const planFeatures = dbPlan?.features ?? [];
+          const planCategory = dbPlan?.category ?? "";
+          sendSubscriptionConfirmation({
+            customerName,
+            customerEmail,
+            planName,
+            planCategory,
+            planSpeed,
+            priceMonthly: amountPaid,
+            features: planFeatures,
+            subscriptionId: sub.id
+          }).catch(() => {
+          });
+          sendPaymentReceipt({
+            customerName,
+            customerEmail,
+            planName,
+            amountPaid,
+            currency: session.currency?.toUpperCase() ?? "USD",
+            transactionId: session.payment_intent ?? session_id,
+            date: (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+          }).catch(() => {
+          });
+        }
+      } catch {
+      }
     }
     res.json({
       success: true,
@@ -73251,7 +73472,8 @@ router10.post("/stripe-plan-verify", async (req, res) => {
         amountPaid,
         currency: session.currency?.toUpperCase() ?? "USD",
         sessionId: session_id,
-        address: customerAddress
+        address: customerAddress,
+        alreadyProcessed: !!existingSub
       }
     });
   } catch (err) {
@@ -73759,24 +73981,178 @@ router12.get("/user/token-balance", requireAuth, async (req, res) => {
 });
 var flutterwave_default = router12;
 
-// src/routes/index.ts
+// src/routes/support.ts
+var import_express13 = __toESM(require_express2(), 1);
+init_src2();
+init_src2();
+init_drizzle_orm();
 var router13 = (0, import_express13.Router)();
-router13.use(auth_default);
-router13.use(health_default);
-router13.use(plans_default);
-router13.use(subscriptions_default);
-router13.use(checkout_default);
-router13.use(admin_default);
-router13.use(wallet_default);
-router13.use(whatsapp_orders_default);
-router13.use(whatsapp_webhook_default);
-router13.use(stripe_default);
-router13.use(token_activation_default);
-router13.use(flutterwave_default);
-var routes_default = router13;
+function generateTicketRef() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let ref = "ORB-";
+  for (let i = 0; i < 8; i++) {
+    ref += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return ref;
+}
+function sanitize(s) {
+  return s.trim().replace(/[<>]/g, "").slice(0, 5e3);
+}
+router13.post("/support/tickets", async (req, res) => {
+  try {
+    const { customerName, customerEmail, subject, message, priority } = req.body;
+    const name2 = typeof customerName === "string" ? sanitize(customerName) : "";
+    const email = typeof customerEmail === "string" ? customerEmail.trim().toLowerCase() : "";
+    const subj = typeof subject === "string" ? sanitize(subject) : "";
+    const msg = typeof message === "string" ? sanitize(message) : "";
+    const prio = ["low", "normal", "high", "urgent"].includes(priority ?? "") ? priority : "normal";
+    if (!name2 || !email || !subj || !msg) {
+      res.status(400).json({ error: "customerName, customerEmail, subject, and message are required" });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(400).json({ error: "Invalid email address" });
+      return;
+    }
+    let ticketRef = generateTicketRef();
+    for (let i = 0; i < 5; i++) {
+      const [existing] = await db.select({ id: supportTicketsTable.id }).from(supportTicketsTable).where(eq(supportTicketsTable.ticketRef, ticketRef)).limit(1);
+      if (!existing) break;
+      ticketRef = generateTicketRef();
+    }
+    const [ticket] = await db.insert(supportTicketsTable).values({ ticketRef, customerName: name2, customerEmail: email, subject: subj, message: msg, priority: prio, status: "open" }).returning();
+    res.status(201).json({
+      success: true,
+      ticket: {
+        id: ticket.id,
+        ticketRef: ticket.ticketRef,
+        subject: ticket.subject,
+        status: ticket.status,
+        createdAt: ticket.createdAt
+      }
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to create support ticket");
+    res.status(500).json({ error: "Failed to submit ticket" });
+  }
+});
+router13.get("/support/tickets", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const ref = req.query.ref;
+    if (!email && !ref) {
+      res.status(400).json({ error: "email or ref query param is required" });
+      return;
+    }
+    let whereClause;
+    if (ref) {
+      whereClause = eq(supportTicketsTable.ticketRef, ref.toUpperCase());
+    } else {
+      whereClause = eq(supportTicketsTable.customerEmail, email.toLowerCase());
+    }
+    const tickets = await db.select().from(supportTicketsTable).where(whereClause).orderBy(desc(supportTicketsTable.createdAt));
+    res.json({ tickets });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list tickets");
+    res.status(500).json({ error: "Failed to fetch tickets" });
+  }
+});
+router13.get("/admin/support/tickets", adminAuth, async (req, res) => {
+  try {
+    const status = req.query.status;
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const offset = (page - 1) * limit;
+    let whereClause;
+    if (status && status !== "all") {
+      whereClause = eq(supportTicketsTable.status, status);
+    }
+    const [tickets, [{ total }]] = await Promise.all([
+      db.select().from(supportTicketsTable).where(whereClause).orderBy(desc(supportTicketsTable.createdAt)).limit(limit).offset(offset),
+      db.select({ total: count() }).from(supportTicketsTable).where(whereClause)
+    ]);
+    res.json({ tickets, total, page, limit });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list admin support tickets");
+    res.status(500).json({ error: "Failed to fetch tickets" });
+  }
+});
+router13.patch("/admin/support/tickets/:id", adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const { status, adminReply } = req.body;
+    const [ticket] = await db.select().from(supportTicketsTable).where(eq(supportTicketsTable.id, id)).limit(1);
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+    const updateData = { updatedAt: /* @__PURE__ */ new Date() };
+    if (status) updateData.status = status;
+    if (adminReply !== void 0) {
+      const replyText = sanitize(adminReply);
+      updateData.adminReply = replyText;
+      updateData.adminRepliedAt = /* @__PURE__ */ new Date();
+      if (!status) updateData.status = "replied";
+      sendSupportReply({
+        customerName: ticket.customerName,
+        customerEmail: ticket.customerEmail,
+        ticketId: ticket.ticketRef,
+        subject: ticket.subject,
+        message: replyText,
+        agentName: "ORBITFUTURE Support"
+      }).catch(() => {
+      });
+    }
+    const [updated] = await db.update(supportTicketsTable).set(updateData).where(eq(supportTicketsTable.id, id)).returning();
+    res.json({ success: true, ticket: updated });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update support ticket");
+    res.status(500).json({ error: "Failed to update ticket" });
+  }
+});
+router13.delete("/admin/support/tickets/:id", adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const [deleted] = await db.delete(supportTicketsTable).where(eq(supportTicketsTable.id, id)).returning({ id: supportTicketsTable.id });
+    if (!deleted) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete ticket");
+    res.status(500).json({ error: "Failed to delete ticket" });
+  }
+});
+var support_default = router13;
+
+// src/routes/index.ts
+var router14 = (0, import_express14.Router)();
+router14.use(auth_default);
+router14.use(health_default);
+router14.use(plans_default);
+router14.use(subscriptions_default);
+router14.use(checkout_default);
+router14.use(admin_default);
+router14.use(wallet_default);
+router14.use(whatsapp_orders_default);
+router14.use(whatsapp_webhook_default);
+router14.use(stripe_default);
+router14.use(token_activation_default);
+router14.use(flutterwave_default);
+router14.use(support_default);
+var routes_default = router14;
 
 // src/app.ts
-var app = (0, import_express14.default)();
+var app = (0, import_express15.default)();
 var ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "").split(",").map((o) => o.trim()).filter(Boolean);
 var isDev = process.env.NODE_ENV !== "production";
 app.set("trust proxy", 1);
@@ -73825,14 +74201,14 @@ app.use((req, _res, next) => {
   }
   next();
 });
-app.use("/api/stripe-webhook", import_express14.default.raw({ type: "application/json" }));
-app.use(import_express14.default.json({ limit: "2mb" }));
-app.use(import_express14.default.urlencoded({ extended: true, limit: "2mb" }));
+app.use("/api/stripe-webhook", import_express15.default.raw({ type: "application/json" }));
+app.use(import_express15.default.json({ limit: "2mb" }));
+app.use(import_express15.default.urlencoded({ extended: true, limit: "2mb" }));
 app.use("/api", routes_default);
 if (process.env.NODE_ENV === "production") {
   const __dirname2 = path.dirname(fileURLToPath(import.meta.url));
   const frontendDist = path.resolve(__dirname2, "../../spacex-starlink/dist");
-  app.use(import_express14.default.static(frontendDist));
+  app.use(import_express15.default.static(frontendDist));
   app.get("/{*path}", (_req, res) => {
     res.sendFile(path.join(frontendDist, "index.html"));
   });

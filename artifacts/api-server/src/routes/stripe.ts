@@ -5,12 +5,17 @@ import { subscriptionsTable, plansTable, walletsTable, walletTransactionsTable }
 import { eq } from "drizzle-orm";
 import { BUNDLES } from "../utils/bundleMapper";
 import { requireAuth } from "./auth";
+import { sendSubscriptionConfirmation, sendPaymentReceipt } from "../lib/email";
 
 const router = Router();
 
 const getStripe = () => new Stripe(process.env["STRIPE_SECRET_KEY"] ?? "", { apiVersion: "2025-04-30.basil" });
 
-const APP_URL = process.env["APP_URL"] ?? "https://www.spacexstarlink.com";
+const APP_URL = (() => {
+  const url = process.env["APP_URL"] ?? process.env["REPLIT_DEV_DOMAIN"];
+  if (url) return url.startsWith("http") ? url : `https://${url}`;
+  return "https://www.orbitfuture.com";
+})();
 
 const PLAN_PRICES: Record<number, { name: string; priceMonthly: number; speed: string }> = {
   1: { name: "Starlink Best Effort", priceMonthly: 90, speed: "5–100 Mbps" },
@@ -283,23 +288,61 @@ router.post("/stripe-plan-verify", async (req, res): Promise<void> => {
     const planSpeed = meta.planSpeed ?? PLAN_PRICES[planIdNum]?.speed ?? "";
     const amountPaid = (session.amount_total ?? 0) / 100;
 
-    let subscriptionId: number | null = null;
-    try {
-      const [sub] = await db
-        .insert(subscriptionsTable)
-        .values({
-          email: customerEmail,
-          name: customerName,
-          planId: planIdNum,
-          status: "active",
-          address: customerAddress,
-          amountPaid: String(amountPaid),
-          stripeSubscriptionId: session.payment_intent as string ?? session_id,
-        })
-        .returning();
-      subscriptionId = sub?.id ?? null;
-    } catch {
-      // DB unavailable — still return success
+    // Idempotency: check if already processed
+    const [existingSub] = await db
+      .select()
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.stripeSubscriptionId, session.payment_intent as string ?? session_id))
+      .limit(1);
+
+    let subscriptionId: number | null = existingSub?.id ?? null;
+
+    if (!existingSub) {
+      try {
+        const [sub] = await db
+          .insert(subscriptionsTable)
+          .values({
+            email: customerEmail,
+            name: customerName,
+            planId: planIdNum,
+            status: "active",
+            address: customerAddress,
+            amountPaid: String(amountPaid),
+            stripeSubscriptionId: session.payment_intent as string ?? session_id,
+          })
+          .returning();
+        subscriptionId = sub?.id ?? null;
+
+        // Send confirmation and receipt emails asynchronously
+        if (sub) {
+          const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planIdNum)).limit(1);
+          const planFeatures = (dbPlan?.features as string[]) ?? [];
+          const planCategory = dbPlan?.category ?? "";
+
+          sendSubscriptionConfirmation({
+            customerName,
+            customerEmail,
+            planName,
+            planCategory,
+            planSpeed,
+            priceMonthly: amountPaid,
+            features: planFeatures,
+            subscriptionId: sub.id,
+          }).catch(() => {});
+
+          sendPaymentReceipt({
+            customerName,
+            customerEmail,
+            planName,
+            amountPaid,
+            currency: session.currency?.toUpperCase() ?? "USD",
+            transactionId: session.payment_intent as string ?? session_id,
+            date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+          }).catch(() => {});
+        }
+      } catch {
+        // DB unavailable — still return success
+      }
     }
 
     res.json({
@@ -313,6 +356,7 @@ router.post("/stripe-plan-verify", async (req, res): Promise<void> => {
         currency: session.currency?.toUpperCase() ?? "USD",
         sessionId: session_id,
         address: customerAddress,
+        alreadyProcessed: !!existingSub,
       },
     });
   } catch (err) {

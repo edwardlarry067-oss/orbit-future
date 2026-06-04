@@ -179,4 +179,82 @@ router.patch("/subscriptions/:id", async (req, res): Promise<void> => {
   }
 });
 
+// POST /api/subscriptions/:id/cancel
+// Convenience endpoint used by the customer dashboard
+router.post("/subscriptions/:id/cancel", async (req, res): Promise<void> => {
+  const auth = req.headers.authorization as string | undefined;
+  if (!auth?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  let userEmail: string | null = null;
+  let isAdmin = false;
+  try {
+    const decoded = jwt.verify(auth.slice(7), JWT_SECRET) as Record<string, unknown>;
+    if (decoded.role === "admin") {
+      isAdmin = true;
+    } else if (typeof decoded.email === "string") {
+      userEmail = decoded.email;
+    } else {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+    return;
+  }
+
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.id, id))
+      .limit(1);
+
+    if (!existing) {
+      res.status(404).json({ error: "Subscription not found" });
+      return;
+    }
+
+    if (!isAdmin && existing.email.toLowerCase() !== (userEmail ?? "").toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    if (existing.status === "cancelled") {
+      res.status(400).json({ error: "Subscription is already cancelled" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(subscriptionsTable)
+      .set({ status: "cancelled", cancelledAt: new Date() })
+      .where(eq(subscriptionsTable.id, id))
+      .returning();
+
+    const [plan] = await db.select().from(plansTable).where(eq(plansTable.id, updated.planId));
+
+    if (plan) {
+      sendCancellationEmail({
+        customerName: updated.name,
+        customerEmail: updated.email,
+        planName: plan.name,
+        priceMonthly: parseFloat(plan.priceMonthly),
+      }).catch(() => {});
+    }
+
+    res.json({ success: true, subscription: formatSub(updated, plan ?? null) });
+  } catch (err) {
+    req.log.error({ err }, "Failed to cancel subscription");
+    res.status(500).json({ error: "Failed to cancel subscription" });
+  }
+});
+
 export default router;

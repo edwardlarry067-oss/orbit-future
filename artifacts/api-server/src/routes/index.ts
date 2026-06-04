@@ -11,6 +11,7 @@ import whatsappWebhookRouter from "./whatsapp-webhook";
 import stripeRouter from "./stripe";
 import tokenActivationRouter from "./token-activation";
 import flutterwaveRouter from "./flutterwave";
+import supportRouter from "./support";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(whatsappWebhookRouter);
 router.use(stripeRouter);
 router.use(tokenActivationRouter);
 router.use(flutterwaveRouter);
+router.use(supportRouter);
 
 export default router;

@@ -102,3 +102,18 @@ export const siteSettingsTable = pgTable("site_settings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+export const supportTicketsTable = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  ticketRef: text("ticket_ref").notNull().unique(),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("open"),
+  priority: text("priority").notNull().default("normal"),
+  adminReply: text("admin_reply"),
+  adminRepliedAt: timestamp("admin_replied_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
