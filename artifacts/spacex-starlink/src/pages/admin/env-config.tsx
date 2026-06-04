@@ -5,17 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getAdminToken } from "@/lib/auth";
-import { KeyRound, CheckCircle2, AlertCircle, Eye, EyeOff, Loader2, Link2 } from "lucide-react";
+import { KeyRound, CheckCircle2, AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 const FIELDS = [
-  {
-    key: "FLW_SECRET_KEY",
-    label: "Flutterwave Secret Key",
-    placeholder: "FLWSECK_TEST-... or FLWSECK_LIVE-...",
-    hint: "app.flutterwave.com → Settings → API Keys → Secret Key",
-    provider: "Flutterwave",
-    isLink: false,
-  },
   {
     key: "STRIPE_SECRET_KEY",
     label: "Stripe Secret Key",
@@ -66,16 +58,6 @@ const FIELDS = [
   },
 ];
 
-// Per-plan Flutterwave payment links (live, no API key needed)
-const PLAN_LINK_FIELDS = [
-  { key: "FLW_LINK_1", label: "Residential Plan Link", hint: "Plan ID 1 · $120/mo" },
-  { key: "FLW_LINK_2", label: "Priority Plan Link",    hint: "Plan ID 2 · $250/mo" },
-  { key: "FLW_LINK_3", label: "Mobile Plan Link",      hint: "Plan ID 3 · $150/mo" },
-  { key: "FLW_LINK_4", label: "Maritime Plan Link",    hint: "Plan ID 4 · $250/mo" },
-  { key: "FLW_LINK_5", label: "Aviation Plan Link",    hint: "Plan ID 5 · $1500/mo" },
-  { key: "FLW_LINK_6", label: "Business Plan Link",    hint: "Plan ID 6 · $500/mo" },
-  { key: "FLW_LINK_7", label: "Enterprise Plan Link",  hint: "Plan ID 7 · $5000/mo" },
-];
 
 export default function EnvConfig() {
   const [values, setValues] = useState<Record<string, string>>({});
@@ -188,51 +170,6 @@ export default function EnvConfig() {
                   {show[field.key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {/* ── Flutterwave Payment Links (live, no API key needed) ── */}
-        <div className="pt-4 pb-1">
-          <div className="flex items-center gap-2 mb-1">
-            <Link2 className="w-4 h-4 text-[#F5A623]" />
-            <p className="text-sm font-black uppercase tracking-widest text-white">Flutterwave Payment Links</p>
-          </div>
-          <p className="text-xs text-gray-500">
-            Create a payment link per plan on{" "}
-            <a href="https://app.flutterwave.com/dashboard/pay/create" target="_blank" rel="noopener noreferrer" className="text-[#F5A623] underline">
-              app.flutterwave.com → Pay → Create payment link
-            </a>
-            . These are <strong className="text-gray-300">live by default</strong> — no test/live mode switch needed. Paste each link below and it will be used instead of the API.
-          </p>
-        </div>
-
-        {PLAN_LINK_FIELDS.map((field) => (
-          <Card key={field.key} className={`bg-card border-[#F5A623]/20 ${existing[field.key] ? "border-emerald-700/40" : "border-border"}`}>
-            <CardHeader className="pb-2 pt-4 px-5">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <CardTitle className="text-sm font-bold text-white">{field.label}</CardTitle>
-                <div className="flex items-center gap-2">
-                  {existing[field.key] && (
-                    <span className="text-[10px] text-emerald-400 border border-emerald-700/50 rounded px-2 py-0.5 uppercase tracking-widest font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Set
-                    </span>
-                  )}
-                  <span className="text-[10px] text-[#F5A623] border border-[#F5A623]/30 rounded px-2 py-0.5 uppercase tracking-widest font-bold">
-                    Payment Link
-                  </span>
-                </div>
-              </div>
-              <CardDescription className="text-xs text-gray-500 mt-0.5">{field.hint}</CardDescription>
-            </CardHeader>
-            <CardContent className="px-5 pb-4">
-              <Input
-                type="text"
-                placeholder="https://flutterwave.com/pay/your-link-slug"
-                value={values[field.key] || ""}
-                onChange={(e) => handleChange(field.key, e.target.value)}
-                className="bg-background border-border text-white placeholder:text-gray-700 font-mono text-xs"
-              />
             </CardContent>
           </Card>
         ))}

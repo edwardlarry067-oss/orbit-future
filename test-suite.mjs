@@ -714,39 +714,7 @@ section("16. STRIPE PAYMENT FLOW");
   }
 }
 
-// ── 17. Flutterwave Payment Flow ──────────────────────────────────────────────
-section("17. FLUTTERWAVE PAYMENT FLOW");
-{
-  // FLW init (requireAuth)
-  const r = await req("POST", "/flutterwave-init", {
-    token: userToken,
-    body: { currency: "USD", bundleId: "starter" },
-  });
-  if (r.status === 200 && r.data?.link) {
-    check("POST /flutterwave-init returns payment link", true, r);
-    check("Link is Flutterwave URL", r.data.link.includes("flutterwave") || r.data.link.startsWith("https://"), r);
-  } else if ([400, 500].includes(r.status)) {
-    // Could be bad bundleId or FLW key config
-    check("POST /flutterwave-init responds", true, r, `status=${r.status}`);
-  }
-
-  // Without auth
-  const r2 = await req("POST", "/flutterwave-init", {
-    body: { currency: "USD", bundleId: "starter" },
-  });
-  check("flutterwave-init requires auth (401)", r2.status === 401, r2);
-  sec("Flutterwave init gated behind user auth");
-
-  // FLW webhook — responds 200 always, validates hash internally before processing
-  const r3 = await req("POST", "/flutterwave-webhook", {
-    headers: { "verif-hash": "invalid_webhook_secret" },
-    body: { event: "charge.completed", data: { status: "successful" } },
-  });
-  check("FLW webhook returns 200 (hash validated internally)", r3.status === 200, r3);
-  sec("Flutterwave webhook: responds 200 fast, validates verif-hash before processing");
-}
-
-// ── 18. Legacy Checkout Endpoints ─────────────────────────────────────────────
+// ── 17. Legacy Checkout Endpoints ─────────────────────────────────────────────
 section("18. LEGACY CHECKOUT ENDPOINTS");
 {
   const r = await req("POST", "/checkout/session");
@@ -859,7 +827,7 @@ section("22. RESEND EMAIL INTEGRATION");
 // ── 23. Environment & Secrets ─────────────────────────────────────────────────
 section("23. ENVIRONMENT & SECRETS");
 {
-  const required = ["DATABASE_URL", "SESSION_SECRET", "ADMIN_PASSWORD", "STRIPE_SECRET_KEY", "FLW_SECRET_KEY", "RESEND_API_KEY", "STRIPE_WEBHOOK_SECRET", "FLW_WEBHOOK_SECRET"];
+  const required = ["DATABASE_URL", "SESSION_SECRET", "ADMIN_PASSWORD", "STRIPE_SECRET_KEY", "RESEND_API_KEY", "STRIPE_WEBHOOK_SECRET"];
   for (const key of required) {
     if (process.env[key]) pass(`${key} is set`);
     else fail(`${key} NOT set`);
