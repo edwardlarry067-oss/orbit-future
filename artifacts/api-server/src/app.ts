@@ -35,12 +35,14 @@ app.use(
             "https://orbitfuture.com",
             "https://www.orbitfuture.com",
             "https://fairy-2ff969.netlify.app",
+            "https://space-x-puce.vercel.app",
             ...ALLOWED_ORIGINS,
           ];
-          // Allow any replit.app or netlify.app subdomain
+          // Allow any replit.app, netlify.app, or vercel.app subdomain
           if (
             origin.endsWith(".replit.app") ||
             origin.endsWith(".netlify.app") ||
+            origin.endsWith(".vercel.app") ||
             allowed.some((o) => origin.startsWith(o))
           ) {
             cb(null, true);

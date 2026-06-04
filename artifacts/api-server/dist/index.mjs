@@ -72035,9 +72035,10 @@ app.use(
         "https://orbitfuture.com",
         "https://www.orbitfuture.com",
         "https://fairy-2ff969.netlify.app",
+        "https://space-x-puce.vercel.app",
         ...ALLOWED_ORIGINS
       ];
-      if (origin.endsWith(".replit.app") || origin.endsWith(".netlify.app") || allowed.some((o) => origin.startsWith(o))) {
+      if (origin.endsWith(".replit.app") || origin.endsWith(".netlify.app") || origin.endsWith(".vercel.app") || allowed.some((o) => origin.startsWith(o))) {
         cb(null, true);
       } else {
         cb(new Error("CORS: origin not allowed"));
