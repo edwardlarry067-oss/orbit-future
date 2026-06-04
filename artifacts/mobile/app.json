@@ -33,6 +33,7 @@
       "favicon": "./assets/favicon.png"
     },
     "scheme": "orbitfuture",
+    "plugins": ["expo-router"],
     "extra": {
       "apiUrl": "https://orbitfuture.replit.app",
       "apiUrlDev": "https://919f5ad5-63e6-417f-a233-cd5db7afc8b1-00-85820hjo0ee9.spock.replit.dev"

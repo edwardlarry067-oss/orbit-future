@@ -1,0 +1,39 @@
+import React, { useState, useEffect } from "react";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { AuthProvider, useAuth } from "../src/contexts/AuthContext";
+import SplashScreenComponent from "../src/screens/SplashScreen";
+
+function RootLayoutInner() {
+  const { loading } = useAuth();
+  const [animDone, setAnimDone] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  // Only reveal the app once BOTH the 2-second animation AND the auth check are complete
+  useEffect(() => {
+    if (animDone && !loading) setReady(true);
+  }, [animDone, loading]);
+
+  if (!ready) {
+    return <SplashScreenComponent onFinish={() => setAnimDone(true)} />;
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="notifications" options={{ presentation: "modal", animation: "slide_from_right" }} />
+      <Stack.Screen name="support" options={{ presentation: "modal", animation: "slide_from_right" }} />
+      <Stack.Screen name="checkout" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <StatusBar style="light" backgroundColor="#000" />
+      <RootLayoutInner />
+    </AuthProvider>
+  );
+}

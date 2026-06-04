@@ -6,8 +6,6 @@ import { Colors, Spacing, Radius } from "../theme";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
-import LoginScreen from "./LoginScreen";
-
 export default function ProfileScreen({ navigation }: any) {
   const { user, logout, loading } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -17,13 +15,38 @@ export default function ProfileScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
 
   if (loading) return <LoadingSpinner />;
-  if (!user) return <LoginScreen navigation={navigation} />;
+
+  if (!user) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.bg, alignItems: "center", justifyContent: "center", padding: 32, gap: 16 }}>
+        <Text style={{ fontSize: 48 }}>👤</Text>
+        <Text style={{ color: Colors.text, fontSize: 20, fontWeight: "900", textTransform: "uppercase", textAlign: "center" }}>
+          Sign In to View Profile
+        </Text>
+        <Text style={{ color: Colors.muted, fontSize: 13, textAlign: "center", lineHeight: 20 }}>
+          Access your account details, manage your subscription, and top up your wallet.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 15, paddingHorizontal: 40, marginTop: 8 }}
+          onPress={() => navigation.navigate("Login")}
+        >
+          <Text style={{ color: "#000", fontWeight: "900", fontSize: 13, letterSpacing: 1.5 }}>SIGN IN</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, paddingVertical: 13, paddingHorizontal: 40 }}
+          onPress={() => navigation.navigate("Register")}
+        >
+          <Text style={{ color: Colors.mutedLight, fontWeight: "700", fontSize: 13 }}>Create Account</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const handleSave = async () => {
     if (!name.trim()) { Alert.alert("Error", "Name cannot be empty."); return; }
     setSaving(true);
     try {
-      await apiRequest("PATCH", "users/me", { name: name.trim(), phone: phone.trim(), address: address.trim() });
+      await apiRequest("PATCH", "auth/me", { name: name.trim(), phone: phone.trim(), address: address.trim() });
       Alert.alert("Saved", "Your profile has been updated.");
       setEditing(false);
     } catch (e: any) {
@@ -103,7 +126,19 @@ export default function ProfileScreen({ navigation }: any) {
         {/* Security */}
         <Card style={s.infoCard}>
           <Text style={s.infoTitle}>Security</Text>
-          <TouchableOpacity style={s.secRow} onPress={() => Alert.alert("Password Reset", "A password reset link will be sent to your email address.", [{ text: "Cancel" }, { text: "Send Link", onPress: async () => { try { await apiRequest("POST", "auth/forgot-password", { email: user.email }); Alert.alert("Sent", "Check your inbox for the reset link."); } catch { Alert.alert("Error", "Could not send reset email."); } } }])}>
+          <TouchableOpacity
+            style={s.secRow}
+            onPress={() =>
+              Alert.alert(
+                "Change Password",
+                "To reset your password, contact our support team via WhatsApp or email and we'll send you a secure reset link.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Contact Support", onPress: () => navigation.navigate("Support") },
+                ]
+              )
+            }
+          >
             <Text style={s.secRowText}>Change Password</Text>
             <Text style={s.secRowArrow}>→</Text>
           </TouchableOpacity>

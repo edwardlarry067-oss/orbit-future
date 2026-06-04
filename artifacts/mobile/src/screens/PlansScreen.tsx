@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Linking, Alert, RefreshControl } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Colors, Spacing, Radius } from "../theme";
@@ -66,9 +67,18 @@ export default function PlansScreen({ navigation }: any) {
       return;
     }
     try {
-      const res = await apiRequest<{ url: string }>("POST", "stripe-plan-pay", { planId: plan.id });
-      if ((res as any).url) {
-        Linking.openURL((res as any).url);
+      const res = await apiRequest<{ paymentLink: string; sessionId: string }>(
+        "POST",
+        "stripe-plan-pay",
+        { planId: plan.id, email: user.email, name: user.name }
+      );
+      const url = res.paymentLink ?? (res as any).url;
+      if (url) {
+        await WebBrowser.openBrowserAsync(url, {
+          toolbarColor: "#000",
+          controlsColor: Colors.primary,
+          dismissButtonStyle: "cancel",
+        });
       } else {
         handleOrder(plan);
       }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking, RefreshControl } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, RefreshControl } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Colors, Spacing, Radius } from "../theme";
@@ -40,11 +41,14 @@ export default function WalletScreen({ navigation }: any) {
     if (!user) { setLoading(false); return; }
     try {
       const [walletRes, txRes] = await Promise.allSettled([
-        apiRequest<{ balance: number }>("GET", "wallet"),
-        apiRequest<Transaction[]>("GET", "wallet/transactions"),
+        apiRequest<{ balance: number }>("GET", `wallet/${encodeURIComponent(user.email)}`),
+        apiRequest<{ transactions: Transaction[] } | Transaction[]>("GET", `wallet/${encodeURIComponent(user.email)}/transactions`),
       ]);
       if (walletRes.status === "fulfilled") setBalance((walletRes.value as any).balance ?? 0);
-      if (txRes.status === "fulfilled") setTransactions(Array.isArray(txRes.value) ? txRes.value : []);
+      if (txRes.status === "fulfilled") {
+        const txData = txRes.value as any;
+        setTransactions(Array.isArray(txData) ? txData : (txData.transactions ?? []));
+      }
     } catch (e) {
       // partial load is fine
     } finally {
@@ -59,9 +63,20 @@ export default function WalletScreen({ navigation }: any) {
     if (!user) { Alert.alert("Sign in required", "Please sign in to buy tokens."); return; }
     setBuying(bundle.id);
     try {
-      const res = await apiRequest<{ url: string }>("POST", "stripe-token-buy", { bundleId: bundle.id });
-      if ((res as any).url) {
-        Linking.openURL((res as any).url);
+      const res = await apiRequest<{ paymentLink: string; sessionId: string }>(
+        "POST",
+        "stripe-token-buy",
+        { bundleId: bundle.id }
+      );
+      const url = res.paymentLink ?? (res as any).url;
+      if (url) {
+        await WebBrowser.openBrowserAsync(url, {
+          toolbarColor: "#000",
+          controlsColor: Colors.primary,
+          dismissButtonStyle: "cancel",
+        });
+        // Refresh balance after payment attempt
+        load();
       } else {
         Alert.alert("Error", "No checkout URL returned. Please try again.");
       }
