@@ -1,9 +1,9 @@
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 
-const API_URL: string =
-  Constants.expoConfig?.extra?.apiUrl ??
-  "https://919f5ad5-63e6-417f-a233-cd5db7afc8b1-00-85820hjo0ee9.spock.replit.dev";
+export const API_URL: string =
+  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
+  "https://orbitfuture.replit.app";
 
 const TOKEN_KEY = "orbitfuture_token";
 

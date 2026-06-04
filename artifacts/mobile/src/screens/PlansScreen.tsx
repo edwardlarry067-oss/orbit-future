@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Linking, Alert, RefreshControl } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -110,6 +111,7 @@ export default function PlansScreen({ navigation }: any) {
   }
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top"]}>
     <ScrollView
       style={s.container}
       contentContainerStyle={s.content}
@@ -199,6 +201,7 @@ export default function PlansScreen({ navigation }: any) {
         <Text style={s.footerText}>🔒 Secure checkout · 🌍 Delivered worldwide · 📞 24/7 support</Text>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
