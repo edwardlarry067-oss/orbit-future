@@ -16,6 +16,7 @@ import {
   ArrowRight, RefreshCw, Zap, Package, Wifi, CreditCard, ExternalLink
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getApiBase } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const checkoutSchema = z.object({
@@ -60,7 +61,7 @@ export default function Checkout() {
     if (!email || !email.includes("@")) return;
     setWalletLoading(true);
     try {
-      const res = await fetch(`/api/wallet/${encodeURIComponent(email)}`);
+      const res = await fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}`);
       if (res.ok) {
         const data = await res.json();
         setWalletBalance(data.balance);
@@ -87,7 +88,7 @@ export default function Checkout() {
 
     try {
       if (paymentMethod === "stripe") {
-        const res = await fetch("/api/stripe-plan-pay", {
+        const res = await fetch(`${getApiBase()}/api/stripe-plan-pay`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address }),
@@ -101,7 +102,7 @@ export default function Checkout() {
           setError(json.error || "Failed to create checkout session. Please try again.");
         }
       } else {
-        const res = await fetch("/api/checkout/wallet-pay", {
+        const res = await fetch(`${getApiBase()}/api/checkout/wallet-pay`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address }),

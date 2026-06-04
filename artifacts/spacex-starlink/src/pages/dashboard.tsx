@@ -4,6 +4,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getApiBase } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Satellite, Coins, Activity, LogOut, Package,
@@ -354,14 +355,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/subscriptions?email=${encodeURIComponent(user.email)}`, {
+    fetch(`${getApiBase()}/api/subscriptions?email=${encodeURIComponent(user.email)}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
       .then(data => { setSubscriptions(data.subscriptions || []); setSubsLoading(false); })
       .catch(() => setSubsLoading(false));
 
-    fetch(`/api/wallet/${encodeURIComponent(user.email)}`)
+    fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(user.email)}`)
       .then(r => r.json())
       .then(setWallet)
       .catch(() => {});
@@ -373,7 +374,7 @@ export default function Dashboard() {
     if (!confirmed) return;
     setCancelling(id);
     try {
-      const res = await fetch(`/api/subscriptions/${id}/cancel`, {
+      const res = await fetch(`${getApiBase()}/api/subscriptions/${id}/cancel`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

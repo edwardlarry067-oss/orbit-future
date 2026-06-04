@@ -5,9 +5,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Set VITE_API_URL to your Replit backend URL after deploying the backend there.
-  # Example: VITE_API_URL = "https://orbitfuture.yourname.replit.app"
-  VITE_API_URL = ""
+  # Required: set this in the Netlify UI → Site Settings → Environment Variables
+  # Value should be your deployed API backend URL, e.g. https://your-api.replit.app
+  # VITE_API_URL = "https://your-api.replit.app"
 
 [[headers]]
   for = "/*"

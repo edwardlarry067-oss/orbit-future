@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, LayoutDashboard, Globe, Mail, MessageCircle, Coins, LogOut, User, Shield, Lock, HeadphonesIcon, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { getApiBase } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const TOKEN_KEY = "starlink_token";
@@ -16,7 +17,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const tok = localStorage.getItem(TOKEN_KEY);
     if (!user || !tok) { setTokenBalance(null); return; }
-    fetch(`/api/user/token-balance`, { headers: { Authorization: `Bearer ${tok}` } })
+    fetch(`${getApiBase()}/api/user/token-balance`, { headers: { Authorization: `Bearer ${tok}` } })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d ? setTokenBalance(d.balance) : null)
       .catch(() => {});
