@@ -5,7 +5,7 @@ import { subscriptionsTable, plansTable, walletsTable, walletTransactionsTable }
 import { eq } from "drizzle-orm";
 import { BUNDLES } from "../utils/bundleMapper";
 import { requireAuth } from "./auth";
-import { sendSubscriptionConfirmation, sendPaymentReceipt } from "../lib/email";
+import { sendSubscriptionConfirmation, sendPaymentReceipt, sendAdminPaymentAlert } from "../lib/email";
 
 const router = Router();
 
@@ -154,6 +154,17 @@ router.post("/stripe-token-verify", requireAuth, async (req: any, res): Promise<
     }
 
     const newBalance = await creditTokensViaStripe(email, tokens, bundleName, session_id);
+
+    sendAdminPaymentAlert({
+      type: "token",
+      customerName: email,
+      customerEmail: email,
+      item: `${bundleName} — ${tokens.toLocaleString()} tokens`,
+      amountPaid: (session.amount_total ?? 0) / 100,
+      currency: session.currency?.toUpperCase() ?? "USD",
+      transactionId: session_id,
+    }).catch(() => {});
+
     res.json({ success: true, tokensAdded: tokens, newBalance });
   } catch (err) {
     req.log?.error?.({ err }, "stripe-token-verify error");
@@ -350,6 +361,16 @@ router.post("/stripe-plan-verify", async (req, res): Promise<void> => {
             currency: session.currency?.toUpperCase() ?? "USD",
             transactionId: session.payment_intent as string ?? session_id,
             date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+          }).catch(() => {});
+
+          sendAdminPaymentAlert({
+            type: "plan",
+            customerName,
+            customerEmail,
+            item: planName,
+            amountPaid,
+            currency: session.currency?.toUpperCase() ?? "USD",
+            transactionId: session.payment_intent as string ?? session_id,
           }).catch(() => {});
         }
       } catch {
