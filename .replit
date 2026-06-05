@@ -49,5 +49,5 @@ EMAIL_FROM = "managementstarlinkhq@gmail.com"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["bash", "-c", "PORT=3001 NODE_ENV=production node --enable-source-maps artifacts/api-server/dist/index.mjs"]
+run = ["bash", "start.sh"]
 build = ["bash", "-c", "cd artifacts && pnpm install --frozen-lockfile && cd api-server && pnpm run build && cd ../spacex-starlink && pnpm run build"]
