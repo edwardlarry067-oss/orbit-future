@@ -9,6 +9,7 @@ import authRouter from "./auth";
 import whatsappOrdersRouter from "./whatsapp-orders";
 import whatsappWebhookRouter from "./whatsapp-webhook";
 import stripeRouter from "./stripe";
+import flutterwaveRouter from "./flutterwave";
 import tokenActivationRouter from "./token-activation";
 import supportRouter from "./support";
 
@@ -24,6 +25,7 @@ router.use(walletRouter);
 router.use(whatsappOrdersRouter);
 router.use(whatsappWebhookRouter);
 router.use(stripeRouter);
+router.use(flutterwaveRouter);
 router.use(tokenActivationRouter);
 router.use(supportRouter);
 
