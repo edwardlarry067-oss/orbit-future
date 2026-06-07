@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { useCurrency } from "@/hooks/useCurrency";
 import { getApiBase } from "@workspace/api-client-react";
 import {
   Search, Package, Wifi, CheckCircle2, Clock, XCircle,
@@ -46,7 +47,7 @@ function statusColor(status: string) {
   return map[status] ?? "bg-white/5 text-gray-300 border-white/10";
 }
 
-function ResultCard({ r }: { r: TrackResult }) {
+function ResultCard({ r, formatPrice, formatMonthly }: { r: TrackResult; formatPrice: (n: number) => string; formatMonthly: (n: number) => string }) {
   const cancelled = r.status === "cancelled" || r.status === "suspended";
   const date = new Date(r.createdAt).toLocaleDateString("en-GB", {
     day: "numeric", month: "short", year: "numeric",
@@ -121,7 +122,7 @@ function ResultCard({ r }: { r: TrackResult }) {
           {r.priceMonthly > 0 && (
             <div className="flex items-center gap-2 text-gray-400">
               <Tag className="w-3.5 h-3.5 text-gray-600 shrink-0" />
-              <span>${r.priceMonthly}/mo</span>
+              <span>{formatMonthly(r.priceMonthly)}</span>
             </div>
           )}
         </div>
@@ -131,6 +132,7 @@ function ResultCard({ r }: { r: TrackResult }) {
 }
 
 export default function Track() {
+  const { formatPrice, formatMonthly } = useCurrency();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<TrackResult[] | null>(null);
@@ -214,7 +216,7 @@ export default function Track() {
                 {results.length} result{results.length !== 1 ? "s" : ""} found
               </p>
               {results.map((r) => (
-                <ResultCard key={r.ref} r={r} />
+                <ResultCard key={r.ref} r={r} formatPrice={formatPrice} formatMonthly={formatMonthly} />
               ))}
             </div>
           )}

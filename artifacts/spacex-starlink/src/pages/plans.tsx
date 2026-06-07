@@ -8,6 +8,7 @@ import {
   CheckCircle2, Zap, ArrowRight, Package, CreditCard, Wifi,
   Globe, Shield, HeadphonesIcon, CheckCheck, Minus
 } from "lucide-react";
+import { useCurrency } from "@/hooks/useCurrency";
 
 type Plan = {
   id: number;
@@ -92,6 +93,7 @@ function ComparisonCell({ value, highlight }: { value: string | boolean; highlig
 }
 
 export default function Plans() {
+  const { formatPrice, formatMonthly, currency } = useCurrency();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -206,6 +208,11 @@ export default function Plans() {
             <Wifi className="w-3.5 h-3.5" />
             Global Coverage · 100+ Countries
           </div>
+          {currency === "NGN" && (
+            <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1 mb-6 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+              ₦ Prices shown in Nigerian Naira
+            </div>
+          )}
           <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-white mb-4">
             Starlink Plans
           </h1>
@@ -270,7 +277,7 @@ export default function Plans() {
                         <Wifi className="w-3.5 h-3.5 text-primary" />
                         <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Monthly</span>
                       </div>
-                      <span className="font-black text-white text-lg">${cost.monthly}<span className="text-gray-500 text-xs font-normal">/mo</span></span>
+                      <span className="font-black text-white text-lg">{formatPrice(cost.monthly)}<span className="text-gray-500 text-xs font-normal">/mo</span></span>
                     </div>
 
                     {cost.hardware > 0 && (
@@ -280,7 +287,7 @@ export default function Plans() {
                           <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Hardware</span>
                           <span className="text-[9px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5 uppercase font-bold">Once</span>
                         </div>
-                        <span className="font-bold text-amber-400">${cost.hardware}</span>
+                        <span className="font-bold text-amber-400">{formatPrice(cost.hardware)}</span>
                       </div>
                     )}
 
@@ -291,12 +298,12 @@ export default function Plans() {
                           {cost.hardware > 0 ? "First Payment" : "Monthly"}
                         </span>
                       </div>
-                      <span className="font-black text-emerald-400 text-xl">${cost.firstMonth}</span>
+                      <span className="font-black text-emerald-400 text-xl">{formatPrice(cost.firstMonth)}</span>
                     </div>
 
                     <p className="text-[10px] text-gray-600 leading-relaxed">
                       {cost.hardware > 0
-                        ? `Then $${cost.monthly}/mo. Hardware charged once on first payment.`
+                        ? `Then ${formatMonthly(cost.monthly)}. Hardware charged once on first payment.`
                         : `Billed monthly. Cancel anytime.`}
                     </p>
                   </div>
@@ -332,7 +339,7 @@ export default function Plans() {
                       ) : (
                         <span className="flex items-center gap-2">
                           <Zap className="w-4 h-4" />
-                          Get Started — ${cost.firstMonth}
+                          Get Started — {formatPrice(cost.firstMonth)}
                           <ArrowRight className="w-4 h-4" />
                         </span>
                       )}
