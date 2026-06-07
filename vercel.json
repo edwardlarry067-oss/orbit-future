@@ -1,8 +1,8 @@
 {
   "version": 2,
   "framework": null,
-  "installCommand": "corepack prepare pnpm@10.26.1 --activate && cd artifacts && pnpm install --no-frozen-lockfile",
-  "buildCommand": "cd artifacts && pnpm --filter @workspace/spacex-starlink run build",
+  "installCommand": "cd artifacts/spacex-starlink && npm install --legacy-peer-deps --ignore-scripts",
+  "buildCommand": "cd artifacts/spacex-starlink && npm run build",
   "outputDirectory": "artifacts/spacex-starlink/dist",
   "rewrites": [
     {
