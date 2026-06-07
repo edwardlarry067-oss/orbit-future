@@ -54511,49 +54511,110 @@ router10.post("/paystack-webhook", async (req, res) => {
   try {
     const crypto2 = await import("node:crypto");
     const secret = PSK();
-    const hash = crypto2.createHmac("sha512", secret).update(JSON.stringify(req.body)).digest("hex");
-    if (hash !== req.headers["x-paystack-signature"]) {
-      req.log?.warn("Paystack webhook signature verification failed");
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+    const rawBodyStr = rawBody.toString("utf8");
+    const hash = crypto2.createHmac("sha512", secret).update(rawBodyStr).digest("hex");
+    const incomingSig = req.headers["x-paystack-signature"];
+    if (!incomingSig || hash !== incomingSig) {
+      req.log?.warn({ incomingSig: incomingSig?.slice(0, 12) }, "Paystack webhook: signature mismatch \u2014 ignored");
       return;
     }
-    const event = req.body;
+    let event;
+    try {
+      event = JSON.parse(rawBodyStr);
+    } catch {
+      req.log?.warn("Paystack webhook: failed to parse JSON body");
+      return;
+    }
+    req.log?.info({ event: event.event }, "Paystack webhook received");
     if (event.event !== "charge.success") return;
     const data = event.data;
     if (data.status !== "success") return;
     const meta = data.metadata ?? {};
     const reference = data.reference;
+    const eventCurrency = data.currency ?? DEFAULT_CURRENCY;
     if (meta.type === "token_bundle") {
       const email = meta.customerEmail ?? data.customer?.email ?? "";
       const tokens = parseInt(meta.tokens ?? "0") || 0;
       const bundleName = meta.bundleName ?? "Bundle";
-      if (email && tokens > 0) {
-        const [existing] = await db.select().from(walletTransactionsTable).where(eq(walletTransactionsTable.reference, reference)).limit(1);
-        if (!existing) {
-          await creditTokensViaPaystack(email, tokens, bundleName, reference).catch(() => {
-          });
-        }
+      if (!email || tokens <= 0) return;
+      const [existing] = await db.select().from(walletTransactionsTable).where(eq(walletTransactionsTable.reference, reference)).limit(1);
+      if (!existing) {
+        await creditTokensViaPaystack(email, tokens, bundleName, reference).catch((err) => {
+          req.log?.error({ err, reference }, "Webhook: failed to credit tokens");
+        });
+        req.log?.info({ email, tokens, bundleName, reference }, "Webhook: tokens credited");
+      } else {
+        req.log?.info({ reference }, "Webhook: token bundle already processed \u2014 skipped");
       }
       return;
     }
     const planIdNum = parseInt(meta.planId ?? "0") || 0;
     const customerEmail = meta.customerEmail ?? data.customer?.email ?? "";
     const customerName = meta.customerName ?? "";
+    const customerAddress = meta.address ?? "";
+    const planName = meta.planName ?? PLAN_PRICES[planIdNum]?.name ?? "Starlink Plan";
+    const planSpeed = meta.planSpeed ?? PLAN_PRICES[planIdNum]?.speed ?? "";
+    const planCategory = meta.planCategory ?? "";
     const amountPaid = (data.amount ?? 0) / 100;
-    const [existingSub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.stripeSessionId, reference)).limit(1);
-    if (!existingSub && planIdNum && customerEmail) {
-      await db.insert(subscriptionsTable).values({
-        email: customerEmail,
-        name: customerName,
-        planId: planIdNum,
-        status: "active",
-        address: meta.address ?? "",
-        amountPaid: String(amountPaid),
-        stripeSessionId: reference
-      }).catch(() => {
-      });
+    if (!planIdNum || !customerEmail) {
+      req.log?.warn({ reference, planIdNum, customerEmail }, "Webhook: missing planId or email \u2014 skipped");
+      return;
     }
+    const [existingSub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.stripeSessionId, reference)).limit(1);
+    if (existingSub) {
+      req.log?.info({ reference, subscriptionId: existingSub.id }, "Webhook: subscription already exists \u2014 skipped");
+      return;
+    }
+    const [sub] = await db.insert(subscriptionsTable).values({
+      email: customerEmail,
+      name: customerName,
+      planId: planIdNum,
+      status: "active",
+      address: customerAddress,
+      amountPaid: String(amountPaid),
+      stripeSessionId: reference
+    }).returning();
+    req.log?.info(
+      { reference, subscriptionId: sub?.id, planId: planIdNum, email: customerEmail },
+      "Webhook: subscription activated"
+    );
+    if (!sub) return;
+    const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planIdNum)).limit(1).catch(() => [null]);
+    const planFeatures = dbPlan?.features ?? [];
+    sendSubscriptionConfirmation({
+      customerName,
+      customerEmail,
+      planName,
+      planCategory: planCategory || dbPlan?.category || "",
+      planSpeed,
+      priceMonthly: amountPaid,
+      features: planFeatures,
+      subscriptionId: sub.id
+    }).catch(() => {
+    });
+    sendPaymentReceipt({
+      customerName,
+      customerEmail,
+      planName,
+      amountPaid,
+      currency: eventCurrency,
+      transactionId: reference,
+      date: (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    }).catch(() => {
+    });
+    sendAdminPaymentAlert({
+      type: "plan",
+      customerName,
+      customerEmail,
+      item: planName,
+      amountPaid,
+      currency: eventCurrency,
+      transactionId: reference
+    }).catch(() => {
+    });
   } catch (err) {
-    req.log?.error?.({ err }, "Paystack webhook processing error");
+    req.log?.error({ err }, "Paystack webhook: unhandled error");
   }
 });
 var paystack_default = router10;

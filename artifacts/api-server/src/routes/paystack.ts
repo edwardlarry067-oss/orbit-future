@@ -437,22 +437,40 @@ router.post("/paystack-plan-verify", async (req, res): Promise<void> => {
 
 // ── POST /api/paystack-webhook ────────────────────────────────────────────────
 router.post("/paystack-webhook", async (req, res): Promise<void> => {
+  // Always acknowledge immediately — Paystack requires a fast 200
   res.sendStatus(200);
 
   try {
     const crypto = await import("node:crypto");
     const secret = PSK();
+
+    // req.body is a raw Buffer (express.raw middleware set in app.ts)
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+    const rawBodyStr = rawBody.toString("utf8");
+
+    // Signature verification — compare HMAC-SHA512 of the raw body
     const hash = crypto
       .createHmac("sha512", secret)
-      .update(JSON.stringify(req.body))
+      .update(rawBodyStr)
       .digest("hex");
 
-    if (hash !== req.headers["x-paystack-signature"]) {
-      req.log?.warn("Paystack webhook signature verification failed");
+    const incomingSig = req.headers["x-paystack-signature"] as string | undefined;
+    if (!incomingSig || hash !== incomingSig) {
+      req.log?.warn({ incomingSig: incomingSig?.slice(0, 12) }, "Paystack webhook: signature mismatch — ignored");
       return;
     }
 
-    const event = req.body as { event: string; data: Record<string, unknown> };
+    // Parse event from the raw body
+    let event: { event: string; data: Record<string, unknown> };
+    try {
+      event = JSON.parse(rawBodyStr);
+    } catch {
+      req.log?.warn("Paystack webhook: failed to parse JSON body");
+      return;
+    }
+
+    req.log?.info({ event: event.event }, "Paystack webhook received");
+
     if (event.event !== "charge.success") return;
 
     const data = event.data as {
@@ -468,48 +486,118 @@ router.post("/paystack-webhook", async (req, res): Promise<void> => {
 
     const meta = data.metadata ?? {};
     const reference = data.reference;
+    const eventCurrency = data.currency ?? DEFAULT_CURRENCY;
 
+    // ── Token bundle purchase ─────────────────────────────────────────────────
     if (meta.type === "token_bundle") {
       const email = meta.customerEmail ?? data.customer?.email ?? "";
       const tokens = parseInt(meta.tokens ?? "0") || 0;
       const bundleName = meta.bundleName ?? "Bundle";
-      if (email && tokens > 0) {
-        const [existing] = await db
-          .select()
-          .from(walletTransactionsTable)
-          .where(eq(walletTransactionsTable.reference, reference))
-          .limit(1);
-        if (!existing) {
-          await creditTokensViaPaystack(email, tokens, bundleName, reference).catch(() => {});
-        }
+
+      if (!email || tokens <= 0) return;
+
+      const [existing] = await db
+        .select()
+        .from(walletTransactionsTable)
+        .where(eq(walletTransactionsTable.reference, reference))
+        .limit(1);
+
+      if (!existing) {
+        await creditTokensViaPaystack(email, tokens, bundleName, reference).catch((err) => {
+          req.log?.error({ err, reference }, "Webhook: failed to credit tokens");
+        });
+        req.log?.info({ email, tokens, bundleName, reference }, "Webhook: tokens credited");
+      } else {
+        req.log?.info({ reference }, "Webhook: token bundle already processed — skipped");
       }
       return;
     }
 
+    // ── Plan subscription purchase ────────────────────────────────────────────
     const planIdNum = parseInt(meta.planId ?? "0") || 0;
     const customerEmail = meta.customerEmail ?? data.customer?.email ?? "";
     const customerName = meta.customerName ?? "";
+    const customerAddress = meta.address ?? "";
+    const planName = meta.planName ?? PLAN_PRICES[planIdNum]?.name ?? "Starlink Plan";
+    const planSpeed = meta.planSpeed ?? PLAN_PRICES[planIdNum]?.speed ?? "";
+    const planCategory = meta.planCategory ?? "";
     const amountPaid = (data.amount ?? 0) / 100;
 
+    if (!planIdNum || !customerEmail) {
+      req.log?.warn({ reference, planIdNum, customerEmail }, "Webhook: missing planId or email — skipped");
+      return;
+    }
+
+    // Idempotency: skip if already activated (via verify or a previous webhook)
     const [existingSub] = await db
       .select()
       .from(subscriptionsTable)
       .where(eq(subscriptionsTable.stripeSessionId, reference))
       .limit(1);
 
-    if (!existingSub && planIdNum && customerEmail) {
-      await db.insert(subscriptionsTable).values({
+    if (existingSub) {
+      req.log?.info({ reference, subscriptionId: existingSub.id }, "Webhook: subscription already exists — skipped");
+      return;
+    }
+
+    // Insert subscription
+    const [sub] = await db
+      .insert(subscriptionsTable)
+      .values({
         email: customerEmail,
         name: customerName,
         planId: planIdNum,
         status: "active",
-        address: meta.address ?? "",
+        address: customerAddress,
         amountPaid: String(amountPaid),
         stripeSessionId: reference,
-      }).catch(() => {});
-    }
+      })
+      .returning();
+
+    req.log?.info(
+      { reference, subscriptionId: sub?.id, planId: planIdNum, email: customerEmail },
+      "Webhook: subscription activated"
+    );
+
+    if (!sub) return;
+
+    // Fire confirmation + receipt emails asynchronously (non-blocking)
+    const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planIdNum)).limit(1).catch(() => [null]);
+    const planFeatures = (dbPlan?.features as string[]) ?? [];
+
+    sendSubscriptionConfirmation({
+      customerName,
+      customerEmail,
+      planName,
+      planCategory: planCategory || dbPlan?.category || "",
+      planSpeed,
+      priceMonthly: amountPaid,
+      features: planFeatures,
+      subscriptionId: sub.id,
+    }).catch(() => {});
+
+    sendPaymentReceipt({
+      customerName,
+      customerEmail,
+      planName,
+      amountPaid,
+      currency: eventCurrency,
+      transactionId: reference,
+      date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+    }).catch(() => {});
+
+    sendAdminPaymentAlert({
+      type: "plan",
+      customerName,
+      customerEmail,
+      item: planName,
+      amountPaid,
+      currency: eventCurrency,
+      transactionId: reference,
+    }).catch(() => {});
+
   } catch (err) {
-    req.log?.error?.({ err }, "Paystack webhook processing error");
+    req.log?.error({ err }, "Paystack webhook: unhandled error");
   }
 });
 
