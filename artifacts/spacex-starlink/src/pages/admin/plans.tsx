@@ -11,7 +11,7 @@ import {
   useAdminDeletePlan,
   getAdminListPlansQueryKey
 } from "@workspace/api-client-react";
-import { Plus, Edit2, Power, PowerOff, ExternalLink } from "lucide-react";
+import { Plus, Edit2, Power, PowerOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -26,13 +26,12 @@ import * as z from "zod";
 
 const planSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  category: z.enum(["residential", "roam", "business"]),
+  category: z.enum(["residential", "roam", "business", "maritime", "aviation"]),
   speed: z.string().min(1, "Speed is required"),
   priceMonthly: z.coerce.number().min(0),
   hardwarePrice: z.coerce.number().min(0),
   description: z.string().min(1, "Description is required"),
   features: z.string().min(1, "Features are required (comma separated)"),
-  stripePaymentLink: z.string().optional(),
   popular: z.boolean().default(false),
 });
 
@@ -47,7 +46,6 @@ type Plan = {
   hardwarePrice?: number;
   description: string;
   features: string[];
-  stripePaymentLink?: string | null;
   popular: boolean;
   active: boolean;
 };
@@ -97,6 +95,8 @@ function PlanForm({
                     <SelectItem value="residential">Residential</SelectItem>
                     <SelectItem value="roam">Roam</SelectItem>
                     <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="maritime">Maritime</SelectItem>
+                    <SelectItem value="aviation">Aviation</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -167,27 +167,6 @@ function PlanForm({
 
         <FormField
           control={form.control}
-          name="stripePaymentLink"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Stripe Payment Link</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="https://buy.stripe.com/..."
-                  {...field}
-                  value={field.value ?? ""}
-                />
-              </FormControl>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Paste your Stripe payment link — customers will be redirected here when they click "Get Started".
-              </p>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
           name="popular"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -229,7 +208,6 @@ export default function AdminPlans() {
         data: {
           ...data,
           features: data.features.split(",").map(f => f.trim()).filter(Boolean),
-          stripePaymentLink: data.stripePaymentLink?.trim() || undefined,
         }
       },
       {
@@ -253,7 +231,6 @@ export default function AdminPlans() {
         data: {
           ...data,
           features: data.features.split(",").map(f => f.trim()).filter(Boolean),
-          stripePaymentLink: data.stripePaymentLink?.trim() || undefined,
         }
       },
       {
@@ -308,7 +285,6 @@ export default function AdminPlans() {
                 hardwarePrice: 0,
                 description: "",
                 features: "",
-                stripePaymentLink: "",
                 popular: false,
               }}
               onSubmit={handleCreate}
@@ -329,13 +305,12 @@ export default function AdminPlans() {
             <PlanForm
               defaultValues={{
                 name: editingPlan.name,
-                category: editingPlan.category as "residential" | "roam" | "business",
+                category: editingPlan.category as "residential" | "roam" | "business" | "maritime" | "aviation",
                 speed: editingPlan.speed,
                 priceMonthly: editingPlan.priceMonthly,
                 hardwarePrice: editingPlan.hardwarePrice ?? 0,
                 description: editingPlan.description,
                 features: editingPlan.features.join(", "),
-                stripePaymentLink: editingPlan.stripePaymentLink ?? "",
                 popular: editingPlan.popular,
               }}
               onSubmit={handleEdit}
@@ -353,7 +328,6 @@ export default function AdminPlans() {
               <TableHead className="uppercase tracking-widest text-xs font-bold w-[220px]">Plan Name</TableHead>
               <TableHead className="uppercase tracking-widest text-xs font-bold">Category</TableHead>
               <TableHead className="uppercase tracking-widest text-xs font-bold">Pricing</TableHead>
-              <TableHead className="uppercase tracking-widest text-xs font-bold">Payment Link</TableHead>
               <TableHead className="uppercase tracking-widest text-xs font-bold">Status</TableHead>
               <TableHead className="uppercase tracking-widest text-xs font-bold text-right">Actions</TableHead>
             </TableRow>
@@ -361,11 +335,11 @@ export default function AdminPlans() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading plans...</TableCell>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading plans...</TableCell>
               </TableRow>
             ) : !plans || plans.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No plans found.</TableCell>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No plans found.</TableCell>
               </TableRow>
             ) : (
               plans.map((plan) => (
@@ -380,21 +354,6 @@ export default function AdminPlans() {
                   <TableCell>
                     <div className="font-mono text-sm">${plan.priceMonthly}/mo</div>
                     {plan.hardwarePrice ? <div className="text-xs text-muted-foreground">${plan.hardwarePrice} hw</div> : null}
-                  </TableCell>
-                  <TableCell>
-                    {plan.stripePaymentLink ? (
-                      <a
-                        href={plan.stripePaymentLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-[#635bff] hover:underline font-mono"
-                      >
-                        <ExternalLink className="w-3 h-3 shrink-0" />
-                        Configured
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground/50 italic">Not set</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={plan.active ? 'text-green-400 border-green-400/30' : 'text-muted-foreground'}>

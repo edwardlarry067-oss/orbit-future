@@ -18,7 +18,6 @@ type Plan = {
   priceMonthly: number;
   hardwarePrice?: number;
   features: string[];
-  stripePaymentLink?: string | null;
   popular: boolean;
   active: boolean;
   description: string;
@@ -150,10 +149,6 @@ export default function Plans() {
   const filtered = activeCategory === "all" ? plans : plans.filter((p) => p.category === activeCategory);
 
   const handleGetStarted = async (plan: Plan) => {
-    if (plan.stripePaymentLink) {
-      window.location.href = plan.stripePaymentLink;
-      return;
-    }
     navigate(`/checkout?planId=${plan.id}`);
   };
 

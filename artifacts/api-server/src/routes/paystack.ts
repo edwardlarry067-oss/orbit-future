@@ -28,15 +28,15 @@ const APP_URL = (() => {
 })();
 
 const PLAN_PRICES: Record<number, { name: string; priceMonthly: number; speed: string }> = {
-  1: { name: "Starlink Best Effort", priceMonthly: 90, speed: "5–100 Mbps" },
-  2: { name: "Starlink Standard", priceMonthly: 120, speed: "50–250 Mbps" },
-  3: { name: "Starlink Standard Plus", priceMonthly: 150, speed: "100–300 Mbps" },
-  4: { name: "Starlink Roam", priceMonthly: 150, speed: "50–200 Mbps" },
-  5: { name: "Starlink Maritime", priceMonthly: 250, speed: "100–350 Mbps" },
-  6: { name: "Starlink Aviation", priceMonthly: 500, speed: "100–350 Mbps" },
-  7: { name: "Starlink Business", priceMonthly: 500, speed: "200–500 Mbps" },
-  8: { name: "Starlink Enterprise", priceMonthly: 1500, speed: "500 Mbps–1 Gbps" },
-  9: { name: "Starlink Global Elite", priceMonthly: 3000, speed: "1 Gbps+" },
+  1: { name: "Starlink Residential", priceMonthly: 120, speed: "25–100 Mbps" },
+  2: { name: "Starlink Roam", priceMonthly: 150, speed: "25–100 Mbps" },
+  3: { name: "Starlink Mobile Priority", priceMonthly: 50, speed: "5–50 Mbps" },
+  4: { name: "Starlink Priority (40GB)", priceMonthly: 250, speed: "40–220 Mbps" },
+  5: { name: "Starlink Priority (1TB)", priceMonthly: 500, speed: "40–220 Mbps" },
+  6: { name: "Starlink Priority (6TB)", priceMonthly: 1500, speed: "100–350 Mbps" },
+  7: { name: "Starlink Maritime (50GB)", priceMonthly: 250, speed: "40–220 Mbps" },
+  8: { name: "Starlink Maritime (1TB)", priceMonthly: 1000, speed: "100–350 Mbps" },
+  9: { name: "Starlink Aviation", priceMonthly: 12500, speed: "40–350 Mbps" },
 };
 
 function paystackHeaders() {
