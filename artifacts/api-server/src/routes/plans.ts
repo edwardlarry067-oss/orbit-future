@@ -13,6 +13,7 @@ function formatPlan(p: typeof plansTable.$inferSelect) {
     speed: p.speed,
     priceMonthly: parseFloat(p.priceMonthly),
     features: p.features,
+    localPrices: p.localPrices ?? {},
     stripePriceId: p.stripePriceId,
     stripePaymentLink: p.stripePaymentLink,
     active: p.active,

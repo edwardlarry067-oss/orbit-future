@@ -8,9 +8,10 @@ import walletRouter from "./wallet";
 import authRouter from "./auth";
 import whatsappOrdersRouter from "./whatsapp-orders";
 import whatsappWebhookRouter from "./whatsapp-webhook";
-import stripeRouter from "./stripe";
+import paystackRouter from "./paystack";
 import tokenActivationRouter from "./token-activation";
 import supportRouter from "./support";
+import trackRouter from "./track";
 
 const router: IRouter = Router();
 
@@ -23,8 +24,9 @@ router.use(adminRouter);
 router.use(walletRouter);
 router.use(whatsappOrdersRouter);
 router.use(whatsappWebhookRouter);
-router.use(stripeRouter);
+router.use(paystackRouter);
 router.use(tokenActivationRouter);
 router.use(supportRouter);
+router.use(trackRouter);
 
 export default router;
