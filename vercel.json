@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://workspace--edwardlarry067.replit.app/api/:path*"
+      "destination": "https://orbitfuture--Orbitfuture.replit.app/api/:path*"
     },
     {
       "source": "/(.*)",
