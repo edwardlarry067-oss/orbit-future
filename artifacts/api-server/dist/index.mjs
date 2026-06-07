@@ -54174,7 +54174,14 @@ var BUNDLES = [
 var router10 = (0, import_express10.Router)();
 var PSK = () => process.env["PAYSTACK_SECRET_KEY"] ?? "";
 var PSK_BASE = "https://api.paystack.co";
-var CURRENCY = process.env["PAYSTACK_CURRENCY"] ?? "USD";
+var DEFAULT_CURRENCY = process.env["PAYSTACK_CURRENCY"] ?? "USD";
+var SUPPORTED_CURRENCIES = /* @__PURE__ */ new Set(["NGN", "USD", "GHS", "ZAR", "KES"]);
+function resolveCurrency(requested) {
+  if (requested && SUPPORTED_CURRENCIES.has(requested.toUpperCase())) {
+    return requested.toUpperCase();
+  }
+  return DEFAULT_CURRENCY;
+}
 var APP_URL2 = (() => {
   const url = process.env["APP_URL"] ?? process.env["REPLIT_DEV_DOMAIN"];
   if (url) return url.startsWith("http") ? url : `https://${url}`;
@@ -54326,7 +54333,7 @@ router10.post("/paystack-token-verify", requireAuth, async (req, res) => {
 });
 router10.post("/paystack-plan-pay", async (req, res) => {
   try {
-    const { planId, email, name, address } = req.body;
+    const { planId, email, name, address, currency: requestedCurrency } = req.body;
     if (!planId || !email?.trim() || !name?.trim()) {
       res.status(400).json({ error: "planId, email, and name are required" });
       return;
@@ -54336,11 +54343,13 @@ router10.post("/paystack-plan-pay", async (req, res) => {
       res.status(503).json({ error: "Payment gateway not configured. Please contact support." });
       return;
     }
+    const currency = resolveCurrency(requestedCurrency);
     let planName;
     let priceMonthly;
     let planSpeed;
     let hardwarePrice = 0;
     let planCategory = "";
+    let localPrices = null;
     try {
       const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planId)).limit(1);
       if (dbPlan) {
@@ -54349,6 +54358,7 @@ router10.post("/paystack-plan-pay", async (req, res) => {
         planSpeed = dbPlan.speed;
         hardwarePrice = dbPlan.hardwarePrice ? parseFloat(String(dbPlan.hardwarePrice)) : 0;
         planCategory = dbPlan.category;
+        localPrices = dbPlan.localPrices ?? null;
       } else {
         throw new Error("not in db");
       }
@@ -54362,7 +54372,15 @@ router10.post("/paystack-plan-pay", async (req, res) => {
       priceMonthly = fallback.priceMonthly;
       planSpeed = fallback.speed;
     }
-    const totalAmount = priceMonthly + hardwarePrice;
+    let chargeAmount;
+    let chargeHardware = hardwarePrice;
+    if (currency !== "USD" && localPrices?.[currency]) {
+      chargeAmount = localPrices[currency].monthly;
+      chargeHardware = localPrices[currency].hardware ?? 0;
+    } else {
+      chargeAmount = priceMonthly;
+    }
+    const totalAmount = chargeAmount + chargeHardware;
     const reference = uniqueRef("plan");
     const safeEmail = encodeURIComponent(email.trim());
     const safeName = encodeURIComponent(name.trim());
@@ -54370,7 +54388,7 @@ router10.post("/paystack-plan-pay", async (req, res) => {
     const result = await paystackInit({
       email: email.trim(),
       amount: toSubunit(totalAmount),
-      currency: CURRENCY,
+      currency,
       reference,
       callback_url: `${APP_URL2}/plans?paystack_success=1&reference=${reference}&plan_id=${planId}&email=${safeEmail}&name=${safeName}&address=${safeAddr}`,
       metadata: {
@@ -54381,7 +54399,8 @@ router10.post("/paystack-plan-pay", async (req, res) => {
         customerName: name.trim(),
         customerEmail: email.trim(),
         address: address?.trim() ?? "",
-        hardwarePrice: String(hardwarePrice)
+        hardwarePrice: String(chargeHardware),
+        currency
       }
     });
     if (!result.status || !result.data?.authorization_url) {
@@ -54985,15 +55004,114 @@ async function seedIfEmpty() {
     const [{ count: count2 }] = await db.select({ count: sql`count(*)` }).from(plansTable);
     if (Number(count2) > 0) return;
     const PLANS = [
-      { name: "Starlink Best Effort", category: "residential", speed: "5\u2013100 Mbps", priceMonthly: "90.00", hardwarePrice: "599.00", description: "Affordable option for light internet users in areas with high Starlink demand.", features: ["Unlimited data", "Best-effort speeds", "Cancel anytime", "Secure Stripe checkout"], popular: false, active: true },
-      { name: "Starlink Standard", category: "residential", speed: "50\u2013250 Mbps", priceMonthly: "120.00", hardwarePrice: "599.00", description: "Reliable high-speed internet for homes and apartments.", features: ["Unlimited data", "Priority speeds", "Cancel anytime", "Secure Stripe checkout"], popular: false, active: true },
-      { name: "Starlink Standard Plus", category: "residential", speed: "100\u2013300 Mbps", priceMonthly: "150.00", hardwarePrice: "599.00", description: "Our most popular residential plan with priority speeds and enhanced support.", features: ["Unlimited data", "Priority access", "Faster speeds", "Cancel anytime"], popular: true, active: true },
-      { name: "Starlink Roam", category: "roam", speed: "50\u2013200 Mbps", priceMonthly: "150.00", hardwarePrice: "599.00", description: "Use Starlink anywhere on land. Perfect for road trips and mobile workers.", features: ["Unlimited data", "Use on the move", "100+ countries", "Cancel anytime"], popular: false, active: true },
-      { name: "Starlink Maritime", category: "roam", speed: "100\u2013350 Mbps", priceMonthly: "250.00", hardwarePrice: "2500.00", description: "High-speed internet at sea for boats, yachts, and vessels of all sizes.", features: ["In-motion at sea", "Priority maritime speeds", "Global ocean coverage", "24/7 support"], popular: true, active: true },
-      { name: "Starlink Aviation", category: "roam", speed: "100\u2013350 Mbps", priceMonthly: "500.00", hardwarePrice: "5000.00", description: "Connectivity in the sky for private aircraft and commercial fleets.", features: ["In-flight internet", "Global air coverage", "Low latency", "Enterprise SLA"], popular: false, active: true },
-      { name: "Starlink Business", category: "business", speed: "200\u2013500 Mbps", priceMonthly: "500.00", hardwarePrice: "2500.00", description: "Dedicated business-grade speeds for offices, clinics, and small enterprises.", features: ["Priority data", "Dedicated bandwidth", "Business support", "Cancel anytime"], popular: false, active: true },
-      { name: "Starlink Enterprise", category: "business", speed: "500 Mbps\u20131 Gbps", priceMonthly: "1500.00", hardwarePrice: "5000.00", description: "Mission-critical connectivity for large enterprises, NGOs, and government agencies.", features: ["SLA guarantee", "Dedicated capacity", "24/7 priority support", "Multi-site management"], popular: true, active: true },
-      { name: "Starlink Global Elite", category: "business", speed: "1 Gbps+", priceMonthly: "3000.00", hardwarePrice: "10000.00", description: "The highest tier of Starlink service for critical infrastructure and global operations.", features: ["Maximum bandwidth", "Redundant links", "Dedicated account manager", "Custom SLA"], popular: false, active: true }
+      {
+        name: "Starlink Residential",
+        category: "residential",
+        speed: "25\u2013100 Mbps",
+        priceMonthly: "120.00",
+        hardwarePrice: "599.00",
+        description: "Reliable high-speed internet for homes and apartments. Priority access with no data caps.",
+        features: ["Unlimited data", "Priority speeds", "Cancel anytime", "Free shipping", "24/7 support"],
+        popular: true,
+        active: true,
+        localPrices: { NGN: { monthly: 75e3, hardware: 498e3 } }
+      },
+      {
+        name: "Starlink Best Effort",
+        category: "residential",
+        speed: "5\u201350 Mbps",
+        priceMonthly: "90.00",
+        hardwarePrice: "599.00",
+        description: "Budget-friendly option for areas with high Starlink demand. Variable speeds, great for light use.",
+        features: ["Unlimited data", "Best-effort speeds", "Cancel anytime", "Free shipping", "24/7 support"],
+        popular: false,
+        active: true,
+        localPrices: { NGN: { monthly: 55e3, hardware: 498e3 } }
+      },
+      {
+        name: "Starlink Roam",
+        category: "roam",
+        speed: "5\u201350 Mbps",
+        priceMonthly: "150.00",
+        hardwarePrice: "599.00",
+        description: "Use Starlink anywhere on land in 100+ countries. Perfect for road trips, RVs, and mobile workers.",
+        features: ["Use anywhere on land", "100+ countries", "Pause anytime", "Low priority data", "Cancel anytime"],
+        popular: false,
+        active: true,
+        localPrices: { NGN: { monthly: 95e3, hardware: 498e3 } }
+      },
+      {
+        name: "Starlink Mobile Priority 50GB",
+        category: "roam",
+        speed: "40\u2013220 Mbps",
+        priceMonthly: "250.00",
+        hardwarePrice: "599.00",
+        description: "50GB of priority mobile data for heavy mobile users. In-motion use on land and coastal waters.",
+        features: ["50GB priority data", "In-motion use", "100+ countries", "High-speed streaming", "Cancel anytime"],
+        popular: true,
+        active: true,
+        localPrices: { NGN: { monthly: 16e4, hardware: 498e3 } }
+      },
+      {
+        name: "Starlink Mobile Priority 1TB",
+        category: "roam",
+        speed: "40\u2013220 Mbps",
+        priceMonthly: "500.00",
+        hardwarePrice: "599.00",
+        description: "1TB of priority mobile data for power users and teams. Best for video calls, large file transfers, and heavy use.",
+        features: ["1TB priority data", "In-motion use", "100+ countries", "Multiple devices", "Cancel anytime"],
+        popular: false,
+        active: true,
+        localPrices: { NGN: { monthly: 32e4, hardware: 498e3 } }
+      },
+      {
+        name: "Starlink Maritime 50GB",
+        category: "maritime",
+        speed: "40\u2013220 Mbps",
+        priceMonthly: "250.00",
+        hardwarePrice: "2500.00",
+        description: "50GB priority maritime data for small vessels. Stay connected at sea with high-speed satellite internet.",
+        features: ["50GB priority data", "In-motion at sea", "Global ocean coverage", "Marine-grade hardware", "24/7 support"],
+        popular: false,
+        active: true,
+        localPrices: { NGN: { monthly: 16e4, hardware: 16e5 } }
+      },
+      {
+        name: "Starlink Maritime 1TB",
+        category: "maritime",
+        speed: "100\u2013350 Mbps",
+        priceMonthly: "1000.00",
+        hardwarePrice: "2500.00",
+        description: "1TB priority maritime data for yachts, cargo ships, and offshore operations. Maximum speeds at sea.",
+        features: ["1TB priority data", "In-motion at sea", "Global ocean coverage", "Enterprise SLA", "24/7 priority support"],
+        popular: true,
+        active: true,
+        localPrices: { NGN: { monthly: 65e4, hardware: 16e5 } }
+      },
+      {
+        name: "Starlink Business",
+        category: "business",
+        speed: "40\u2013220 Mbps",
+        priceMonthly: "140.00",
+        hardwarePrice: "2500.00",
+        description: "Business-grade priority connectivity for offices, clinics, shops, and small enterprises.",
+        features: ["Priority data", "Business-grade hardware", "Multiple users", "Business support", "Cancel anytime"],
+        popular: false,
+        active: true,
+        localPrices: { NGN: { monthly: 9e4, hardware: 16e5 } }
+      },
+      {
+        name: "Starlink Priority 6TB",
+        category: "business",
+        speed: "100\u2013500 Mbps",
+        priceMonthly: "1500.00",
+        hardwarePrice: "2500.00",
+        description: "6TB of high-speed priority data for large enterprises, NGOs, and government agencies requiring maximum throughput.",
+        features: ["6TB priority data", "Dedicated bandwidth", "Multi-site management", "24/7 priority support", "SLA guarantee"],
+        popular: true,
+        active: true,
+        localPrices: { NGN: { monthly: 95e4, hardware: 16e5 } }
+      }
     ];
     await db.insert(plansTable).values(PLANS);
     logger.info({ count: PLANS.length }, "Auto-seeded plans table");

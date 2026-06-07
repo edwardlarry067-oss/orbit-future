@@ -19,7 +19,16 @@ const router = Router();
 
 const PSK = () => process.env["PAYSTACK_SECRET_KEY"] ?? "";
 const PSK_BASE = "https://api.paystack.co";
-const CURRENCY = process.env["PAYSTACK_CURRENCY"] ?? "USD";
+const DEFAULT_CURRENCY = process.env["PAYSTACK_CURRENCY"] ?? "USD";
+
+const SUPPORTED_CURRENCIES = new Set(["NGN", "USD", "GHS", "ZAR", "KES"]);
+
+function resolveCurrency(requested?: string): string {
+  if (requested && SUPPORTED_CURRENCIES.has(requested.toUpperCase())) {
+    return requested.toUpperCase();
+  }
+  return DEFAULT_CURRENCY;
+}
 
 const APP_URL = (() => {
   const url = process.env["APP_URL"] ?? process.env["REPLIT_DEV_DOMAIN"];
@@ -213,11 +222,12 @@ router.post("/paystack-token-verify", requireAuth, async (req: any, res): Promis
 // ── POST /api/paystack-plan-pay ───────────────────────────────────────────────
 router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
   try {
-    const { planId, email, name, address } = req.body as {
+    const { planId, email, name, address, currency: requestedCurrency } = req.body as {
       planId: number;
       email: string;
       name: string;
       address?: string;
+      currency?: string;
     };
 
     if (!planId || !email?.trim() || !name?.trim()) {
@@ -231,11 +241,14 @@ router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
       return;
     }
 
+    const currency = resolveCurrency(requestedCurrency);
+
     let planName: string;
     let priceMonthly: number;
     let planSpeed: string;
     let hardwarePrice = 0;
     let planCategory = "";
+    let localPrices: Record<string, { monthly: number; hardware?: number }> | null = null;
 
     try {
       const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planId)).limit(1);
@@ -245,6 +258,7 @@ router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
         planSpeed = dbPlan.speed;
         hardwarePrice = dbPlan.hardwarePrice ? parseFloat(String(dbPlan.hardwarePrice)) : 0;
         planCategory = dbPlan.category;
+        localPrices = (dbPlan.localPrices as Record<string, { monthly: number; hardware?: number }>) ?? null;
       } else {
         throw new Error("not in db");
       }
@@ -256,7 +270,17 @@ router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
       planSpeed = fallback.speed;
     }
 
-    const totalAmount = priceMonthly + hardwarePrice;
+    // Use local currency pricing if available (e.g. NGN for Nigeria)
+    let chargeAmount: number;
+    let chargeHardware: number = hardwarePrice;
+    if (currency !== "USD" && localPrices?.[currency]) {
+      chargeAmount = localPrices[currency].monthly;
+      chargeHardware = localPrices[currency].hardware ?? 0;
+    } else {
+      chargeAmount = priceMonthly;
+    }
+
+    const totalAmount = chargeAmount + chargeHardware;
     const reference = uniqueRef("plan");
 
     const safeEmail = encodeURIComponent(email.trim());
@@ -266,7 +290,7 @@ router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
     const result = await paystackInit({
       email: email.trim(),
       amount: toSubunit(totalAmount),
-      currency: CURRENCY,
+      currency,
       reference,
       callback_url: `${APP_URL}/plans?paystack_success=1&reference=${reference}&plan_id=${planId}&email=${safeEmail}&name=${safeName}&address=${safeAddr}`,
       metadata: {
@@ -277,7 +301,8 @@ router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
         customerName: name.trim(),
         customerEmail: email.trim(),
         address: address?.trim() ?? "",
-        hardwarePrice: String(hardwarePrice),
+        hardwarePrice: String(chargeHardware),
+        currency,
       },
     });
 

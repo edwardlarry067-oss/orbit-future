@@ -26,8 +26,19 @@ const checkoutSchema = z.object({
   address: z.string().min(5, "Please provide your shipping address"),
 });
 
+const PAYSTACK_NATIVE_CURRENCIES = new Set(["NGN", "GHS", "ZAR", "KES"]);
+const PAYSTACK_CURRENCY_LABELS: Record<string, string> = {
+  NGN: "Paystack · Pay in ₦ Naira",
+  GHS: "Paystack · Pay in GH₵ Cedis",
+  ZAR: "Paystack · Pay in R Rand",
+  KES: "Paystack · Pay in KSh Shillings",
+};
+function getPaystackLabel(currency: string) {
+  return PAYSTACK_CURRENCY_LABELS[currency] ?? "Paystack · Card / Bank Transfer";
+}
+
 export default function Checkout() {
-  const { formatPrice, formatMonthly } = useCurrency();
+  const { formatPrice, formatMonthly, currency } = useCurrency();
   const urlParams = new URLSearchParams(window.location.search);
   const planIdParam = urlParams.get("planId");
   const planId = planIdParam ? parseInt(planIdParam, 10) : 0;
@@ -94,7 +105,7 @@ export default function Checkout() {
         const res = await fetch(`${getApiBase()}/api/paystack-plan-pay`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address }),
+          body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address, currency }),
         });
         const json = await res.json();
         if (json.paymentLink) {
@@ -210,10 +221,21 @@ export default function Checkout() {
                 >
                   <div className="flex items-center gap-2">
                     <CreditCard className={`w-4 h-4 ${paymentMethod === "paystack" ? "text-primary" : "text-gray-500"}`} />
-                    <span className="text-xs font-black uppercase tracking-widest text-white">Card / Paystack</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-white">
+                      {PAYSTACK_NATIVE_CURRENCIES.has(currency) ? "Paystack" : "Card / Paystack"}
+                    </span>
+                    {currency === "NGN" && (
+                      <span className="text-[9px] font-black bg-green-500/15 text-green-400 border border-green-500/20 rounded-full px-2 py-0.5 uppercase tracking-wider">NGN</span>
+                    )}
                     {paymentMethod === "paystack" && <span className="ml-auto w-2 h-2 bg-primary rounded-full" />}
                   </div>
-                  <p className="text-[10px] text-gray-500">Visa, Mastercard, Bank Transfer, USSD, Mobile Money</p>
+                  <p className="text-[10px] text-gray-500">
+                    {currency === "NGN"
+                      ? "Card, Bank Transfer, USSD, Mobile Money — in ₦ Naira"
+                      : currency === "GHS"
+                      ? "Card, Mobile Money, Bank — in GH₵ Cedis"
+                      : "Visa, Mastercard, Bank Transfer, USSD, Mobile Money"}
+                  </p>
                 </button>
 
                 <button
@@ -431,7 +453,7 @@ export default function Checkout() {
                   ) : paymentMethod === "paystack" ? (
                     <span className="flex items-center gap-2">
                       <CreditCard className="w-5 h-5" />
-                      Pay {formatPrice(firstMonthTotal)} with Paystack
+                      Pay {formatPrice(firstMonthTotal, (plan as any)?.localPrices)} with {getPaystackLabel(currency).split("·")[0].trim()}
                       <ExternalLink className="w-4 h-4" />
                     </span>
                   ) : !hasSufficientTokens && walletBalance !== null ? (

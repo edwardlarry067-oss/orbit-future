@@ -28,8 +28,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   all: "All Plans",
   residential: "Residential",
   roam: "Roam & Mobile",
-  business: "Business",
   maritime: "Maritime",
+  business: "Business",
   aviation: "Aviation",
 };
 
@@ -204,9 +204,14 @@ export default function Plans() {
             <Wifi className="w-3.5 h-3.5" />
             Global Coverage · 100+ Countries
           </div>
-          {currency === "NGN" && (
-            <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1 mb-6 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
-              ₦ Prices shown in Nigerian Naira
+          {currency !== "USD" && (
+            <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5 mb-4 text-[11px] font-bold uppercase tracking-widest text-emerald-400">
+              <Globe className="w-3 h-3" />
+              {currency === "NGN" ? "₦ Prices shown in Nigerian Naira · Pay via Paystack" :
+               currency === "GHS" ? "GH₵ Prices shown in Ghanaian Cedis · Pay via Paystack" :
+               currency === "ZAR" ? "R Prices shown in South African Rand · Pay via Paystack" :
+               currency === "KES" ? "KSh Prices shown in Kenyan Shillings · Pay via Paystack" :
+               `Prices shown in your local currency`}
             </div>
           )}
           <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-white mb-4">
