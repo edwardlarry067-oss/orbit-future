@@ -79,8 +79,8 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Paystack webhooks need raw body for signature verification
-app.use("/api/paystack-webhook", express.raw({ type: "application/json" }));
+// Stripe webhooks need raw body for signature verification
+app.use("/api/stripe-webhook", express.raw({ type: "application/json" }));
 
 // Standard JSON parsing for all other routes
 app.use(express.json({ limit: "2mb" }));

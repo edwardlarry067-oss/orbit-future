@@ -1,3 +1,3 @@
  # SpaceX Starlink
 
-Starlink hardware and subscription platform.
+SpaceX Starlink subscription platform.

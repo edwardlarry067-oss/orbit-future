@@ -9,7 +9,6 @@ export const plansTable = pgTable("plans", {
   hardwarePrice: numeric("hardware_price"),
   description: text("description").notNull().default(""),
   features: jsonb("features").notNull().$type<string[]>().default([]),
-  localPrices: jsonb("local_prices").$type<Record<string, { monthly: number; hardware?: number }>>().default({}),
   stripePriceId: text("stripe_price_id"),
   stripePaymentLink: text("stripe_payment_link"),
   popular: boolean("popular").notNull().default(false),

@@ -5,7 +5,6 @@ export type Plan = {
   speed: string;
   priceMonthly: number;
   hardwarePrice?: number;
-  localPrices?: Record<string, { monthly: number; hardware?: number }>;
   description: string;
   features: string[];
   stripePriceId?: string | null;

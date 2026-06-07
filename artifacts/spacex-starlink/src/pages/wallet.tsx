@@ -59,31 +59,38 @@ export default function Wallet() {
     refreshWallet(user.email);
   }, [user, refreshWallet]);
 
-  // Handle Paystack return after token purchase
+  // Handle Stripe return after token purchase
   useEffect(() => {
     if (!user || !token) return;
     const params = new URLSearchParams(window.location.search);
-    const success = params.get("paystack_token_success");
-    const reference = params.get("reference");
+    const success = params.get("stripe_token_success");
+    const sessionId = params.get("session_id");
+    const cancelled = params.get("stripe_token_cancel");
 
-    if (!success || !reference) return;
+    if (cancelled) {
+      setToastMsg({ type: "error", text: "Payment cancelled." });
+      window.history.replaceState({}, "", "/wallet");
+      return;
+    }
 
-    window.history.replaceState({}, "", "/wallet");
-    fetch(`${getApiBase()}/api/paystack-token-verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ reference }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) {
-          setToastMsg({ type: "success", text: `+${data.tokensAdded} tokens added to your wallet!` });
-          refreshWallet(user.email);
-        } else {
-          setToastMsg({ type: "error", text: data.error || "Verification failed." });
-        }
+    if (success && sessionId) {
+      window.history.replaceState({}, "", "/wallet");
+      fetch(`${getApiBase()}/api/stripe-token-verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ session_id: sessionId }),
       })
-      .catch(() => setToastMsg({ type: "error", text: "Could not verify payment. Contact support." }));
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            setToastMsg({ type: "success", text: `+${data.tokensAdded} tokens added to your wallet!` });
+            refreshWallet(user.email);
+          } else {
+            setToastMsg({ type: "error", text: data.error || "Verification failed." });
+          }
+        })
+        .catch(() => setToastMsg({ type: "error", text: "Could not verify payment. Contact support." }));
+    }
   }, [user, token, refreshWallet]);
 
   // Auto-dismiss toast after 5 seconds
@@ -97,7 +104,7 @@ export default function Wallet() {
     if (!token) return;
     setPaymentLoading(bundleId);
     try {
-      const res = await fetch(`${getApiBase()}/api/paystack-token-buy`, {
+      const res = await fetch(`${getApiBase()}/api/stripe-token-buy`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ bundleId }),

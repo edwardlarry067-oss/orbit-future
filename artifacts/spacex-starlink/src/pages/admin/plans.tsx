@@ -11,9 +11,9 @@ import {
   useAdminDeletePlan,
   getAdminListPlansQueryKey
 } from "@workspace/api-client-react";
-import { Plus, Edit2, Power, PowerOff, RefreshCw } from "lucide-react";
+import { Plus, Edit2, Power, PowerOff, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -26,12 +26,13 @@ import * as z from "zod";
 
 const planSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  category: z.enum(["residential", "roam", "business", "maritime", "aviation"]),
+  category: z.enum(["residential", "roam", "business"]),
   speed: z.string().min(1, "Speed is required"),
   priceMonthly: z.coerce.number().min(0),
   hardwarePrice: z.coerce.number().min(0),
   description: z.string().min(1, "Description is required"),
   features: z.string().min(1, "Features are required (comma separated)"),
+  stripePaymentLink: z.string().optional(),
   popular: z.boolean().default(false),
 });
 
@@ -46,6 +47,7 @@ type Plan = {
   hardwarePrice?: number;
   description: string;
   features: string[];
+  stripePaymentLink?: string | null;
   popular: boolean;
   active: boolean;
 };
@@ -95,8 +97,6 @@ function PlanForm({
                     <SelectItem value="residential">Residential</SelectItem>
                     <SelectItem value="roam">Roam</SelectItem>
                     <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="maritime">Maritime</SelectItem>
-                    <SelectItem value="aviation">Aviation</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -167,6 +167,27 @@ function PlanForm({
 
         <FormField
           control={form.control}
+          name="stripePaymentLink"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Stripe Payment Link</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="https://buy.stripe.com/..."
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Paste your Stripe payment link — customers will be redirected here when they click "Get Started".
+              </p>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
           name="popular"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -202,29 +223,13 @@ export default function AdminPlans() {
   const updatePlan = useAdminUpdatePlan();
   const deletePlan = useAdminDeletePlan();
 
-  const resetToOfficialPrices = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/admin/seed-plans", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("adminToken") ?? ""}` },
-        body: JSON.stringify({ force: true }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: getAdminListPlansQueryKey() });
-      toast({ title: `✓ ${data.message}` });
-    },
-    onError: () => toast({ variant: "destructive", title: "Failed to reset plans" }),
-  });
-
   const handleCreate = (data: PlanFormValues) => {
     createPlan.mutate(
       {
         data: {
           ...data,
           features: data.features.split(",").map(f => f.trim()).filter(Boolean),
+          stripePaymentLink: data.stripePaymentLink?.trim() || undefined,
         }
       },
       {
@@ -248,6 +253,7 @@ export default function AdminPlans() {
         data: {
           ...data,
           features: data.features.split(",").map(f => f.trim()).filter(Boolean),
+          stripePaymentLink: data.stripePaymentLink?.trim() || undefined,
         }
       },
       {
@@ -283,49 +289,34 @@ export default function AdminPlans() {
           <p className="text-muted-foreground mt-2">Manage subscription tiers and pricing.</p>
         </div>
         
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="uppercase tracking-widest font-bold text-xs border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10"
-            onClick={() => {
-              if (confirm("This will DELETE all current plans and replace them with official 2025 Starlink pricing. Continue?")) {
-                resetToOfficialPrices.mutate();
-              }
-            }}
-            disabled={resetToOfficialPrices.isPending}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${resetToOfficialPrices.isPending ? "animate-spin" : ""}`} />
-            {resetToOfficialPrices.isPending ? "Resetting…" : "Reset to Official Prices"}
-          </Button>
-
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="uppercase tracking-widest font-bold text-xs" data-testid="button-add-plan">
-                <Plus className="w-4 h-4 mr-2" /> Add Plan
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] bg-background border-border max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="uppercase tracking-widest font-bold text-lg">Create New Plan</DialogTitle>
-              </DialogHeader>
-              <PlanForm
-                defaultValues={{
-                  name: "",
-                  category: "residential",
-                  speed: "",
-                  priceMonthly: 0,
-                  hardwarePrice: 0,
-                  description: "",
-                  features: "",
-                  popular: false,
-                }}
-                onSubmit={handleCreate}
-                isPending={createPlan.isPending}
-                submitLabel="Save Plan"
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button className="uppercase tracking-widest font-bold text-xs" data-testid="button-add-plan">
+              <Plus className="w-4 h-4 mr-2" /> Add Plan
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px] bg-background border-border max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="uppercase tracking-widest font-bold text-lg">Create New Plan</DialogTitle>
+            </DialogHeader>
+            <PlanForm
+              defaultValues={{
+                name: "",
+                category: "residential",
+                speed: "",
+                priceMonthly: 0,
+                hardwarePrice: 0,
+                description: "",
+                features: "",
+                stripePaymentLink: "",
+                popular: false,
+              }}
+              onSubmit={handleCreate}
+              isPending={createPlan.isPending}
+              submitLabel="Save Plan"
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Edit dialog */}
@@ -338,12 +329,13 @@ export default function AdminPlans() {
             <PlanForm
               defaultValues={{
                 name: editingPlan.name,
-                category: editingPlan.category as "residential" | "roam" | "business" | "maritime" | "aviation",
+                category: editingPlan.category as "residential" | "roam" | "business",
                 speed: editingPlan.speed,
                 priceMonthly: editingPlan.priceMonthly,
                 hardwarePrice: editingPlan.hardwarePrice ?? 0,
                 description: editingPlan.description,
                 features: editingPlan.features.join(", "),
+                stripePaymentLink: editingPlan.stripePaymentLink ?? "",
                 popular: editingPlan.popular,
               }}
               onSubmit={handleEdit}
@@ -361,6 +353,7 @@ export default function AdminPlans() {
               <TableHead className="uppercase tracking-widest text-xs font-bold w-[220px]">Plan Name</TableHead>
               <TableHead className="uppercase tracking-widest text-xs font-bold">Category</TableHead>
               <TableHead className="uppercase tracking-widest text-xs font-bold">Pricing</TableHead>
+              <TableHead className="uppercase tracking-widest text-xs font-bold">Payment Link</TableHead>
               <TableHead className="uppercase tracking-widest text-xs font-bold">Status</TableHead>
               <TableHead className="uppercase tracking-widest text-xs font-bold text-right">Actions</TableHead>
             </TableRow>
@@ -368,11 +361,11 @@ export default function AdminPlans() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading plans...</TableCell>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading plans...</TableCell>
               </TableRow>
             ) : !plans || plans.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No plans found.</TableCell>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No plans found.</TableCell>
               </TableRow>
             ) : (
               plans.map((plan) => (
@@ -387,6 +380,21 @@ export default function AdminPlans() {
                   <TableCell>
                     <div className="font-mono text-sm">${plan.priceMonthly}/mo</div>
                     {plan.hardwarePrice ? <div className="text-xs text-muted-foreground">${plan.hardwarePrice} hw</div> : null}
+                  </TableCell>
+                  <TableCell>
+                    {plan.stripePaymentLink ? (
+                      <a
+                        href={plan.stripePaymentLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-[#635bff] hover:underline font-mono"
+                      >
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                        Configured
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/50 italic">Not set</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={plan.active ? 'text-green-400 border-green-400/30' : 'text-muted-foreground'}>
