@@ -17,6 +17,7 @@ const REAL_STARLINK_PLANS = [
     speed: "25–100 Mbps",
     priceMonthly: "120",
     hardwarePrice: "599",
+    localPrices: { NGN: { monthly: 38000, hardware: 299000 } },
     description: "High-speed satellite internet for homes. Unlimited data, no contracts, cancel anytime.",
     features: JSON.stringify([
       "Unlimited data",
@@ -37,6 +38,7 @@ const REAL_STARLINK_PLANS = [
     speed: "25–100 Mbps",
     priceMonthly: "150",
     hardwarePrice: "599",
+    localPrices: { NGN: { monthly: 50000, hardware: 299000 } },
     description: "Take your Starlink anywhere on land. Use while parked, camping, or travelling.",
     features: JSON.stringify([
       "Use anywhere on land",
@@ -56,6 +58,7 @@ const REAL_STARLINK_PLANS = [
     speed: "5–50 Mbps",
     priceMonthly: "50",
     hardwarePrice: "0",
+    localPrices: { NGN: { monthly: 25000, hardware: 0 } },
     description: "50 GB of high-speed priority mobile data. Perfect add-on for Roam subscribers on the move.",
     features: JSON.stringify([
       "50 GB priority data/month",
@@ -74,6 +77,7 @@ const REAL_STARLINK_PLANS = [
     speed: "40–220 Mbps",
     priceMonthly: "250",
     hardwarePrice: "2500",
+    localPrices: { NGN: { monthly: 400000, hardware: 4000000 } },
     description: "Enterprise-grade connectivity with 40 GB priority data. Ideal for remote offices and farms.",
     features: JSON.stringify([
       "40 GB priority data/month",
@@ -93,6 +97,7 @@ const REAL_STARLINK_PLANS = [
     speed: "40–220 Mbps",
     priceMonthly: "500",
     hardwarePrice: "2500",
+    localPrices: { NGN: { monthly: 800000, hardware: 4000000 } },
     description: "1 TB priority data for data-heavy business operations requiring consistent fast speeds.",
     features: JSON.stringify([
       "1 TB priority data/month",
@@ -112,6 +117,7 @@ const REAL_STARLINK_PLANS = [
     speed: "100–350 Mbps",
     priceMonthly: "1500",
     hardwarePrice: "0",
+    localPrices: { NGN: { monthly: 2400000, hardware: 0 } },
     description: "6 TB priority data for enterprise businesses with heavy bandwidth requirements.",
     features: JSON.stringify([
       "6 TB priority data/month",
@@ -131,6 +137,7 @@ const REAL_STARLINK_PLANS = [
     speed: "40–220 Mbps",
     priceMonthly: "250",
     hardwarePrice: "2500",
+    localPrices: { NGN: { monthly: 400000, hardware: 4000000 } },
     description: "Reliable high-speed internet at sea. 50 GB priority data for vessels and boats.",
     features: JSON.stringify([
       "50 GB priority maritime data",
@@ -150,6 +157,7 @@ const REAL_STARLINK_PLANS = [
     speed: "100–350 Mbps",
     priceMonthly: "1000",
     hardwarePrice: "2500",
+    localPrices: { NGN: { monthly: 1600000, hardware: 4000000 } },
     description: "High-capacity maritime internet. 1 TB priority data for commercial and charter vessels.",
     features: JSON.stringify([
       "1 TB maritime priority data",
@@ -169,6 +177,7 @@ const REAL_STARLINK_PLANS = [
     speed: "40–350 Mbps",
     priceMonthly: "12500",
     hardwarePrice: "150000",
+    localPrices: { NGN: { monthly: 20000000, hardware: 240000000 } },
     description: "In-flight high-speed internet for commercial and private aircraft. Contact us for custom enterprise pricing.",
     features: JSON.stringify([
       "In-flight connectivity",
@@ -198,6 +207,7 @@ async function seedPlans() {
         hardwarePrice: plan.hardwarePrice,
         description: plan.description,
         features: JSON.parse(plan.features),
+        localPrices: plan.localPrices,
         popular: plan.popular,
         active: plan.active,
         stripePriceId: null,
@@ -214,6 +224,7 @@ async function seedPlans() {
         hardwarePrice: plan.hardwarePrice,
         description: plan.description,
         features: JSON.parse(plan.features),
+        localPrices: plan.localPrices,
         popular: plan.popular,
         active: plan.active,
       });

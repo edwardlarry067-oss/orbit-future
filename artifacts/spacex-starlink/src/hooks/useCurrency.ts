@@ -106,7 +106,14 @@ export function useCurrency() {
     return usdAmount * (rates[currency] ?? 1);
   }
 
-  function formatPrice(usdAmount: number): string {
+  function formatPrice(usdAmount: number, localPrices?: Record<string, { monthly?: number; hardware?: number }>, field?: "monthly" | "hardware"): string {
+    if (currency !== "USD" && localPrices?.[currency] != null) {
+      const localVal = field === "hardware" ? localPrices[currency].hardware : localPrices[currency].monthly;
+      if (localVal != null) {
+        const sym = CURRENCY_SYMBOLS[currency] ?? currency;
+        return `${sym}${Math.round(localVal).toLocaleString()}`;
+      }
+    }
     if (currency === "USD") return `$${usdAmount.toLocaleString("en-US")}`;
     const converted = convert(usdAmount);
     const sym = CURRENCY_SYMBOLS[currency] ?? currency;
@@ -114,8 +121,8 @@ export function useCurrency() {
     return `${sym}${rounded.toLocaleString()}`;
   }
 
-  function formatMonthly(usdAmount: number): string {
-    return `${formatPrice(usdAmount)}/mo`;
+  function formatMonthly(usdAmount: number, localPrices?: Record<string, { monthly?: number; hardware?: number }>): string {
+    return `${formatPrice(usdAmount, localPrices, "monthly")}/mo`;
   }
 
   const symbol = CURRENCY_SYMBOLS[currency] ?? "$";
