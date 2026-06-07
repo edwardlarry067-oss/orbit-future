@@ -11,9 +11,9 @@ import {
   useAdminDeletePlan,
   getAdminListPlansQueryKey
 } from "@workspace/api-client-react";
-import { Plus, Edit2, Power, PowerOff } from "lucide-react";
+import { Plus, Edit2, Power, PowerOff, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -202,6 +202,23 @@ export default function AdminPlans() {
   const updatePlan = useAdminUpdatePlan();
   const deletePlan = useAdminDeletePlan();
 
+  const resetToOfficialPrices = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/seed-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("adminToken") ?? ""}` },
+        body: JSON.stringify({ force: true }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: getAdminListPlansQueryKey() });
+      toast({ title: `✓ ${data.message}` });
+    },
+    onError: () => toast({ variant: "destructive", title: "Failed to reset plans" }),
+  });
+
   const handleCreate = (data: PlanFormValues) => {
     createPlan.mutate(
       {
@@ -266,33 +283,49 @@ export default function AdminPlans() {
           <p className="text-muted-foreground mt-2">Manage subscription tiers and pricing.</p>
         </div>
         
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="uppercase tracking-widest font-bold text-xs" data-testid="button-add-plan">
-              <Plus className="w-4 h-4 mr-2" /> Add Plan
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] bg-background border-border max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="uppercase tracking-widest font-bold text-lg">Create New Plan</DialogTitle>
-            </DialogHeader>
-            <PlanForm
-              defaultValues={{
-                name: "",
-                category: "residential",
-                speed: "",
-                priceMonthly: 0,
-                hardwarePrice: 0,
-                description: "",
-                features: "",
-                popular: false,
-              }}
-              onSubmit={handleCreate}
-              isPending={createPlan.isPending}
-              submitLabel="Save Plan"
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="uppercase tracking-widest font-bold text-xs border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10"
+            onClick={() => {
+              if (confirm("This will DELETE all current plans and replace them with official 2025 Starlink pricing. Continue?")) {
+                resetToOfficialPrices.mutate();
+              }
+            }}
+            disabled={resetToOfficialPrices.isPending}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${resetToOfficialPrices.isPending ? "animate-spin" : ""}`} />
+            {resetToOfficialPrices.isPending ? "Resetting…" : "Reset to Official Prices"}
+          </Button>
+
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="uppercase tracking-widest font-bold text-xs" data-testid="button-add-plan">
+                <Plus className="w-4 h-4 mr-2" /> Add Plan
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] bg-background border-border max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="uppercase tracking-widest font-bold text-lg">Create New Plan</DialogTitle>
+              </DialogHeader>
+              <PlanForm
+                defaultValues={{
+                  name: "",
+                  category: "residential",
+                  speed: "",
+                  priceMonthly: 0,
+                  hardwarePrice: 0,
+                  description: "",
+                  features: "",
+                  popular: false,
+                }}
+                onSubmit={handleCreate}
+                isPending={createPlan.isPending}
+                submitLabel="Save Plan"
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Edit dialog */}
