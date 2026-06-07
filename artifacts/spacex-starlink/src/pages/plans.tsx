@@ -97,6 +97,7 @@ export default function Plans() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [payingPlanId, setPayingPlanId] = useState<number | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -105,6 +106,43 @@ export default function Plans() {
       .then((data) => { setPlans(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  // Handle Paystack redirect back after plan payment
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paystackSuccess = params.get("paystack_success");
+    const reference = params.get("reference");
+    const planId = params.get("plan_id");
+    const email = params.get("email");
+    const name = params.get("name");
+    const address = params.get("address");
+
+    if (!paystackSuccess || !reference) return;
+    window.history.replaceState({}, "", "/plans");
+
+    fetch(`${getApiBase()}/api/paystack-plan-verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reference, plan_id: planId, email, name, address }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setToastMsg({ type: "success", text: `Subscription activated! Welcome to ${data.subscription?.planName ?? "Starlink"}.` });
+          setTimeout(() => navigate("/dashboard"), 3000);
+        } else {
+          setToastMsg({ type: "error", text: data.error || "Payment verification failed. Contact support." });
+        }
+      })
+      .catch(() => setToastMsg({ type: "error", text: "Could not verify payment. Contact support." }));
+  }, [navigate]);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toastMsg) return;
+    const t = setTimeout(() => setToastMsg(null), 6000);
+    return () => clearTimeout(t);
+  }, [toastMsg]);
 
   const allCategories = ["all", ...Array.from(new Set(plans.map((p) => p.category)))];
   const filtered = activeCategory === "all" ? plans : plans.filter((p) => p.category === activeCategory);
@@ -117,7 +155,7 @@ export default function Plans() {
     navigate(`/checkout?planId=${plan.id}`);
   };
 
-  const handleStripePay = async (plan: Plan) => {
+  const handlePaystackPay = async (plan: Plan) => {
     setPayingPlanId(plan.id);
     try {
       const name = localStorage.getItem("orbit_name") || "";
@@ -127,7 +165,7 @@ export default function Plans() {
         setPayingPlanId(null);
         return;
       }
-      const res = await fetch(`${getApiBase()}/api/stripe-plan-pay`, {
+      const res = await fetch(`${getApiBase()}/api/paystack-plan-pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId: plan.id, email, name }),
@@ -151,6 +189,15 @@ export default function Plans() {
 
   return (
     <MainLayout>
+      {toastMsg && (
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl px-5 py-3.5 shadow-2xl text-sm font-bold border transition-all ${
+          toastMsg.type === "success"
+            ? "bg-emerald-950 border-emerald-500/40 text-emerald-300"
+            : "bg-red-950 border-red-500/40 text-red-300"
+        }`}>
+          {toastMsg.text}
+        </div>
+      )}
       <div className="container mx-auto px-4 py-16 max-w-7xl">
 
         {/* Page header */}
@@ -291,7 +338,7 @@ export default function Plans() {
                       )}
                     </Button>
                     <p className="text-center text-[10px] text-gray-600 mt-2 uppercase tracking-widest">
-                      Stripe · Secure Checkout · Cancel Anytime
+                      Paystack · Secure Checkout · Cancel Anytime
                     </p>
                   </div>
                 </div>
