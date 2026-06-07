@@ -190,7 +190,7 @@ const HOME_FAQS = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "Visa, Mastercard, Verve via Paystack. Also Orbit Wallet tokens (pre-loaded via Paystack or Flutterwave). No crypto.",
+    a: "Visa, Mastercard, Verve via Paystack. Also Orbit Wallet tokens (pre-loaded via Paystack). No crypto.",
   },
   {
     q: "Is my payment secure?",

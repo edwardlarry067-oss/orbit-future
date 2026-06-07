@@ -59,7 +59,7 @@ export default function Contact() {
       `💳 *Preferred Payment Method:*\n` +
       `${paymentLabel} — ${paymentDesc}\n\n` +
       `*Payment options available:*\n` +
-      `  • 🟠 Flutterwave — Card, Bank Transfer, USSD, Mobile Money, M-Pesa (150+ countries)\n` +
+      `  • 🟢 Paystack — Card, Bank Transfer, USSD, Mobile Money (Visa, Mastercard, Verve)\n` +
       `  • 🪙 Orbit Wallet — Instant token activation\n\n` +
       `Please get back to me with next steps. Thank you! 🌐`
     );

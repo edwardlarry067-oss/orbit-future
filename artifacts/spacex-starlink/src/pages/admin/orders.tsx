@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getApiUrl } from "@/lib/api";
 
-type PaymentMethod = "stripe" | "paystack" | "wallet";
+type PaymentMethod = "paystack" | "wallet";
 type PaymentStatus = "pending" | "paid" | "shipped" | "delivered" | "cancelled";
 
 type Order = {
@@ -37,7 +37,6 @@ const STATUS_CONFIG: Record<PaymentStatus, { label: string; color: string; bg: s
 };
 
 const PAYMENT_CONFIG: Record<PaymentMethod, { label: string; color: string; icon: React.ElementType }> = {
-  stripe:   { label: "Stripe",        color: "text-[#6772e5]", icon: CreditCard },
   paystack: { label: "Paystack",      color: "text-[#00c3f7]", icon: Banknote },
   wallet:   { label: "Orbit Wallet",  color: "text-amber-400", icon: Coins },
 };
@@ -51,7 +50,7 @@ const ALL_PLANS = [
 const EMPTY_FORM = {
   customerName: "", customerPhone: "", customerEmail: "",
   planName: "Residential", planPrice: "120", hardwarePrice: "599",
-  paymentMethod: "stripe" as PaymentMethod,
+  paymentMethod: "paystack" as PaymentMethod,
   paymentStatus: "pending" as PaymentStatus,
   address: "", notes: "",
 };
@@ -131,7 +130,6 @@ function OrderFormModal({
               <label className="field-label">Payment Method</label>
               <select value={form.paymentMethod} onChange={e => set("paymentMethod", e.target.value as PaymentMethod)}
                 className="select-input w-full">
-                <option value="stripe">Stripe</option>
                 <option value="paystack">Paystack</option>
                 <option value="wallet">Orbit Wallet</option>
               </select>

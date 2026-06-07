@@ -26,7 +26,7 @@ export default function CheckoutSuccess() {
                 <Package className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1">Payment</p>
-                  <p className="font-medium text-sm text-emerald-400">Secured via Flutterwave ✓</p>
+                  <p className="font-medium text-sm text-emerald-400">Secured via Paystack ✓</p>
                   <p className="text-xs text-muted-foreground mt-1">A confirmation email has been sent to you.</p>
                 </div>
               </div>
