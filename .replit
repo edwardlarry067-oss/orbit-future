@@ -50,6 +50,7 @@ LOG_LEVEL = "info"
 APP_URL = "https://orbitfuture--Orbitfuture.replit.app"
 PORT = "3001"
 EMAIL_FROM = "managementstarlinkhq@gmail.com"
+PAYSTACK_CURRENCY = "USD"
 
 [deployment]
 deploymentTarget = "autoscale"
