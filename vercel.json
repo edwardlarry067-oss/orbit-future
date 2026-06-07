@@ -1,13 +1,13 @@
 {
   "version": 2,
   "framework": null,
-  "installCommand": "cd artifacts/spacex-starlink && npm install --legacy-peer-deps --ignore-scripts",
-  "buildCommand": "cd artifacts/spacex-starlink && npm run build",
+  "installCommand": "npm install -g pnpm && cd artifacts && pnpm install --no-frozen-lockfile",
+  "buildCommand": "cd artifacts/spacex-starlink && pnpm run build",
   "outputDirectory": "artifacts/spacex-starlink/dist",
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://orbit-future--managementstarl.replit.app/api/:path*"
+      "destination": "https://orbitfuture--Orbitfuture.replit.app/api/:path*"
     },
     {
       "source": "/(.*)",
