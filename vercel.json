@@ -1,13 +1,13 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "npm install -g pnpm@10 && cd artifacts && pnpm install --frozen-lockfile && pnpm --filter @workspace/spacex-starlink run build",
+  "installCommand": "corepack enable && corepack prepare pnpm@10.26.1 --activate",
+  "buildCommand": "cd artifacts && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/spacex-starlink run build",
   "outputDirectory": "artifacts/spacex-starlink/dist",
-  "installCommand": "echo skip",
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://space-x--spacexstarlinkm.replit.app/api/:path*"
+      "destination": "https://orbitfuture--Orbitfuture.replit.app/api/:path*"
     },
     {
       "source": "/(.*)",
@@ -17,8 +17,14 @@
   "redirects": [
     {
       "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.orbitfuture.store" }],
+      "destination": "https://orbitfuture.store/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "www.orbitfuture.com" }],
-      "destination": "https://orbitfuture.com/:path*",
+      "destination": "https://orbitfuture.store/:path*",
       "permanent": true
     }
   ],

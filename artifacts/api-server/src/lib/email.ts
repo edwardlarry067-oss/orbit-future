@@ -517,6 +517,89 @@ export async function sendSupportReply(data: SupportReplyData): Promise<void> {
   }
 }
 
+interface AdminPaymentAlertData {
+  type: "plan" | "token";
+  customerName: string;
+  customerEmail: string;
+  item: string;
+  amountPaid: number;
+  currency: string;
+  transactionId: string;
+}
+
+function adminPaymentAlertHtml(data: AdminPaymentAlertData): string {
+  const typeLabel = data.type === "plan" ? "Plan Subscription" : "Token Bundle";
+  const icon = data.type === "plan" ? "🛰️" : "🪙";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#0a0f1a;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+        <tr><td style="background:#0d1f3c;border:1px solid rgba(0,212,255,0.25);border-radius:10px;padding:28px 32px;">
+          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:3px;color:#00D4FF;text-transform:uppercase;">
+            ${icon} New Payment — ${typeLabel}
+          </p>
+          <h2 style="margin:8px 0 24px;font-size:22px;font-weight:900;color:#ffffff;">
+            ${data.currency} ${data.amountPaid.toFixed(2)} received
+          </h2>
+
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${[
+              ["Customer", data.customerName],
+              ["Email", data.customerEmail],
+              ["Item", data.item],
+              ["Amount", `${data.currency} ${data.amountPaid.toFixed(2)}`],
+              ["Transaction ID", data.transactionId],
+              ["Time", new Date().toUTCString()],
+            ].map(([label, value]) => `
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <span style="font-size:11px;color:#718096;text-transform:uppercase;letter-spacing:1px;display:inline-block;width:120px;">${label}</span>
+                  <span style="font-size:13px;color:#e2e8f0;font-weight:600;">${value}</span>
+                </td>
+              </tr>
+            `).join("")}
+          </table>
+
+          <p style="margin:20px 0 0;font-size:11px;color:#2d3748;text-align:center;">
+            ORBITFUTURE Admin Alert · ${APP_URL}
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendAdminPaymentAlert(data: AdminPaymentAlertData): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+
+  const rawFrom = process.env.EMAIL_FROM ?? "";
+  const adminEmail = (process.env.ADMIN_EMAIL
+    ?? (rawFrom.includes("<") ? rawFrom.match(/<(.+)>/)?.[1] ?? rawFrom : rawFrom))
+    || "admin@orbitfuture.com";
+
+  const typeLabel = data.type === "plan" ? "Plan Subscription" : "Token Bundle";
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: adminEmail,
+      subject: `💳 New Payment: ${data.currency} ${data.amountPaid.toFixed(2)} — ${typeLabel}`,
+      html: adminPaymentAlertHtml(data),
+    });
+    logger.info({ adminEmail, transactionId: data.transactionId }, "Admin payment alert sent");
+  } catch (err) {
+    logger.error({ err }, "Failed to send admin payment alert");
+  }
+}
+
 export async function sendCancellationEmail(data: CancellationData): Promise<void> {
   const resend = getResend();
   if (!resend) {

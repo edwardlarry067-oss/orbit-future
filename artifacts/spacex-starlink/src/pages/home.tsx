@@ -107,6 +107,85 @@ const INCLUDED = [
   { icon: Award, title: "Priority Support", desc: "24/7 WhatsApp and email support for all subscribers." },
 ];
 
+function SatelliteGlobe() {
+  return (
+    <div className="relative w-72 h-72 md:w-80 md:h-80 mx-auto flex items-center justify-center">
+      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,212,255,0.12)_0%,transparent_70%)] rounded-full" />
+      <svg viewBox="0 0 300 300" className="w-full h-full drop-shadow-[0_0_20px_rgba(0,212,255,0.3)]">
+        <defs>
+          <filter id="sat-glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <radialGradient id="globe-surface" cx="38%" cy="35%" r="60%">
+            <stop offset="0%" stopColor="rgba(0,212,255,0.12)" />
+            <stop offset="60%" stopColor="rgba(0,30,50,0.6)" />
+            <stop offset="100%" stopColor="rgba(0,10,20,0.95)" />
+          </radialGradient>
+          <path id="orbit-equator" d="M 285,150 a 135,36 0 1,1 -270,0 a 135,36 0 1,1 270,0" />
+          <path id="orbit-polar" d="M 150,15 a 36,135 0 1,1 0,270 a 36,135 0 1,1 0,-270" />
+          <path id="orbit-diagonal" d="M 245,55 a 135,36 0 1,1 -190,190" />
+        </defs>
+
+        {/* Globe body */}
+        <circle cx="150" cy="150" r="132" fill="url(#globe-surface)" stroke="rgba(0,212,255,0.4)" strokeWidth="1.5" />
+
+        {/* Latitude grid lines */}
+        <ellipse cx="150" cy="150" rx="132" ry="36" fill="none" stroke="rgba(0,212,255,0.1)" strokeWidth="0.8" />
+        <ellipse cx="150" cy="112" rx="114" ry="28" fill="none" stroke="rgba(0,212,255,0.07)" strokeWidth="0.7" />
+        <ellipse cx="150" cy="188" rx="114" ry="28" fill="none" stroke="rgba(0,212,255,0.07)" strokeWidth="0.7" />
+        <ellipse cx="150" cy="78"  rx="76"  ry="18" fill="none" stroke="rgba(0,212,255,0.05)" strokeWidth="0.6" />
+        <ellipse cx="150" cy="222" rx="76"  ry="18" fill="none" stroke="rgba(0,212,255,0.05)" strokeWidth="0.6" />
+
+        {/* Longitude grid lines */}
+        <ellipse cx="150" cy="150" rx="36" ry="132" fill="none" stroke="rgba(0,212,255,0.1)" strokeWidth="0.8" />
+        <ellipse cx="150" cy="150" rx="36" ry="132" fill="none" stroke="rgba(0,212,255,0.07)" strokeWidth="0.7" transform="rotate(60 150 150)" />
+        <ellipse cx="150" cy="150" rx="36" ry="132" fill="none" stroke="rgba(0,212,255,0.07)" strokeWidth="0.7" transform="rotate(120 150 150)" />
+
+        {/* Orbit rings (dashed, tilted) */}
+        <ellipse cx="150" cy="150" rx="143" ry="38" fill="none" stroke="rgba(0,212,255,0.55)" strokeWidth="1.3" strokeDasharray="7,4" />
+        <ellipse cx="150" cy="150" rx="143" ry="38" fill="none" stroke="rgba(0,212,255,0.4)" strokeWidth="1.1" strokeDasharray="7,4" transform="rotate(55 150 150)" />
+        <ellipse cx="150" cy="150" rx="143" ry="38" fill="none" stroke="rgba(0,212,255,0.35)" strokeWidth="1" strokeDasharray="7,4" transform="rotate(-55 150 150)" />
+
+        {/* Animated satellites */}
+        <circle r="5.5" fill="#00d4ff" filter="url(#sat-glow)">
+          <animateMotion dur="8s" repeatCount="indefinite" calcMode="linear">
+            <mpath href="#orbit-equator" />
+          </animateMotion>
+        </circle>
+
+        <circle r="4" fill="#00d4ff" filter="url(#sat-glow)">
+          <animateMotion dur="11s" repeatCount="indefinite" begin="-5s" calcMode="linear">
+            <mpath href="#orbit-polar" />
+          </animateMotion>
+        </circle>
+
+        <circle r="4" fill="#4dffc8" filter="url(#sat-glow)">
+          <animateMotion dur="9.5s" repeatCount="indefinite" begin="-2s" calcMode="linear">
+            <mpath href="#orbit-diagonal" />
+          </animateMotion>
+        </circle>
+
+        {/* Pole dots */}
+        <circle cx="150" cy="18" r="3" fill="rgba(0,212,255,0.5)" />
+        <circle cx="150" cy="282" r="3" fill="rgba(0,212,255,0.5)" />
+
+        {/* Rim highlight */}
+        <circle cx="150" cy="150" r="132" fill="none" stroke="rgba(0,212,255,0.15)" strokeWidth="8" opacity="0.4" />
+      </svg>
+
+      {/* Live indicator */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 border border-primary/30 rounded-full px-3 py-1">
+        <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Live Coverage</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -156,6 +235,26 @@ export default function Home() {
                 <span className="text-[11px] text-gray-500 uppercase tracking-wider font-bold">{label}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MOUNTAIN IMAGE ── */}
+      <section className="relative w-full overflow-hidden">
+        <img
+          src="/mountain-starlink.png"
+          alt="Starlink satellite dish installed in a dramatic mountain landscape at dusk"
+          className="w-full object-cover h-64 md:h-96 lg:h-[480px]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
+        <div className="absolute bottom-0 left-0 right-0 pb-8 text-center">
+          <p className="text-white/90 text-sm md:text-base font-bold uppercase tracking-[0.25em]">
+            Connected from the world's most remote locations
+          </p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-primary text-xs font-bold uppercase tracking-widest">Signal Active</span>
           </div>
         </div>
       </section>
@@ -329,19 +428,10 @@ export default function Home() {
                 </Button>
               </Link>
             </div>
-            <div className="flex-1 grid grid-cols-2 gap-4">
-              {[
-                { label: "Countries Served", value: "100+", icon: Globe },
-                { label: "Satellites in Orbit", value: "5,000+", icon: Satellite },
-                { label: "Avg Latency", value: "25ms", icon: Zap },
-                { label: "Uptime SLA", value: "99.9%", icon: Shield },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="bg-card border border-border rounded-xl p-5 text-center hover:border-primary/20 transition-colors">
-                  <Icon className="w-6 h-6 text-primary mx-auto mb-3" />
-                  <div className="text-2xl font-black text-white mb-1">{value}</div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">{label}</div>
-                </div>
-              ))}
+
+            {/* Animated satellite globe */}
+            <div className="flex-1 flex items-center justify-center">
+              <SatelliteGlobe />
             </div>
           </div>
         </div>
