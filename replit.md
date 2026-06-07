@@ -9,7 +9,7 @@ A full-stack SpaceX Starlink subscription and hardware platform. Users can brows
 - **Database**: PostgreSQL via Replit's built-in Helium DB + Drizzle ORM
 - **Monorepo**: pnpm workspaces under `artifacts/`
 
-Vercel rewrites `/api/*` → `https://orbitfuture--Orbitfuture.replit.app/api/*`
+Vercel rewrites `/api/*` → `https://workspace--edwardlarry067.replit.app/api/*`
 
 ## Running locally on Replit
 
