@@ -47,7 +47,7 @@ waitForPort = 5000
 [userenv.shared]
 NODE_ENV = "development"
 LOG_LEVEL = "info"
-APP_URL = "https://orbitfuture--Orbitfuture.replit.app"
+APP_URL = "https://orbit-future--christianacade1.replit.app"
 PORT = "3001"
 EMAIL_FROM = "managementstarlinkhq@gmail.com"
 PAYSTACK_CURRENCY = "USD"
