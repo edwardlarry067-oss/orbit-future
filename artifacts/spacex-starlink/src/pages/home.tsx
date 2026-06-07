@@ -190,11 +190,11 @@ const HOME_FAQS = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "Visa, Mastercard, Amex via Stripe. Also Orbit Wallet tokens (pre-loaded via Stripe or Flutterwave). No crypto.",
+    a: "Visa, Mastercard, Verve via Paystack. Also Orbit Wallet tokens (pre-loaded via Paystack or Flutterwave). No crypto.",
   },
   {
     q: "Is my payment secure?",
-    a: "Yes. All payments are processed by Stripe, a PCI-DSS Level 1 certified processor. Your card details are never stored on our servers.",
+    a: "Yes. All payments are processed by Paystack, a PCI-DSS compliant processor. Your card details are never stored on our servers.",
   },
 ];
 
