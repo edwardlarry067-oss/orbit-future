@@ -30,6 +30,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     { label: "About", href: "/about" },
     { label: "FAQ", href: "/faq" },
     { label: "Support", href: "/support" },
+    { label: "Track Order", href: "/track" },
   ];
 
   return (

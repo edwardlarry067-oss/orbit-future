@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useCurrency } from "@/hooks/useCurrency";
 import { useLocation } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ const checkoutSchema = z.object({
 });
 
 export default function Checkout() {
+  const { formatPrice, formatMonthly } = useCurrency();
   const urlParams = new URLSearchParams(window.location.search);
   const planIdParam = urlParams.get("planId");
   const planId = planIdParam ? parseInt(planIdParam, 10) : 0;
@@ -34,7 +36,7 @@ export default function Checkout() {
   const [, navigate] = useLocation();
 
   const [paying, setPaying] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "wallet">("stripe");
+  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "wallet">("paystack");
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
   const [error, setError] = useState("");
@@ -88,8 +90,8 @@ export default function Checkout() {
     setPaying(true);
 
     try {
-      if (paymentMethod === "stripe") {
-        const res = await fetch(`${getApiBase()}/api/stripe-plan-pay`, {
+      if (paymentMethod === "paystack") {
+        const res = await fetch(`${getApiBase()}/api/paystack-plan-pay`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address }),
@@ -199,19 +201,19 @@ export default function Checkout() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod("stripe")}
+                  onClick={() => setPaymentMethod("paystack")}
                   className={`rounded-xl border p-4 flex flex-col gap-2 text-left transition-all ${
-                    paymentMethod === "stripe"
+                    paymentMethod === "paystack"
                       ? "border-primary/50 bg-primary/5 shadow-[0_0_20px_rgba(0,212,255,0.08)]"
                       : "border-white/10 bg-card hover:border-white/20"
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <CreditCard className={`w-4 h-4 ${paymentMethod === "stripe" ? "text-primary" : "text-gray-500"}`} />
-                    <span className="text-xs font-black uppercase tracking-widest text-white">Card / Stripe</span>
-                    {paymentMethod === "stripe" && <span className="ml-auto w-2 h-2 bg-primary rounded-full" />}
+                    <CreditCard className={`w-4 h-4 ${paymentMethod === "paystack" ? "text-primary" : "text-gray-500"}`} />
+                    <span className="text-xs font-black uppercase tracking-widest text-white">Card / Paystack</span>
+                    {paymentMethod === "paystack" && <span className="ml-auto w-2 h-2 bg-primary rounded-full" />}
                   </div>
-                  <p className="text-[10px] text-gray-500">Visa, Mastercard, Amex, Apple Pay, Google Pay</p>
+                  <p className="text-[10px] text-gray-500">Visa, Mastercard, Bank Transfer, USSD, Mobile Money</p>
                 </button>
 
                 <button
@@ -361,7 +363,7 @@ export default function Checkout() {
                           <Wifi className="w-3.5 h-3.5 text-primary" />
                           <span className="text-gray-400">Monthly service</span>
                         </div>
-                        <span className="font-bold text-white">${priceMonthly}/mo</span>
+                        <span className="font-bold text-white">{formatMonthly(priceMonthly)}</span>
                       </div>
 
                       {hardwarePrice > 0 && (
@@ -371,7 +373,7 @@ export default function Checkout() {
                             <span className="text-gray-400">Hardware kit</span>
                             <span className="text-[9px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5 uppercase font-bold">One-time</span>
                           </div>
-                          <span className="font-bold text-amber-400">${hardwarePrice}</span>
+                          <span className="font-bold text-amber-400">{formatPrice(hardwarePrice)}</span>
                         </div>
                       )}
 
@@ -384,12 +386,12 @@ export default function Checkout() {
                         <span className="text-sm font-bold uppercase tracking-wider text-white">
                           {hardwarePrice > 0 ? "First Month Total" : "Monthly Total"}
                         </span>
-                        <span className="text-2xl font-black text-white">${firstMonthTotal}</span>
+                        <span className="text-2xl font-black text-white">{formatPrice(firstMonthTotal)}</span>
                       </div>
 
                       {hardwarePrice > 0 && (
                         <p className="text-[10px] text-gray-600">
-                          Then ${priceMonthly}/mo from month 2 onwards. Hardware is a one-time fee.
+                          Then {formatMonthly(priceMonthly)} from month 2 onwards. Hardware is a one-time fee.
                         </p>
                       )}
                     </div>
@@ -424,12 +426,12 @@ export default function Checkout() {
                   {paying ? (
                     <span className="flex items-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {paymentMethod === "stripe" ? "Opening Stripe…" : "Processing…"}
+                      {paymentMethod === "paystack" ? "Opening Paystack…" : "Processing…"}
                     </span>
-                  ) : paymentMethod === "stripe" ? (
+                  ) : paymentMethod === "paystack" ? (
                     <span className="flex items-center gap-2">
                       <CreditCard className="w-5 h-5" />
-                      Pay ${firstMonthTotal} with Stripe
+                      Pay {formatPrice(firstMonthTotal)} with Paystack
                       <ExternalLink className="w-4 h-4" />
                     </span>
                   ) : !hasSufficientTokens && walletBalance !== null ? (
