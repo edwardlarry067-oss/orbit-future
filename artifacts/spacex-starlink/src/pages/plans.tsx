@@ -284,7 +284,7 @@ export default function Plans() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div id="plan-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 lg:pb-0">
               {filtered.map((plan) => {
                 const cost = totalCost(plan);
                 const lp = plan.localPrices;
@@ -295,6 +295,7 @@ export default function Plans() {
                 return (
                   <div
                     key={plan.id}
+                    data-plan-id={plan.id}
                     className={`relative bg-card border rounded-2xl flex flex-col transition-all hover:border-primary/40 hover:shadow-[0_0_40px_rgba(0,212,255,0.06)] ${
                       plan.popular ? "border-primary/40 shadow-[0_0_40px_rgba(0,212,255,0.08)]" : "border-border"
                     }`}
@@ -546,7 +547,7 @@ export default function Plans() {
         <div className="border-t border-white/5 pt-12 mb-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
-              { label: "Countries Served", value: "100+" },
+              { label: "Countries Available", value: "100+" },
               { label: "Avg Download Speed", value: "200Mbps" },
               { label: "Avg Latency", value: "20ms" },
               { label: "Uptime (Starlink Network)", value: "99.9%" },
@@ -598,6 +599,22 @@ export default function Plans() {
           <p className="text-gray-700 text-[10px] leading-relaxed max-w-2xl mx-auto">
             OrbitFuture is an independent satellite internet solutions company. We are not affiliated with, endorsed by, or operated by SpaceX or Starlink. "Starlink" is a registered trademark of Space Exploration Technologies Corp. References to Starlink describe the satellite internet service that OrbitFuture helps customers access and manage.
           </p>
+        </div>
+      </div>
+
+      {/* Sticky mobile CTA */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-4 bg-black/95 backdrop-blur-xl border-t border-white/10 shadow-[0_-4px_30px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-3 max-w-lg mx-auto">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Starlink Plans</p>
+            <p className="text-[11px] text-gray-500 truncate">No contracts · Free shipping · 24/7 support</p>
+          </div>
+          <a href="#plan-grid" onClick={(e) => { e.preventDefault(); document.getElementById('plan-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+            <Button className="h-11 px-6 text-xs font-black uppercase tracking-widest shrink-0">
+              <ArrowRight className="w-4 h-4 mr-1.5" />
+              View Plans
+            </Button>
+          </a>
         </div>
       </div>
     </MainLayout>

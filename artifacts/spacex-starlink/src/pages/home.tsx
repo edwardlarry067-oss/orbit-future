@@ -4,73 +4,27 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Satellite, Zap, Globe, Shield, Lock, HeadphonesIcon, CheckCircle2, Star, ChevronDown, ChevronUp, ArrowRight, Package, Award, Clock, Home as HomeIcon, Briefcase, Navigation, Ship, Plane, Users, Mail, Phone } from "lucide-react";
 
-const LIVE_FEED = [
-  { name: "Chukwuemeka O.", location: "Lagos, Nigeria", plan: "Starlink Residential", action: "just ordered" },
-  { name: "Sarah K.", location: "Rural Montana, USA", plan: "Starlink Residential", action: "just connected" },
-  { name: "Babatunde F.", location: "Port Harcourt, Nigeria", plan: "Starlink Business", action: "just ordered" },
-  { name: "James T.", location: "Auckland, New Zealand", plan: "Starlink Roam", action: "just activated" },
-  { name: "Ngozi A.", location: "Abuja, Nigeria", plan: "Starlink Residential", action: "just ordered" },
-  { name: "Felix W.", location: "Vancouver, Canada", plan: "Starlink Roam", action: "just connected" },
-  { name: "Emeka K.", location: "Enugu, Nigeria", plan: "Starlink Residential", action: "just ordered" },
-  { name: "Hans B.", location: "Bavaria, Germany", plan: "Starlink Residential", action: "just activated" },
-  { name: "Adaeze N.", location: "Owerri, Nigeria", plan: "Starlink Business", action: "just ordered" },
-  { name: "Captain J. Moore", location: "North Atlantic", plan: "Starlink Maritime", action: "just connected" },
-  { name: "Tunde M.", location: "Ibadan, Nigeria", plan: "Starlink Residential", action: "just ordered" },
-  { name: "Sophie D.", location: "Brittany, France", plan: "Starlink Roam", action: "just activated" },
-  { name: "Chioma I.", location: "Lagos, Nigeria", plan: "Starlink Residential", action: "just ordered" },
-  { name: "Dr. Claire M.", location: "Ontario, Canada", plan: "Starlink Residential", action: "just connected" },
-  { name: "Segun A.", location: "Kano, Nigeria", plan: "Starlink Business", action: "just ordered" },
-  { name: "Emma & Tom L.", location: "Yorkshire, UK", plan: "Starlink Residential", action: "just activated" },
-  { name: "Funmi B.", location: "Abuja, Nigeria", plan: "Starlink Residential", action: "just ordered" },
-  { name: "Michael R.", location: "Austin, Texas", plan: "Starlink Business", action: "just connected" },
-  { name: "Obinna C.", location: "Port Harcourt, Nigeria", plan: "Starlink Residential", action: "just ordered" },
-  { name: "Maria L.", location: "São Paulo, Brazil", plan: "Starlink Residential", action: "just activated" },
-];
-
-const TICKER_TIMES = [2, 3, 4, 5, 6, 7, 8, 1, 3, 5, 2, 6, 4, 7, 3, 5, 2, 8, 4, 6];
-
-function LiveActivityTicker() {
-  const [current, setCurrent] = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setCurrent((prev) => (prev + 1) % LIVE_FEED.length);
-        setVisible(true);
-      }, 400);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, []);
-
-  const item = LIVE_FEED[current];
-  const mins = TICKER_TIMES[current];
-
+function TrustStatusBar() {
   return (
-    <div className="bg-black border-b border-primary/15 py-2.5 overflow-hidden">
-      <div className="container mx-auto px-4 flex items-center justify-center gap-3">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-primary">Live</span>
-        </div>
-        <div
-          className="text-[11px] text-gray-300 font-medium transition-all duration-300"
-          style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(-6px)" }}
-        >
-          <span className="text-white font-bold">{item.name}</span>
-          {" "}from{" "}
-          <span className="text-gray-400">{item.location}</span>
-          {" "}{item.action}{" "}
-          <span className="text-primary font-bold">{item.plan}</span>
-        </div>
-        <div className="shrink-0 text-[9px] font-bold uppercase tracking-widest text-gray-600 border border-white/10 rounded-full px-2 py-0.5">
-          {mins}m ago
-        </div>
+    <div className="bg-[#040404] border-b border-white/5 py-2.5 overflow-hidden">
+      <div className="container mx-auto px-4 flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
+        {[
+          { dot: "bg-emerald-400", text: "Secure Paystack Checkout" },
+          { dot: "bg-primary", text: "SSL Encrypted" },
+          { dot: "bg-primary", text: "No Hidden Fees" },
+          { dot: "bg-primary", text: "Service Available in 100+ Countries" },
+          { dot: "bg-emerald-400", text: "14-Day Hardware Return Policy" },
+        ].map(({ dot, text }) => (
+          <div key={text} className="flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${dot} shrink-0`} />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{text}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
+
 
 const TESTIMONIALS = [
   {
@@ -343,8 +297,8 @@ export default function Home() {
 
   return (
     <MainLayout>
-      {/* ── LIVE ACTIVITY TICKER ── */}
-      <LiveActivityTicker />
+      {/* ── TRUST STATUS BAR ── */}
+      <TrustStatusBar />
 
       {/* ── HERO ── */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-black">

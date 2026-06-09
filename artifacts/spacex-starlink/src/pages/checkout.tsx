@@ -74,7 +74,7 @@ function CheckoutProgress({ step }: { step: 1 | 2 | 3 }) {
 }
 
 export default function Checkout() {
-  const { formatPrice, formatMonthly, currency } = useCurrency();
+  const { formatPrice, formatMonthly, currency, symbol } = useCurrency();
   const urlParams = new URLSearchParams(window.location.search);
   const planIdParam = urlParams.get("planId");
   const planId = planIdParam ? parseInt(planIdParam, 10) : 0;
@@ -143,6 +143,16 @@ export default function Checkout() {
   const firstMonthTotal = priceMonthly + hardwarePrice;
   const priceTokens = Math.ceil(firstMonthTotal);
   const hasSufficientTokens = walletBalance !== null && walletBalance >= priceTokens;
+
+  const planLocalPrices = (plan as any)?.localPrices as Record<string, { monthly: number; hardware?: number }> | undefined;
+  const localCurrencyPrices = planLocalPrices?.[currency];
+  const formatLocalTotal = () => {
+    if (localCurrencyPrices && currency !== "USD") {
+      const total = localCurrencyPrices.monthly + (localCurrencyPrices.hardware ?? 0);
+      return `${symbol}${Math.round(total).toLocaleString()}`;
+    }
+    return formatPrice(firstMonthTotal);
+  };
 
   const onSubmit = async (data: z.infer<typeof checkoutSchema>) => {
     if (!plan) return;
@@ -460,7 +470,7 @@ export default function Checkout() {
                           <Wifi className="w-3.5 h-3.5 text-primary" />
                           <span className="text-gray-400">Monthly service</span>
                         </div>
-                        <span className="font-bold text-white">{formatMonthly(priceMonthly)}</span>
+                        <span className="font-bold text-white">{formatMonthly(priceMonthly, planLocalPrices)}</span>
                       </div>
 
                       {hardwarePrice > 0 && (
@@ -470,7 +480,7 @@ export default function Checkout() {
                             <span className="text-gray-400">Hardware kit</span>
                             <span className="text-[9px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5 uppercase font-bold">One-time</span>
                           </div>
-                          <span className="font-bold text-amber-400">{formatPrice(hardwarePrice)}</span>
+                          <span className="font-bold text-amber-400">{formatPrice(hardwarePrice, planLocalPrices, "hardware")}</span>
                         </div>
                       )}
 
@@ -483,14 +493,23 @@ export default function Checkout() {
                         <span className="text-sm font-bold uppercase tracking-wider text-white">
                           {hardwarePrice > 0 ? "First Month Total" : "Monthly Total"}
                         </span>
-                        <span className="text-2xl font-black text-white">{formatPrice(firstMonthTotal)}</span>
+                        <span className="text-2xl font-black text-white">{formatLocalTotal()}</span>
                       </div>
 
                       {hardwarePrice > 0 && (
                         <p className="text-[10px] text-gray-600">
-                          Then {formatMonthly(priceMonthly)} from month 2 onwards. Hardware is a one-time fee.
+                          Then {formatMonthly(priceMonthly, planLocalPrices)} from month 2 onwards. Hardware is a one-time fee.
                         </p>
                       )}
+
+                      {/* Explicit charge confirmation */}
+                      <div className="mt-2 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2.5">
+                        <p className="text-[11px] text-gray-300 leading-relaxed">
+                          <span className="font-black text-white">You will be charged exactly {formatLocalTotal()} today.</span>
+                          {hardwarePrice > 0 && <span className="text-gray-400"> Then {formatMonthly(priceMonthly, planLocalPrices)} from month 2.</span>}
+                          {" "}<span className="text-gray-500">No additional fees unless you select optional add-ons.</span>
+                        </p>
+                      </div>
                     </div>
 
                     {/* Features */}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Home, MapPin, Ship, Briefcase, Plane, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
+import { useCurrency } from "@/hooks/useCurrency";
 
 type Plan = {
   id: number;
@@ -9,6 +10,7 @@ type Plan = {
   category: string;
   priceMonthly: number;
   hardwarePrice?: number;
+  localPrices?: Record<string, { monthly: number; hardware?: number }>;
   description: string;
   popular: boolean;
 };
@@ -34,6 +36,7 @@ type Props = {
 };
 
 export function PlanFinder({ plans, onSelectPlan }: Props) {
+  const { formatPrice, formatMonthly, currency, symbol } = useCurrency();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [result, setResult] = useState<Plan | null>(null);
@@ -66,9 +69,14 @@ export function PlanFinder({ plans, onSelectPlan }: Props) {
     handleReset();
   };
 
-  const firstPayment = result
-    ? result.priceMonthly + (result.hardwarePrice ?? 0)
-    : 0;
+  const getLocalTotal = (plan: Plan) => {
+    const lp = plan.localPrices?.[currency];
+    if (lp && currency !== "USD") {
+      const total = lp.monthly + (lp.hardware ?? 0);
+      return `${symbol}${Math.round(total).toLocaleString()}`;
+    }
+    return formatPrice(plan.priceMonthly + (plan.hardwarePrice ?? 0));
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -174,12 +182,11 @@ export function PlanFinder({ plans, onSelectPlan }: Props) {
             <p className="text-xs text-gray-400 mt-1 mb-3 leading-relaxed">{result.description}</p>
 
             <div className="flex items-baseline gap-1.5 mb-1">
-              <span className="text-2xl font-black text-primary">${result.priceMonthly}</span>
-              <span className="text-sm text-gray-400">/mo</span>
+              <span className="text-2xl font-black text-primary">{formatMonthly(result.priceMonthly, result.localPrices)}</span>
             </div>
             {(result.hardwarePrice ?? 0) > 0 && (
               <p className="text-[11px] text-gray-500 mb-3">
-                + ${result.hardwarePrice} hardware (one-time) · First payment: ${firstPayment}
+                + {formatPrice(result.hardwarePrice ?? 0, result.localPrices, "hardware")} hardware (one-time) · First payment: {getLocalTotal(result)}
               </p>
             )}
 
