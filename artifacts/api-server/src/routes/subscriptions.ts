@@ -23,6 +23,12 @@ function formatSub(sub: typeof subscriptionsTable.$inferSelect, plan: typeof pla
     stripeCustomerId: sub.stripeCustomerId,
     status: sub.status,
     address: sub.address,
+    renewalDate: sub.renewalDate,
+    nextBillingDate: sub.nextBillingDate,
+    autoRenew: sub.autoRenew,
+    billingCycleMonths: sub.billingCycleMonths,
+    trackingStatus: sub.trackingStatus,
+    trackingHistory: sub.trackingHistory,
     createdAt: sub.createdAt,
     cancelledAt: sub.cancelledAt,
   };

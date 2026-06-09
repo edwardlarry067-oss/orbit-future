@@ -52822,6 +52822,12 @@ function formatSub(sub, plan) {
     stripeCustomerId: sub.stripeCustomerId,
     status: sub.status,
     address: sub.address,
+    renewalDate: sub.renewalDate,
+    nextBillingDate: sub.nextBillingDate,
+    autoRenew: sub.autoRenew,
+    billingCycleMonths: sub.billingCycleMonths,
+    trackingStatus: sub.trackingStatus,
+    trackingHistory: sub.trackingHistory,
     createdAt: sub.createdAt,
     cancelledAt: sub.cancelledAt
   };
@@ -52999,6 +53005,74 @@ var subscriptions_default = router3;
 
 // src/routes/checkout.ts
 var import_express4 = __toESM(require_express2(), 1);
+
+// src/lib/invoiceService.ts
+function generateInvoiceNumber() {
+  const now = /* @__PURE__ */ new Date();
+  const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const rand = Math.floor(Math.random() * 9e3) + 1e3;
+  return `INV-${ym}-${rand}`;
+}
+async function createInvoice(params) {
+  try {
+    const { userEmail, subscriptionId, planId, amountPaid, currency = "USD", paymentRef, isFirstMonth = true } = params;
+    let planName = "Starlink Plan";
+    let priceMonthly = amountPaid;
+    let hardwarePrice = 0;
+    try {
+      const [plan] = await db.select().from(plansTable).where(eq(plansTable.id, planId)).limit(1);
+      if (plan) {
+        planName = plan.name;
+        priceMonthly = parseFloat(String(plan.priceMonthly));
+        hardwarePrice = plan.hardwarePrice ? parseFloat(String(plan.hardwarePrice)) : 0;
+      }
+    } catch {
+    }
+    const lineItems = [];
+    if (isFirstMonth && hardwarePrice > 0) {
+      lineItems.push({ description: "Starlink Hardware Kit (one-time)", amount: hardwarePrice });
+      lineItems.push({ description: `${planName} \u2014 Monthly Service`, amount: priceMonthly });
+    } else {
+      lineItems.push({ description: `${planName} \u2014 Monthly Service`, amount: amountPaid });
+    }
+    const now = /* @__PURE__ */ new Date();
+    const dueDate = new Date(now);
+    dueDate.setDate(dueDate.getDate() + 30);
+    let invoiceNumber = generateInvoiceNumber();
+    let retries = 0;
+    while (retries < 5) {
+      try {
+        const [inv] = await db.insert(invoicesTable).values({
+          invoiceNumber,
+          userEmail: userEmail.toLowerCase(),
+          subscriptionId: subscriptionId ?? null,
+          amountUsd: String(amountPaid),
+          currency,
+          lineItems,
+          status: "paid",
+          dueDate,
+          paidAt: now,
+          paymentRef: paymentRef ?? null,
+          planName
+        }).returning();
+        return inv;
+      } catch (e) {
+        if (e?.code === "23505" || e?.message?.includes("unique")) {
+          invoiceNumber = generateInvoiceNumber();
+          retries++;
+        } else {
+          throw e;
+        }
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("[invoiceService] Failed to create invoice:", err);
+    return null;
+  }
+}
+
+// src/routes/checkout.ts
 var router4 = (0, import_express4.Router)();
 router4.post("/checkout/wallet-pay", async (req, res) => {
   try {
@@ -53037,14 +53111,30 @@ router4.post("/checkout/wallet-pay", async (req, res) => {
       status: "completed",
       metadata: { planId, planName: plan.name }
     });
+    const renewalDate = /* @__PURE__ */ new Date();
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
     const [sub] = await db.insert(subscriptionsTable).values({
       email: email.toLowerCase(),
       name,
       planId,
       address: address ?? null,
       status: "active",
-      stripeSessionId: `wallet_${Date.now()}`
+      stripeSessionId: `wallet_${Date.now()}`,
+      renewalDate,
+      nextBillingDate: renewalDate,
+      autoRenew: true,
+      trackingStatus: "pending"
     }).returning();
+    createInvoice({
+      userEmail: email,
+      subscriptionId: sub.id,
+      planId,
+      amountPaid: priceTokens,
+      currency: "USD",
+      paymentRef: sub.stripeSessionId ?? void 0,
+      isFirstMonth: true
+    }).catch(() => {
+    });
     sendSubscriptionConfirmation({
       customerName: sub.name,
       customerEmail: sub.email,
@@ -54314,72 +54404,6 @@ var BUNDLES = [
     }
   }
 ];
-
-// src/lib/invoiceService.ts
-function generateInvoiceNumber() {
-  const now = /* @__PURE__ */ new Date();
-  const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const rand = Math.floor(Math.random() * 9e3) + 1e3;
-  return `INV-${ym}-${rand}`;
-}
-async function createInvoice(params) {
-  try {
-    const { userEmail, subscriptionId, planId, amountPaid, currency = "USD", paymentRef, isFirstMonth = true } = params;
-    let planName = "Starlink Plan";
-    let priceMonthly = amountPaid;
-    let hardwarePrice = 0;
-    try {
-      const [plan] = await db.select().from(plansTable).where(eq(plansTable.id, planId)).limit(1);
-      if (plan) {
-        planName = plan.name;
-        priceMonthly = parseFloat(String(plan.priceMonthly));
-        hardwarePrice = plan.hardwarePrice ? parseFloat(String(plan.hardwarePrice)) : 0;
-      }
-    } catch {
-    }
-    const lineItems = [];
-    if (isFirstMonth && hardwarePrice > 0) {
-      lineItems.push({ description: "Starlink Hardware Kit (one-time)", amount: hardwarePrice });
-      lineItems.push({ description: `${planName} \u2014 Monthly Service`, amount: priceMonthly });
-    } else {
-      lineItems.push({ description: `${planName} \u2014 Monthly Service`, amount: amountPaid });
-    }
-    const now = /* @__PURE__ */ new Date();
-    const dueDate = new Date(now);
-    dueDate.setDate(dueDate.getDate() + 30);
-    let invoiceNumber = generateInvoiceNumber();
-    let retries = 0;
-    while (retries < 5) {
-      try {
-        const [inv] = await db.insert(invoicesTable).values({
-          invoiceNumber,
-          userEmail: userEmail.toLowerCase(),
-          subscriptionId: subscriptionId ?? null,
-          amountUsd: String(amountPaid),
-          currency,
-          lineItems,
-          status: "paid",
-          dueDate,
-          paidAt: now,
-          paymentRef: paymentRef ?? null,
-          planName
-        }).returning();
-        return inv;
-      } catch (e) {
-        if (e?.code === "23505" || e?.message?.includes("unique")) {
-          invoiceNumber = generateInvoiceNumber();
-          retries++;
-        } else {
-          throw e;
-        }
-      }
-    }
-    return null;
-  } catch (err) {
-    console.error("[invoiceService] Failed to create invoice:", err);
-    return null;
-  }
-}
 
 // src/routes/paystack.ts
 var router10 = (0, import_express10.Router)();

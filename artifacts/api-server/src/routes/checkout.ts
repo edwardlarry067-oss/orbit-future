@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { plansTable, subscriptionsTable, walletsTable, walletTransactionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { sendSubscriptionConfirmation } from "../lib/email";
+import { createInvoice } from "../lib/invoiceService";
 
 const router = Router();
 
@@ -61,6 +62,9 @@ router.post("/checkout/wallet-pay", async (req, res): Promise<void> => {
       metadata: { planId, planName: plan.name },
     });
 
+    const renewalDate = new Date();
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
+
     const [sub] = await db
       .insert(subscriptionsTable)
       .values({
@@ -70,8 +74,22 @@ router.post("/checkout/wallet-pay", async (req, res): Promise<void> => {
         address: address ?? null,
         status: "active",
         stripeSessionId: `wallet_${Date.now()}`,
+        renewalDate,
+        nextBillingDate: renewalDate,
+        autoRenew: true,
+        trackingStatus: "pending",
       })
       .returning();
+
+    createInvoice({
+      userEmail: email,
+      subscriptionId: sub.id,
+      planId,
+      amountPaid: priceTokens,
+      currency: "USD",
+      paymentRef: sub.stripeSessionId ?? undefined,
+      isFirstMonth: true,
+    }).catch(() => {});
 
     sendSubscriptionConfirmation({
       customerName: sub.name,
