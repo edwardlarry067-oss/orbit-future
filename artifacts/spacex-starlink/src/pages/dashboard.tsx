@@ -1,579 +1,600 @@
-import React, { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useLocation, Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getApiBase } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  Satellite, Coins, Activity, LogOut, Package,
-  Truck, Wrench, CheckCircle2, Zap, Calendar, ArrowRight,
-  Clock, AlertCircle, ExternalLink, HeadphonesIcon,
-  User, Lock, Save, ChevronDown, ChevronUp, Loader2
+  Satellite, CreditCard, Activity, Package, Truck, Wrench, CheckCircle2,
+  Zap, Calendar, ArrowRight, Clock, AlertCircle, HeadphonesIcon, User,
+  Lock, Save, Loader2, Shield, Receipt, LayoutDashboard, MapPin, Signal,
+  Copy, CheckCheck, TrendingUp, RefreshCw
 } from "lucide-react";
-import { format } from "date-fns";
-import { Link } from "wouter";
+import { format, differenceInDays } from "date-fns";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+type TrackingEvent = { status: string; timestamp: string; note?: string };
 
 type Subscription = {
   id: number;
-  planName: string;
-  planCategory: string;
-  planSpeed: string;
-  priceMonthly: number;
+  email: string;
+  planId: number;
+  planName?: string;
+  planCategory?: string;
+  planSpeed?: string;
+  priceMonthly?: number;
   status: string;
+  address?: string;
+  amountPaid?: string;
+  renewalDate?: string;
+  nextBillingDate?: string;
+  autoRenew?: boolean;
+  trackingStatus?: string;
+  trackingHistory?: TrackingEvent[];
   createdAt: string;
   cancelledAt?: string;
 };
 
-type InstallStep = {
+type Invoice = {
   id: number;
-  label: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  activeColor: string;
+  invoiceNumber: string;
+  amountUsd: string;
+  currency: string;
+  status: string;
+  planName: string;
+  paidAt?: string;
+  createdAt: string;
 };
 
-const INSTALL_STEPS: InstallStep[] = [
-  { id: 1, label: "Order Received",  description: "Your order has been confirmed and entered our system.", icon: CheckCircle2, activeColor: "text-emerald-400" },
-  { id: 2, label: "Processing",      description: "Hardware is being prepared and configured for your plan.", icon: Wrench, activeColor: "text-amber-400" },
-  { id: 3, label: "Dispatched",      description: "Your kit is on its way. Expect delivery within 3–5 business days.", icon: Truck, activeColor: "text-blue-400" },
-  { id: 4, label: "Delivered",       description: "Hardware delivered! Time to set up your dish.", icon: Package, activeColor: "text-purple-400" },
-  { id: 5, label: "Active & Online", description: "You're fully connected to the ORBITFUTURE network.", icon: Zap, activeColor: "text-primary" },
-];
+type BillingSummary = {
+  invoiceCount: number;
+  totalPaid: number;
+  totalOutstanding: number;
+  unpaidCount: number;
+  nextBills: { subscriptionId: number; planName: string; amount: number; renewalDate: string; autoRenew: boolean }[];
+};
 
-function getInstallStepFromStatus(status: string, daysOld: number): number {
-  if (status === "cancelled") return 0;
-  if (status === "active") {
-    if (daysOld < 1) return 1;
-    if (daysOld < 2) return 2;
-    if (daysOld < 5) return 3;
-    if (daysOld < 8) return 4;
-    return 5;
-  }
-  return 1;
+// ── Tracking stages ────────────────────────────────────────────────────────────
+const TRACKING_STAGES = ["pending", "processing", "shipped", "delivered", "activated", "completed"] as const;
+type TrackingStage = (typeof TRACKING_STAGES)[number];
+
+const STAGE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  pending:    { label: "Order Received",  icon: Clock,          color: "text-amber-400" },
+  processing: { label: "Processing",      icon: Wrench,         color: "text-blue-400" },
+  shipped:    { label: "Shipped",          icon: Truck,          color: "text-violet-400" },
+  delivered:  { label: "Delivered",       icon: Package,        color: "text-orange-400" },
+  activated:  { label: "Activated",       icon: Zap,            color: "text-emerald-400" },
+  completed:  { label: "Online",          icon: CheckCircle2,   color: "text-primary" },
+};
+
+function getStageIndex(status: string): number {
+  return TRACKING_STAGES.indexOf(status as TrackingStage);
 }
 
-function InstallationTracker({ subscription }: { subscription: Subscription }) {
-  const daysOld = Math.floor((Date.now() - new Date(subscription.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-  const currentStep = getInstallStepFromStatus(subscription.status, daysOld);
-  if (subscription.status === "cancelled") return null;
+// ── Simulated data gauge ───────────────────────────────────────────────────────
+function getSimulatedUsage(createdAt: string, priceMonthly: number): { used: number; total: number } {
+  const daysOld = Math.max(0, differenceInDays(new Date(), new Date(createdAt)));
+  const dayOfMonth = daysOld % 30;
+  const baseTotal = priceMonthly >= 500 ? 1000 : priceMonthly >= 200 ? 500 : priceMonthly >= 100 ? 200 : 100;
+  const usedRatio = Math.min(0.95, (dayOfMonth / 30) * 0.85 + Math.random() * 0.08);
+  return { used: Math.round(baseTotal * usedRatio), total: baseTotal };
+}
 
+function DataGauge({ used, total }: { used: number; total: number }) {
+  const pct = Math.min(100, Math.round((used / total) * 100));
+  const color = pct > 85 ? "bg-red-500" : pct > 65 ? "bg-amber-500" : "bg-primary";
   return (
-    <div className="bg-card border border-border rounded-2xl p-6 mb-4">
-      <div className="flex items-center gap-2 mb-5">
-        <Satellite className="w-4 h-4 text-primary" />
-        <span className="text-xs font-bold uppercase tracking-widest text-primary">Installation Tracker</span>
-        <span className="ml-auto text-xs text-gray-600 uppercase tracking-wider font-bold">{subscription.planName}</span>
+    <div>
+      <div className="flex justify-between text-xs mb-1.5">
+        <span className="text-muted-foreground">Data Used</span>
+        <span className="text-white font-bold">{used} GB / {total} GB</span>
       </div>
-
-      {/* Desktop: horizontal stepper */}
-      <div className="hidden md:flex items-start gap-0">
-        {INSTALL_STEPS.map((step, idx) => {
-          const isCompleted = currentStep > step.id;
-          const isActive = currentStep === step.id;
-          const Icon = step.icon;
-          return (
-            <React.Fragment key={step.id}>
-              <div className="flex flex-col items-center flex-1">
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center mb-3 transition-all ${
-                  isCompleted ? "bg-emerald-400/20 border-emerald-400"
-                    : isActive ? "bg-primary/20 border-primary shadow-[0_0_16px_rgba(0,212,255,0.3)]"
-                    : "bg-white/3 border-white/15"
-                }`}>
-                  {isCompleted
-                    ? <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                    : <Icon className={`w-5 h-5 ${isActive ? step.activeColor : "text-gray-600"}`} />}
-                </div>
-                <p className={`text-[10px] font-bold uppercase tracking-widest text-center ${
-                  isCompleted ? "text-emerald-400" : isActive ? "text-white" : "text-gray-600"
-                }`}>{step.label}</p>
-                {isActive && <p className="text-[10px] text-gray-500 text-center mt-1 max-w-[100px] leading-relaxed">{step.description}</p>}
-              </div>
-              {idx < INSTALL_STEPS.length - 1 && (
-                <div className={`h-0.5 flex-1 mt-5 mx-1 rounded-full transition-all ${currentStep > step.id ? "bg-emerald-400/50" : "bg-white/8"}`} />
-              )}
-            </React.Fragment>
-          );
-        })}
+      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
       </div>
-
-      {/* Mobile: vertical stepper */}
-      <div className="md:hidden space-y-4">
-        {INSTALL_STEPS.map((step) => {
-          const isCompleted = currentStep > step.id;
-          const isActive = currentStep === step.id;
-          const Icon = step.icon;
-          return (
-            <div key={step.id} className={`flex items-start gap-3 rounded-xl p-3 transition-all ${isActive ? "bg-primary/5 border border-primary/20" : "opacity-50"}`}>
-              <div className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${
-                isCompleted ? "bg-emerald-400/20 border-emerald-400"
-                  : isActive ? "bg-primary/20 border-primary"
-                  : "bg-white/3 border-white/10"
-              }`}>
-                {isCompleted
-                  ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  : <Icon className={`w-4 h-4 ${isActive ? step.activeColor : "text-gray-600"}`} />}
-              </div>
-              <div>
-                <p className={`text-xs font-bold uppercase tracking-widest ${isCompleted ? "text-emerald-400" : isActive ? "text-white" : "text-gray-600"}`}>{step.label}</p>
-                {isActive && <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{step.description}</p>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {currentStep === 5 && (
-        <div className="mt-4 flex items-center gap-2 bg-emerald-400/8 border border-emerald-400/20 rounded-xl px-4 py-3">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <p className="text-xs text-emerald-400 font-bold">You're fully connected to ORBITFUTURE. Enjoy high-speed internet anywhere!</p>
-        </div>
-      )}
-      {currentStep < 5 && (
-        <div className="mt-4 flex items-center gap-2 text-gray-600 text-xs">
-          <Clock className="w-3.5 h-3.5" />
-          <span>Questions about delivery? Contact our team via WhatsApp or email support.</span>
-        </div>
-      )}
+      <p className="text-[10px] text-muted-foreground mt-1">{100 - pct}% remaining · Resets in {30 - (differenceInDays(new Date(), new Date()) % 30)} days</p>
     </div>
   );
 }
 
-type ProfileSaveState = "idle" | "saving" | "saved" | "error";
-type PasswordSaveState = "idle" | "saving" | "saved" | "error";
-
-function ProfileSection({ user, updateProfile, refreshUser }: {
-  user: { name: string; email: string; phone?: string | null; address?: string | null };
-  updateProfile: (data: Partial<{ name: string; phone: string; address: string; password: string; newPassword: string }>) => Promise<void>;
-  refreshUser: () => Promise<void>;
-}) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState(user.name);
-  const [phone, setPhone] = useState(user.phone ?? "");
-  const [address, setAddress] = useState(user.address ?? "");
-  const [saveState, setSaveState] = useState<ProfileSaveState>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  // Sync form when user changes
-  useEffect(() => {
-    setName(user.name);
-    setPhone(user.phone ?? "");
-    setAddress(user.address ?? "");
-  }, [user.name, user.phone, user.address]);
-
-  // Password change
-  const [pwOpen, setPwOpen] = useState(false);
-  const [currentPw, setCurrentPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [pwState, setPwState] = useState<PasswordSaveState>("idle");
-  const [pwError, setPwError] = useState("");
-
-  const handleProfileSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || name.trim().length < 2) { setErrorMsg("Name must be at least 2 characters"); return; }
-    setSaveState("saving");
-    setErrorMsg("");
-    try {
-      await updateProfile({ name: name.trim(), phone: phone || undefined, address: address || undefined });
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 2500);
-    } catch (err: any) {
-      setErrorMsg(err.message ?? "Update failed");
-      setSaveState("error");
-    }
-  };
-
-  const handlePasswordSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPw !== confirmPw) { setPwError("Passwords don't match"); return; }
-    if (newPw.length < 8) { setPwError("New password must be at least 8 characters"); return; }
-    setPwState("saving");
-    setPwError("");
-    try {
-      await updateProfile({ password: currentPw, newPassword: newPw });
-      setPwState("saved");
-      setCurrentPw(""); setNewPw(""); setConfirmPw("");
-      setTimeout(() => { setPwState("idle"); setPwOpen(false); }, 2000);
-    } catch (err: any) {
-      setPwError(err.message ?? "Password change failed");
-      setPwState("error");
-    }
-  };
+// ── Tracking timeline card ─────────────────────────────────────────────────────
+function TrackingTimeline({ subscription, liveStatus }: { subscription: Subscription; liveStatus?: string }) {
+  const currentStatus = liveStatus ?? subscription.trackingStatus ?? "pending";
+  const currentIdx = getStageIndex(currentStatus);
+  const history: TrackingEvent[] = subscription.trackingHistory ?? [];
 
   return (
-    <Card className="bg-card border-border mt-6">
-      <button
-        className="w-full flex items-center justify-between p-5 md:p-6 border-b border-border/50"
-        onClick={() => setOpen(o => !o)}
-      >
-        <div className="flex items-center gap-2.5">
-          <User className="w-4 h-4 text-primary" />
-          <span className="text-sm font-bold uppercase tracking-widest text-white">Profile Settings</span>
-        </div>
-        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-      </button>
+    <div className="space-y-1 mt-2">
+      {TRACKING_STAGES.map((stage, i) => {
+        const meta = STAGE_META[stage];
+        const Icon = meta.icon;
+        const done = i < currentIdx;
+        const active = i === currentIdx;
+        const future = i > currentIdx;
+        const event = history.find(h => h.status === stage);
 
-      {open && (
-        <CardContent className="p-5 md:p-6 space-y-6">
-          {/* Profile form */}
-          <form onSubmit={handleProfileSave} className="space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <User className="w-3.5 h-3.5" /> Personal Information
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1.5">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="w-full h-10 bg-white/5 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                />
+        return (
+          <div key={stage} className="flex items-start gap-3">
+            <div className="flex flex-col items-center">
+              <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                active ? "border-primary bg-primary/20 shadow-[0_0_10px_rgba(0,212,255,0.3)]" :
+                done ? "border-emerald-500 bg-emerald-500/15" :
+                "border-white/15 bg-white/3"
+              }`}>
+                <Icon className={`w-3.5 h-3.5 ${active ? "text-primary" : done ? "text-emerald-400" : "text-gray-600"}`} />
               </div>
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1.5">Email <span className="normal-case text-muted-foreground/60">(read-only)</span></label>
-                <input
-                  type="email"
-                  disabled
-                  value={user.email}
-                  className="w-full h-10 bg-white/3 border border-white/5 rounded-lg px-3 text-gray-500 text-sm cursor-not-allowed"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1.5">Phone <span className="normal-case text-muted-foreground/60">(optional)</span></label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder="+1 234 567 8900"
-                  className="w-full h-10 bg-white/5 border border-white/10 rounded-lg px-3 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1.5">Installation Address <span className="normal-case text-muted-foreground/60">(optional)</span></label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={e => setAddress(e.target.value)}
-                  placeholder="Street, City, Country"
-                  className="w-full h-10 bg-white/5 border border-white/10 rounded-lg px-3 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-colors"
-                />
-              </div>
+              {i < TRACKING_STAGES.length - 1 && (
+                <div className={`w-px h-5 mt-0.5 ${done ? "bg-emerald-500/40" : "bg-white/8"}`} />
+              )}
             </div>
-
-            {saveState === "error" && errorMsg && (
-              <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/20 rounded-lg p-3">
-                <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                <p className="text-red-400 text-xs">{errorMsg}</p>
-              </div>
-            )}
-
-            <div className="flex justify-end">
-              <Button type="submit" size="sm" disabled={saveState === "saving"} className="text-xs uppercase tracking-widest font-bold h-9">
-                {saveState === "saving" ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</>
-                  : saveState === "saved" ? <><CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />Saved!</>
-                  : <><Save className="w-3.5 h-3.5 mr-1.5" />Save Changes</>}
-              </Button>
+            <div className="pb-1 min-w-0">
+              <p className={`text-xs font-bold ${active ? "text-white" : done ? "text-emerald-400" : "text-gray-600"}`}>
+                {meta.label}
+                {active && (
+                  <span className="ml-2 inline-block w-1.5 h-1.5 bg-primary rounded-full animate-pulse align-middle" />
+                )}
+              </p>
+              {event && (
+                <p className="text-[10px] text-muted-foreground truncate">{event.note}</p>
+              )}
+              {event?.timestamp && (
+                <p className="text-[10px] text-gray-600">{format(new Date(event.timestamp), "MMM d 'at' h:mm a")}</p>
+              )}
             </div>
-          </form>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-          {/* Password change */}
-          <div className="border-t border-border/50 pt-5">
-            <button
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors w-full mb-4"
-              onClick={() => setPwOpen(o => !o)}
-            >
-              <Lock className="w-3.5 h-3.5" />
-              Change Password
-              {pwOpen ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
-            </button>
+// ── Subscription service card ──────────────────────────────────────────────────
+function ServiceCard({ sub, token }: { sub: Subscription; token: string }) {
+  const [liveStatus, setLiveStatus] = useState<string | undefined>(undefined);
+  const [connected, setConnected] = useState(false);
+  const [showTracking, setShowTracking] = useState(true);
+  const esRef = useRef<EventSource | null>(null);
 
-            {pwOpen && (
-              <form onSubmit={handlePasswordSave} className="space-y-4">
-                {[
-                  { key: "current", label: "Current Password", val: currentPw, set: setCurrentPw },
-                  { key: "new", label: "New Password", val: newPw, set: setNewPw },
-                  { key: "confirm", label: "Confirm New Password", val: confirmPw, set: setConfirmPw },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label className="block text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1.5">{f.label}</label>
-                    <input
-                      type="password"
-                      required
-                      value={f.val}
-                      onChange={e => f.set(e.target.value)}
-                      className="w-full h-10 bg-white/5 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                    />
-                  </div>
-                ))}
+  useEffect(() => {
+    const base = getApiBase();
+    const url = `${base}/api/subscriptions/${sub.id}/tracking-stream?token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
+    esRef.current = es;
 
-                {pwState === "error" && pwError && (
-                  <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/20 rounded-lg p-3">
-                    <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                    <p className="text-red-400 text-xs">{pwError}</p>
-                  </div>
-                )}
+    es.onopen = () => setConnected(true);
+    es.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === "tracking_update" && msg.trackingStatus) {
+          setLiveStatus(msg.trackingStatus);
+        }
+      } catch { }
+    };
+    es.onerror = () => { setConnected(false); es.close(); };
 
-                {pwState === "saved" && (
-                  <div className="flex items-center gap-2 bg-emerald-500/8 border border-emerald-500/20 rounded-lg p-3">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <p className="text-emerald-400 text-xs">Password changed successfully!</p>
-                  </div>
-                )}
+    return () => { es.close(); };
+  }, [sub.id, token]);
 
-                <div className="flex justify-end">
-                  <Button type="submit" size="sm" disabled={pwState === "saving"} variant="outline" className="text-xs uppercase tracking-widest font-bold h-9 border-white/15">
-                    {pwState === "saving" ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Updating…</>
-                      : <><Lock className="w-3.5 h-3.5 mr-1.5" />Update Password</>}
-                  </Button>
-                </div>
-              </form>
+  const currentStatus = liveStatus ?? sub.trackingStatus ?? "pending";
+  const stageIdx = getStageIndex(currentStatus);
+  const stageMeta = STAGE_META[currentStatus] ?? STAGE_META["pending"];
+  const Icon = stageMeta.icon;
+  const isActive = sub.status === "active";
+  const isCompleted = currentStatus === "completed" || currentStatus === "activated";
+  const usage = getSimulatedUsage(sub.createdAt, sub.priceMonthly ?? 120);
+
+  return (
+    <Card className="bg-card border-border overflow-hidden">
+      {/* Card top bar */}
+      <div className={`h-1 w-full ${isActive ? "bg-gradient-to-r from-primary/50 to-emerald-500/50" : "bg-red-500/30"}`} />
+      <CardContent className="p-5">
+        {/* Header row */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="min-w-0">
+            <p className="text-sm font-black text-white uppercase tracking-widest truncate">{sub.planName || "Starlink Plan"}</p>
+            <p className="text-xs text-muted-foreground">{sub.planSpeed || "High-speed satellite"}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0 ml-3">
+            <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+              isActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" : "bg-red-500/15 text-red-400 border-red-500/20"
+            }`}>
+              {isActive ? "● Active" : sub.status}
+            </span>
+            {connected && (
+              <span className="text-[9px] text-primary/60 uppercase tracking-widest">Live</span>
             )}
           </div>
-        </CardContent>
-      )}
+        </div>
+
+        {/* Status + price row */}
+        <div className="flex items-center gap-3 mb-4 bg-white/3 rounded-xl px-3 py-2.5 border border-white/5">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isCompleted ? "bg-primary/10 border border-primary/20" : "bg-amber-500/10 border border-amber-500/20"}`}>
+            <Icon className={`w-4 h-4 ${isCompleted ? stageMeta.color : "text-amber-400"}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-white">{stageMeta.label}</p>
+            {sub.renewalDate && (
+              <p className="text-[10px] text-muted-foreground">Renews {format(new Date(sub.renewalDate), "MMM d, yyyy")}</p>
+            )}
+          </div>
+          <p className="text-sm font-black text-primary shrink-0">${sub.priceMonthly ?? "—"}/mo</p>
+        </div>
+
+        {/* Data usage */}
+        {isCompleted && (
+          <div className="mb-4">
+            <DataGauge used={usage.used} total={usage.total} />
+          </div>
+        )}
+
+        {/* Address */}
+        {sub.address && (
+          <div className="flex items-start gap-2 mb-4">
+            <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground truncate">{sub.address}</p>
+          </div>
+        )}
+
+        {/* Tracking toggle */}
+        <button
+          className="w-full flex items-center justify-between text-xs font-bold text-muted-foreground hover:text-white border-t border-white/5 pt-3 transition-colors"
+          onClick={() => setShowTracking(!showTracking)}
+        >
+          <span className="flex items-center gap-1.5 uppercase tracking-widest">
+            <Activity className="w-3 h-3" /> Order Tracking
+          </span>
+          <span className="text-[10px]">{showTracking ? "hide" : "show"}</span>
+        </button>
+
+        {showTracking && <TrackingTimeline subscription={sub} liveStatus={liveStatus} />}
+      </CardContent>
     </Card>
   );
 }
 
+// ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const { user, token, logout, loading, updateProfile, refreshUser } = useAuth();
+  const { user, token, updateProfile, refreshUser, logout } = useAuth();
   const [, navigate] = useLocation();
+
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [wallet, setWallet] = useState<{ balance: number } | null>(null);
-  const [subsLoading, setSubsLoading] = useState(true);
-  const [cancelling, setCancelling] = useState<number | null>(null);
-  const [cancelledIds, setCancelledIds] = useState<Set<number>>(new Set());
+  const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  // Profile edit state
+  const [editMode, setEditMode] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: "", phone: "", address: "" });
+  const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+
+  const apiBase = getApiBase();
 
   useEffect(() => {
-    if (!loading && !user) navigate("/login?redirect=/dashboard");
-  }, [user, loading, navigate]);
-
-  useEffect(() => {
+    if (!token) { navigate("/login?redirect=/dashboard"); return; }
     if (!user) return;
-    fetch(`${getApiBase()}/api/subscriptions?email=${encodeURIComponent(user.email)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(data => { setSubscriptions(data.subscriptions || []); setSubsLoading(false); })
-      .catch(() => setSubsLoading(false));
 
-    fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(user.email)}`)
-      .then(r => r.json())
-      .then(setWallet)
-      .catch(() => {});
-  }, [user, token]);
+    setProfileForm({ name: user.name, phone: user.phone ?? "", address: user.address ?? "" });
 
-  const handleCancel = async (id: number) => {
-    if (!token) return;
-    const confirmed = window.confirm("Are you sure you want to cancel this subscription? You'll retain access until end of billing period.");
-    if (!confirmed) return;
-    setCancelling(id);
-    try {
-      const res = await fetch(`${getApiBase()}/api/subscriptions/${id}/cancel`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setCancelledIds(prev => new Set([...prev, id]));
-        setSubscriptions(prev => prev.map(s => s.id === id ? { ...s, status: "cancelled" } : s));
-      }
-    } catch {}
-    setCancelling(null);
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // Fetch subscriptions and billing summary in parallel
+    Promise.all([
+      fetch(`${apiBase}/api/subscriptions?email=${encodeURIComponent(user.email)}`, { headers })
+        .then(r => r.ok ? r.json() : { subscriptions: [] }),
+      fetch(`${apiBase}/api/billing/summary`, { headers })
+        .then(r => r.ok ? r.json() : null),
+    ]).then(([subData, billData]) => {
+      const subs: Subscription[] = (subData.subscriptions ?? []).map((s: any) => ({
+        id: s.id,
+        email: s.email,
+        planId: s.planId,
+        planName: s.planName ?? s.plan?.name ?? "Starlink Plan",
+        planCategory: s.planCategory ?? s.plan?.category ?? "",
+        planSpeed: s.planSpeed ?? s.plan?.speed ?? "",
+        priceMonthly: s.priceMonthly ?? parseFloat(String(s.plan?.priceMonthly ?? 120)),
+        status: s.status,
+        address: s.address,
+        amountPaid: s.amountPaid,
+        renewalDate: s.renewalDate,
+        nextBillingDate: s.nextBillingDate,
+        autoRenew: s.autoRenew ?? true,
+        trackingStatus: s.trackingStatus ?? "pending",
+        trackingHistory: s.trackingHistory ?? [],
+        createdAt: s.createdAt,
+        cancelledAt: s.cancelledAt,
+      }));
+      setSubscriptions(subs);
+      if (billData) setBillingSummary(billData);
+    }).catch(console.error).finally(() => setLoading(false));
+  }, [token, user?.email]);
+
+  const copyAccountNumber = () => {
+    if (!user?.accountNumber) return;
+    navigator.clipboard.writeText(user.accountNumber).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
-  if (loading || !user) return null;
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordForm.newPass && passwordForm.newPass !== passwordForm.confirm) {
+      setProfileError("New passwords don't match"); return;
+    }
+    setProfileError(""); setSavingProfile(true);
+    try {
+      await updateProfile({
+        name: profileForm.name,
+        phone: profileForm.phone || undefined,
+        address: profileForm.address || undefined,
+        ...(passwordForm.current && passwordForm.newPass ? { password: passwordForm.current, newPassword: passwordForm.newPass } : {}),
+      });
+      await refreshUser();
+      setEditMode(false);
+      setProfileSuccess("Profile updated successfully");
+      setPasswordForm({ current: "", newPass: "", confirm: "" });
+      setTimeout(() => setProfileSuccess(""), 3000);
+    } catch (err: any) {
+      setProfileError(err.message || "Update failed");
+    }
+    setSavingProfile(false);
+  };
 
-  const activeSubs = subscriptions.filter(s => s.status === "active");
-  const totalMonthly = activeSubs.reduce((acc, s) => acc + s.priceMonthly, 0);
+  if (!user) return null;
+
+  const activeCount = subscriptions.filter(s => s.status === "active").length;
+  const hasOverdue = billingSummary && billingSummary.unpaidCount > 0;
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-12 max-w-5xl">
+      <div className="max-w-4xl mx-auto px-4 py-10">
 
-        {/* Header */}
-        <div className="flex items-start justify-between mb-10 gap-4">
+        {/* ── Account header ────────────────────────────────────────────────── */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white">My Dashboard</h1>
-            <p className="text-gray-400 mt-1 text-sm">Welcome back, <span className="text-white font-bold">{user.name}</span></p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center">
+                <Satellite className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-lg font-black text-white uppercase tracking-wider leading-none">{user.name}</p>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+            {user.accountNumber && (
+              <button
+                onClick={copyAccountNumber}
+                className="flex items-center gap-2 mt-1 group"
+              >
+                <span className="text-xs font-mono font-bold text-primary/80 group-hover:text-primary transition-colors">{user.accountNumber}</span>
+                {copied
+                  ? <CheckCheck className="w-3 h-3 text-emerald-400" />
+                  : <Copy className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                }
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{copied ? "Copied!" : "Account No."}</span>
+              </button>
+            )}
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Link href="/support">
-              <Button variant="outline" size="sm" className="border-white/15 text-gray-400 hover:text-white text-xs uppercase tracking-widest hidden sm:flex">
-                <HeadphonesIcon className="w-3.5 h-3.5 mr-1.5" />
-                Support
+
+          <div className="flex items-center gap-2">
+            <Link href="/billing">
+              <Button variant="outline" size="sm" className="h-9 text-xs uppercase tracking-widest font-bold border-white/10 hover:border-primary/40">
+                <Receipt className="w-3.5 h-3.5 mr-1.5" /> Billing
               </Button>
             </Link>
-            <Button variant="outline" size="sm" onClick={logout} className="border-white/15 text-gray-400 hover:text-white text-xs uppercase tracking-widest">
-              <LogOut className="w-3.5 h-3.5 mr-1.5" />
+            <Link href="/support">
+              <Button variant="outline" size="sm" className="h-9 text-xs uppercase tracking-widest font-bold border-white/10">
+                <HeadphonesIcon className="w-3.5 h-3.5 mr-1.5" /> Support
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 text-xs uppercase tracking-widest font-bold text-red-400 hover:text-red-300 hover:bg-red-950/20"
+              onClick={() => { logout(); navigate("/"); }}
+            >
               Sign Out
             </Button>
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {/* ── Overdue invoice warning ──────────────────────────────────────── */}
+        {hasOverdue && (
+          <div className="flex items-center gap-3 bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3 mb-6">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <p className="text-sm text-amber-300">
+              You have {billingSummary!.unpaidCount} unpaid invoice{billingSummary!.unpaidCount > 1 ? "s" : ""}.
+              <Link href="/billing" className="ml-2 underline font-bold">View billing →</Link>
+            </p>
+          </div>
+        )}
+
+        {/* ── Summary stats ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] uppercase tracking-widest text-muted-foreground">Orbit Wallet</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-primary" />
-                <span className="text-3xl font-black text-white">{wallet?.balance ?? 0}</span>
-                <span className="text-gray-500 text-sm">tokens</span>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Signal className="w-3.5 h-3.5 text-emerald-400" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Active Plans</p>
               </div>
-              <Link href="/wallet">
-                <span className="text-xs text-primary hover:underline mt-2 block font-bold cursor-pointer">Top up wallet →</span>
-              </Link>
+              <p className="text-2xl font-black text-white">{activeCount}</p>
             </CardContent>
           </Card>
-
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] uppercase tracking-widest text-muted-foreground">Active Plans</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-emerald-400" />
-                <span className="text-3xl font-black text-white">{activeSubs.length}</span>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total Paid</p>
               </div>
-              {activeSubs.length > 0 && (
-                <p className="text-xs text-gray-500 mt-2">${totalMonthly}/mo total</p>
+              <p className="text-2xl font-black text-primary">${billingSummary?.totalPaid?.toFixed(0) ?? "0"}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="w-3.5 h-3.5 text-violet-400" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Next Bill</p>
+              </div>
+              {billingSummary?.nextBills?.[0] ? (
+                <p className="text-sm font-black text-white">
+                  {format(new Date(billingSummary.nextBills[0].renewalDate), "MMM d")}
+                </p>
+              ) : (
+                <p className="text-sm font-black text-gray-600">—</p>
               )}
             </CardContent>
           </Card>
-
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] uppercase tracking-widest text-muted-foreground">Account</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm font-medium text-white truncate">{user.email}</p>
-              {user.phone && <p className="text-xs text-gray-500 mt-1">{user.phone}</p>}
-              {user.address && <p className="text-xs text-gray-600 truncate mt-0.5">{user.address}</p>}
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="w-3.5 h-3.5 text-amber-400" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Member Since</p>
+              </div>
+              <p className="text-sm font-black text-white">{format(new Date(user.createdAt), "MMM yyyy")}</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Installation trackers */}
-        {!subsLoading && activeSubs.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Delivery & Installation Status</h2>
-            {activeSubs.map(sub => <InstallationTracker key={sub.id} subscription={sub} />)}
-          </div>
-        )}
-
-        {/* Subscriptions list */}
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border/50 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm uppercase tracking-widest font-bold">My Subscriptions</CardTitle>
-            {activeSubs.length === 0 && !subsLoading && (
-              <Link href="/plans">
-                <Button size="sm" className="text-xs uppercase tracking-widest font-bold h-8">
-                  <ArrowRight className="w-3.5 h-3.5 mr-1.5" />
-                  Browse Plans
-                </Button>
-              </Link>
-            )}
-          </CardHeader>
-          <CardContent className="p-0">
-            {subsLoading ? (
-              <div className="p-8 text-center">
-                <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
-                <p className="text-gray-500 text-xs mt-3">Loading subscriptions...</p>
-              </div>
-            ) : subscriptions.length === 0 ? (
-              <div className="p-10 text-center">
-                <Satellite className="w-12 h-12 text-gray-700 mx-auto mb-4" />
-                <p className="text-gray-500 mb-2 font-bold">No subscriptions yet</p>
-                <p className="text-gray-600 text-xs mb-6">Get connected with a Starlink plan starting at $90/mo</p>
-                <Link href="/plans">
-                  <Button className="uppercase tracking-widest font-bold text-xs h-10">
-                    <Satellite className="w-4 h-4 mr-2" />
-                    Browse Plans
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/40">
-                {subscriptions.map(sub => (
-                  <div key={sub.id} className="p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-white text-sm">{sub.planName}</h3>
-                        <Badge
-                          variant="outline"
-                          className={`text-[9px] uppercase tracking-wider ${
-                            sub.status === "active" ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/5"
-                              : sub.status === "cancelled" ? "text-red-400 border-red-400/30 bg-red-400/5"
-                              : "text-gray-400 border-gray-400/30"
-                          }`}
-                        >
-                          {sub.status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-gray-500 capitalize">{sub.planCategory} · {sub.planSpeed}</p>
-                      <p className="text-xs text-gray-700 mt-1">
-                        <Calendar className="w-3 h-3 inline mr-1" />
-                        Started {format(new Date(sub.createdAt), "MMM d, yyyy")}
-                        {sub.cancelledAt && ` · Cancelled ${format(new Date(sub.cancelledAt), "MMM d, yyyy")}`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="text-lg font-black text-white">${sub.priceMonthly}<span className="text-xs text-gray-500 font-normal">/mo</span></div>
-                        <p className="text-[10px] text-gray-600 uppercase tracking-wider">Ref: #ORB-{String(sub.id).padStart(6, "0")}</p>
-                      </div>
-                      {sub.status === "active" && !cancelledIds.has(sub.id) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCancel(sub.id)}
-                          disabled={cancelling === sub.id}
-                          className="border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/40 text-xs uppercase tracking-widest font-bold h-8 shrink-0"
-                        >
-                          {cancelling === sub.id
-                            ? <span className="w-3.5 h-3.5 border border-red-400/30 border-t-red-400 rounded-full animate-spin" />
-                            : "Cancel"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Profile settings */}
-        {user && (
-          <ProfileSection
-            user={user}
-            updateProfile={updateProfile}
-            refreshUser={refreshUser}
-          />
-        )}
-
-        {/* Support nudge */}
-        {subscriptions.length > 0 && (
-          <div className="mt-6 border border-white/6 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-xs text-gray-400">Questions about your plan or delivery? Our support team is available 24/7.</p>
-            </div>
-            <Link href="/support">
-              <Button variant="outline" size="sm" className="border-white/15 text-xs uppercase tracking-widest font-bold h-7 shrink-0">
-                <ExternalLink className="w-3 h-3 mr-1" />
-                Support
-              </Button>
+        {/* ── Service cards ─────────────────────────────────────────────────── */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+              <Satellite className="w-3.5 h-3.5 text-primary" /> My Services
+            </h2>
+            <Link href="/plans">
+              <button className="text-xs text-primary hover:underline flex items-center gap-1 font-bold uppercase tracking-widest">
+                Add Plan <ArrowRight className="w-3 h-3" />
+              </button>
             </Link>
           </div>
-        )}
+
+          {loading ? (
+            <div className="grid md:grid-cols-2 gap-4">
+              {[1, 2].map(i => <div key={i} className="h-48 bg-white/5 rounded-xl animate-pulse" />)}
+            </div>
+          ) : subscriptions.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-white/10 rounded-xl">
+              <Satellite className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground mb-4">No active plans yet.</p>
+              <Link href="/plans">
+                <Button size="sm" className="text-xs uppercase tracking-widest font-bold">
+                  Browse Plans <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {subscriptions.map(sub => (
+                <ServiceCard key={sub.id} sub={sub} token={token!} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Quick actions ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          {[
+            { label: "Browse Plans", href: "/plans", icon: Satellite, color: "text-primary" },
+            { label: "Billing", href: "/billing", icon: Receipt, color: "text-amber-400" },
+            { label: "Track Order", href: "/track", icon: Package, color: "text-violet-400" },
+            { label: "Get Support", href: "/support", icon: HeadphonesIcon, color: "text-emerald-400" },
+          ].map(a => {
+            const Icon = a.icon;
+            return (
+              <Link key={a.href} href={a.href}>
+                <div className="flex flex-col items-center gap-2 p-4 bg-card border border-border rounded-xl hover:border-primary/30 cursor-pointer transition-all group">
+                  <Icon className={`w-5 h-5 ${a.color} group-hover:scale-110 transition-transform`} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-white transition-colors text-center">{a.label}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* ── Profile section ───────────────────────────────────────────────── */}
+        <div className="border-t border-white/5 pt-8">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+              <User className="w-3.5 h-3.5 text-primary" /> Account Settings
+            </h2>
+            {!editMode && (
+              <Button variant="outline" size="sm" className="text-xs uppercase tracking-widest font-bold h-8 border-white/10 hover:border-primary/30" onClick={() => { setEditMode(true); setProfileError(""); setProfileSuccess(""); }}>
+                Edit Profile
+              </Button>
+            )}
+          </div>
+
+          {profileSuccess && (
+            <div className="flex items-center gap-2 bg-emerald-950/30 border border-emerald-700/30 rounded-lg px-3 py-2.5 mb-4">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <p className="text-xs text-emerald-400">{profileSuccess}</p>
+            </div>
+          )}
+
+          {!editMode ? (
+            <div className="grid md:grid-cols-2 gap-3">
+              {[
+                { label: "Full Name", value: user.name, icon: User },
+                { label: "Email", value: user.email, icon: null },
+                { label: "Account Number", value: user.accountNumber ?? "—", icon: null, mono: true },
+                { label: "Phone", value: user.phone || "—", icon: null },
+                { label: "Address", value: user.address || "—", icon: null },
+                { label: "Member Since", value: format(new Date(user.createdAt), "MMMM d, yyyy"), icon: null },
+              ].map(field => (
+                <div key={field.label} className="flex items-center gap-3 bg-card border border-border rounded-lg p-3">
+                  <div className="text-left min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{field.label}</p>
+                    <p className={`text-sm text-white truncate ${field.mono ? "font-mono" : ""}`}>{field.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">Full Name</label>
+                  <Input value={profileForm.name} onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))} className="h-11 bg-card" required />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">Phone</label>
+                  <Input value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} className="h-11 bg-card" placeholder="+1 (555) 000-0000" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">Installation Address</label>
+                <Input value={profileForm.address} onChange={e => setProfileForm(p => ({ ...p, address: e.target.value }))} className="h-11 bg-card" placeholder="Street, City, Country" />
+              </div>
+
+              <div className="border-t border-white/5 pt-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <Lock className="w-3 h-3" /> Change Password (optional)
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Input type="password" placeholder="Current password" value={passwordForm.current} onChange={e => setPasswordForm(p => ({ ...p, current: e.target.value }))} className="h-11 bg-card" />
+                  <Input type="password" placeholder="New password" value={passwordForm.newPass} onChange={e => setPasswordForm(p => ({ ...p, newPass: e.target.value }))} className="h-11 bg-card" minLength={6} />
+                  <Input type="password" placeholder="Confirm new password" value={passwordForm.confirm} onChange={e => setPasswordForm(p => ({ ...p, confirm: e.target.value }))} className="h-11 bg-card" />
+                </div>
+              </div>
+
+              {profileError && <p className="text-destructive text-sm">{profileError}</p>}
+
+              <div className="flex items-center gap-3">
+                <Button type="submit" disabled={savingProfile} className="text-xs uppercase tracking-widest font-bold">
+                  {savingProfile ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Saving…</> : <><Save className="w-3.5 h-3.5 mr-1.5" /> Save Changes</>}
+                </Button>
+                <Button type="button" variant="ghost" className="text-xs uppercase tracking-widest font-bold text-muted-foreground" onClick={() => { setEditMode(false); setProfileError(""); }}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </MainLayout>
   );

@@ -18,7 +18,7 @@ const FAQS = [
       },
       {
         q: "Where is OrbitFuture based?",
-        a: "OrbitFuture operates globally to serve customers in 100+ countries where Starlink service is available. Our support team is available 24/7 via WhatsApp and email at support@orbitfuture.com.",
+        a: "OrbitFuture operates globally to serve customers in 100+ countries where Starlink service is available. Our support team is available 24/7 via WhatsApp and email at support@orbitfuture.store.",
       },
     ],
   },
@@ -60,7 +60,7 @@ const FAQS = [
       },
       {
         q: "How is aviation pricing handled?",
-        a: "Aviation connectivity solutions require custom configuration based on aircraft type, route coverage, and data requirements. Please contact our sales team at sales@orbitfuture.com or via WhatsApp for a tailored enterprise quote.",
+        a: "Aviation connectivity solutions require custom configuration based on aircraft type, route coverage, and data requirements. Please contact our sales team at sales@orbitfuture.store or via WhatsApp for a tailored enterprise quote.",
       },
     ],
   },
@@ -108,7 +108,7 @@ const FAQS = [
     items: [
       {
         q: "What is your refund policy for hardware?",
-        a: "Unopened hardware may be returned within 14 days of delivery for a full refund. Hardware that has been opened and tested is not eligible for a refund unless it is confirmed defective under our 12-month warranty. To initiate a return, contact billing@orbitfuture.com with your order reference.",
+        a: "Unopened hardware may be returned within 14 days of delivery for a full refund. Hardware that has been opened and tested is not eligible for a refund unless it is confirmed defective under our 12-month warranty. To initiate a return, contact billing@orbitfuture.store with your order reference.",
       },
       {
         q: "What is your refund policy for monthly service fees?",
@@ -116,11 +116,11 @@ const FAQS = [
       },
       {
         q: "What if my hardware arrives defective?",
-        a: "All hardware is covered by a 12-month replacement warranty. If your equipment is defective on arrival or fails within the warranty period, contact support@orbitfuture.com and we will arrange a replacement at no cost to you.",
+        a: "All hardware is covered by a 12-month replacement warranty. If your equipment is defective on arrival or fails within the warranty period, contact support@orbitfuture.store and we will arrange a replacement at no cost to you.",
       },
       {
         q: "How do I cancel my subscription?",
-        a: "You can cancel anytime from your account dashboard or by contacting support@orbitfuture.com. Cancellation takes effect at the end of your current billing cycle. No cancellation fees apply.",
+        a: "You can cancel anytime from your account dashboard or by contacting support@orbitfuture.store. Cancellation takes effect at the end of your current billing cycle. No cancellation fees apply.",
       },
     ],
   },

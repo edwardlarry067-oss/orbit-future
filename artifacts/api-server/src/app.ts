@@ -34,8 +34,6 @@ app.use(
           const allowed = [
             "https://orbitfuture.store",
             "https://www.orbitfuture.store",
-            "https://orbitfuture.com",
-            "https://www.orbitfuture.com",
             "https://fairy-2ff969.netlify.app",
             "https://space-x-puce.vercel.app",
             ...ALLOWED_ORIGINS,

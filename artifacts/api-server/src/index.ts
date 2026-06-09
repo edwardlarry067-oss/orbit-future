@@ -1,8 +1,8 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { db } from "@workspace/db";
-import { plansTable } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { plansTable, usersTable } from "@workspace/db";
+import { sql, isNull } from "drizzle-orm";
 import { validateEnv } from "./lib/envValidator";
 
 // ── Auto-seed plans if table is empty ────────────────────────────────────────
@@ -129,6 +129,24 @@ async function seedIfEmpty() {
   }
 }
 
+// ── Backfill account numbers for users who don't have one ─────────────────────
+async function backfillAccountNumbers() {
+  try {
+    const users = await db.select({ id: usersTable.id }).from(usersTable).where(isNull(usersTable.accountNumber));
+    if (users.length === 0) return;
+    await Promise.all(
+      users.map(u =>
+        db.update(usersTable)
+          .set({ accountNumber: `ORB-${String(u.id).padStart(4, "0")}` })
+          .where(sql`${usersTable.id} = ${u.id} AND ${usersTable.accountNumber} IS NULL`)
+      )
+    );
+    logger.info({ count: users.length }, "Backfilled account numbers");
+  } catch (err) {
+    logger.warn({ err }, "Account number backfill skipped");
+  }
+}
+
 // ── Startup DB table check ────────────────────────────────────────────────────
 async function ensureTablesExist(): Promise<boolean> {
   try {
@@ -165,9 +183,13 @@ app.listen(port, (err) => {
   // P1: Validate env vars + load from DB on startup
   validateEnv().catch((e) => logger.warn({ err: e }, "Env validation failed"));
 
-  // P1: Verify DB tables exist, then seed if empty
+  // P1: Verify DB tables exist, then seed + backfill if needed
   ensureTablesExist().then((ok) => {
-    if (ok) seedIfEmpty();
-    else logger.warn("Skipping seed — tables not ready. Run db:push to fix.");
+    if (ok) {
+      seedIfEmpty();
+      backfillAccountNumbers();
+    } else {
+      logger.warn("Skipping seed — tables not ready. Run db:push to fix.");
+    }
   });
 });

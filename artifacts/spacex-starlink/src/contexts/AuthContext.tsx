@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   phone?: string | null;
   address?: string | null;
+  accountNumber?: string | null;
   createdAt: string;
 }
 

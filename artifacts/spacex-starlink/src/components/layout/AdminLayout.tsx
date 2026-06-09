@@ -12,7 +12,8 @@ import {
   Package,
   Bot,
   KeyRound,
-  Activity
+  Activity,
+  Receipt
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAdminToken, removeAdminToken } from "@/lib/auth";
@@ -40,6 +41,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/admin/orders", label: "Order Tracker", icon: Package },
     { href: "/admin/whatsapp-bot", label: "WA Capture Bot", icon: Bot },
     { href: "/admin/whatsapp-templates", label: "WA Templates", icon: MessageCircle },
+    { href: "/admin/billing", label: "Billing", icon: Receipt },
     { href: "/admin/env-config", label: "API Keys", icon: KeyRound },
     { href: "/admin/system-health", label: "System Health", icon: Activity },
   ];

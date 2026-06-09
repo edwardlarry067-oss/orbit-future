@@ -132,6 +132,10 @@ router.post("/auth/register", rateLimit(5, 15 * 60 * 1000), async (req, res): Pr
       })
       .returning();
 
+    // Assign account number (ORB-XXXX format)
+    const accountNumber = `ORB-${String(user.id).padStart(4, "0")}`;
+    await db.update(usersTable).set({ accountNumber }).where(eq(usersTable.id, user.id));
+
     const token = signToken({ userId: user.id, email: user.email });
 
     // Send welcome email asynchronously — don't block the response
@@ -145,6 +149,7 @@ router.post("/auth/register", rateLimit(5, 15 * 60 * 1000), async (req, res): Pr
         email: user.email,
         phone: user.phone,
         address: user.address,
+        accountNumber,
         createdAt: user.createdAt,
       },
     });
@@ -185,6 +190,7 @@ router.post("/auth/login", rateLimit(10, 15 * 60 * 1000), async (req, res): Prom
         email: user.email,
         phone: user.phone,
         address: user.address,
+        accountNumber: user.accountNumber,
         createdAt: user.createdAt,
       },
     });
@@ -208,6 +214,7 @@ router.get("/auth/me", requireAuth, async (req: any, res): Promise<void> => {
       email: user.email,
       phone: user.phone,
       address: user.address,
+      accountNumber: user.accountNumber,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -281,6 +288,7 @@ router.patch("/auth/me", requireAuth, async (req: any, res): Promise<void> => {
       email: updated.email,
       phone: updated.phone,
       address: updated.address,
+      accountNumber: updated.accountNumber,
       createdAt: updated.createdAt,
     });
   } catch (err) {

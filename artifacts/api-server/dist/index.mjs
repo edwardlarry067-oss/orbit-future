@@ -20650,27 +20650,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router15;
+    module.exports = Router18;
     module.exports.Route = Route;
-    function Router15(options) {
-      if (!(this instanceof Router15)) {
-        return new Router15(options);
+    function Router18(options) {
+      if (!(this instanceof Router18)) {
+        return new Router18(options);
       }
       const opts = options || {};
-      function router15(req, res, next) {
-        router15.handle(req, res, next);
+      function router18(req, res, next) {
+        router18.handle(req, res, next);
       }
-      Object.setPrototypeOf(router15, this);
-      router15.caseSensitive = opts.caseSensitive;
-      router15.mergeParams = opts.mergeParams;
-      router15.params = {};
-      router15.strict = opts.strict;
-      router15.stack = [];
-      return router15;
+      Object.setPrototypeOf(router18, this);
+      router18.caseSensitive = opts.caseSensitive;
+      router18.mergeParams = opts.mergeParams;
+      router18.params = {};
+      router18.strict = opts.strict;
+      router18.stack = [];
+      return router18;
     }
-    Router15.prototype = function() {
+    Router18.prototype = function() {
     };
-    Router15.prototype.param = function param(name, fn) {
+    Router18.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20690,7 +20690,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router15.prototype.handle = function handle(req, res, callback) {
+    Router18.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20817,7 +20817,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router15.prototype.use = function use(handler) {
+    Router18.prototype.use = function use(handler) {
       let offset = 0;
       let path2 = "/";
       if (typeof handler !== "function") {
@@ -20850,7 +20850,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router15.prototype.route = function route(path2) {
+    Router18.prototype.route = function route(path2) {
       const route2 = new Route(path2);
       const layer = new Layer(path2, {
         sensitive: this.caseSensitive,
@@ -20865,7 +20865,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router15.prototype[method] = function(path2) {
+      Router18.prototype[method] = function(path2) {
         const route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21048,13 +21048,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router15 = require_router();
+    var Router18 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router15 = null;
+      var router18 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21063,13 +21063,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router15 === null) {
-            router15 = new Router15({
+          if (router18 === null) {
+            router18 = new Router18({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router15;
+          return router18;
         }
       });
     };
@@ -21140,15 +21140,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router15 = this.router;
+      var router18 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router15.use(path2, fn2);
+          return router18.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router15.use(path2, function mounted_app(req, res, next) {
+        router18.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23721,7 +23721,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router15 = require_router();
+    var Router18 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23743,8 +23743,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router15.Route;
-    exports.Router = Router15;
+    exports.Route = Router18.Route;
+    exports.Router = Router18;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -35624,9 +35624,9 @@ var require_jws = __commonJS({
 var require_decode = __commonJS({
   "../node_modules/.pnpm/jsonwebtoken@9.0.3/node_modules/jsonwebtoken/decode.js"(exports, module) {
     var jws = require_jws();
-    module.exports = function(jwt5, options) {
+    module.exports = function(jwt7, options) {
       options = options || {};
-      var decoded = jws.decode(jwt5, options);
+      var decoded = jws.decode(jwt7, options);
       if (!decoded) {
         return null;
       }
@@ -38651,7 +38651,7 @@ var require_jsonwebtoken = __commonJS({
 });
 
 // src/app.ts
-var import_express15 = __toESM(require_express2(), 1);
+var import_express18 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // ../node_modules/.pnpm/helmet@8.2.0/node_modules/helmet/index.mjs
@@ -39202,7 +39202,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/routes/index.ts
-var import_express14 = __toESM(require_express2(), 1);
+var import_express17 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -40194,11 +40194,11 @@ function isValidIP(ip, version2) {
   }
   return false;
 }
-function isValidJWT(jwt5, alg) {
-  if (!jwtRegex.test(jwt5))
+function isValidJWT(jwt7, alg) {
+  if (!jwtRegex.test(jwt7))
     return false;
   try {
-    const [header] = jwt5.split(".");
+    const [header] = jwt7.split(".");
     if (!header)
       return false;
     const base64 = header.replace(/-/g, "+").replace(/_/g, "/").padEnd(header.length + (4 - header.length % 4) % 4, "=");
@@ -52054,6 +52054,8 @@ function drizzle(...params) {
 var schema_exports = {};
 __export(schema_exports, {
   flutterwaveTransactionsTable: () => flutterwaveTransactionsTable,
+  invoicesTable: () => invoicesTable,
+  otpCodesTable: () => otpCodesTable,
   plansTable: () => plansTable,
   siteSettingsTable: () => siteSettingsTable,
   subscriptionsTable: () => subscriptionsTable,
@@ -52091,6 +52093,14 @@ var subscriptionsTable = pgTable("subscriptions", {
   stripeCustomerId: text("stripe_customer_id"),
   stripeSessionId: text("stripe_session_id"),
   amountPaid: text("amount_paid"),
+  // Billing cycle fields
+  renewalDate: timestamp("renewal_date"),
+  nextBillingDate: timestamp("next_billing_date"),
+  autoRenew: boolean("auto_renew").notNull().default(true),
+  billingCycleMonths: integer("billing_cycle_months").notNull().default(1),
+  // Order tracking fields
+  trackingStatus: text("tracking_status").notNull().default("pending"),
+  trackingHistory: jsonb("tracking_history").$type().default([]),
   cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
@@ -52102,6 +52112,8 @@ var usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   phone: text("phone"),
   address: text("address"),
+  accountNumber: text("account_number").unique(),
+  kycStatus: text("kyc_status").notNull().default("unverified"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
@@ -52172,6 +52184,31 @@ var supportTicketsTable = pgTable("support_tickets", {
   adminRepliedAt: timestamp("admin_replied_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+var invoicesTable = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  userEmail: text("user_email").notNull(),
+  subscriptionId: integer("subscription_id"),
+  amountUsd: numeric("amount_usd").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  lineItems: jsonb("line_items").$type().default([]),
+  status: text("status").notNull().default("paid"),
+  dueDate: timestamp("due_date").notNull(),
+  paidAt: timestamp("paid_at"),
+  paymentRef: text("payment_ref"),
+  planName: text("plan_name").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+var otpCodesTable = pgTable("otp_codes", {
+  id: serial("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  otpCode: text("otp_code").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  attempts: integer("attempts").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow()
 });
 
 // ../lib/db/src/index.ts
@@ -52259,10 +52296,10 @@ function getResend() {
   const { Resend } = require_dist4();
   return new Resend(key);
 }
-var FROM_EMAIL = process.env.EMAIL_FROM ?? "ORBITFUTURE <noreply@orbitfuture.com>";
+var FROM_EMAIL = process.env.EMAIL_FROM ?? "ORBITFUTURE <noreply@orbitfuture.store>";
 var BRAND_COLOR = "#00D4FF";
-var SUPPORT_EMAIL = "support@orbitfuture.com";
-var APP_URL = process.env.APP_URL ?? "https://orbitfuture.com";
+var SUPPORT_EMAIL = "support@orbitfuture.store";
+var APP_URL = process.env.APP_URL ?? "https://orbitfuture.store";
 var baseStyles = `
   body{margin:0;padding:0;background:#050D1A;font-family:'Helvetica Neue',Arial,sans-serif;}
   @media only screen and (max-width:600px){
@@ -53843,6 +53880,8 @@ router7.post("/auth/register", rateLimit(5, 15 * 60 * 1e3), async (req, res) => 
       phone: phone ?? null,
       address: address ?? null
     }).returning();
+    const accountNumber = `ORB-${String(user.id).padStart(4, "0")}`;
+    await db.update(usersTable).set({ accountNumber }).where(eq(usersTable.id, user.id));
     const token = signToken({ userId: user.id, email: user.email });
     sendWelcomeEmail({ customerName: user.name, customerEmail: user.email }).catch(() => {
     });
@@ -53854,6 +53893,7 @@ router7.post("/auth/register", rateLimit(5, 15 * 60 * 1e3), async (req, res) => 
         email: user.email,
         phone: user.phone,
         address: user.address,
+        accountNumber,
         createdAt: user.createdAt
       }
     });
@@ -53889,6 +53929,7 @@ router7.post("/auth/login", rateLimit(10, 15 * 60 * 1e3), async (req, res) => {
         email: user.email,
         phone: user.phone,
         address: user.address,
+        accountNumber: user.accountNumber,
         createdAt: user.createdAt
       }
     });
@@ -53910,6 +53951,7 @@ router7.get("/auth/me", requireAuth, async (req, res) => {
       email: user.email,
       phone: user.phone,
       address: user.address,
+      accountNumber: user.accountNumber,
       createdAt: user.createdAt
     });
   } catch (err) {
@@ -53964,6 +54006,7 @@ router7.patch("/auth/me", requireAuth, async (req, res) => {
       email: updated.email,
       phone: updated.phone,
       address: updated.address,
+      accountNumber: updated.accountNumber,
       createdAt: updated.createdAt
     });
   } catch (err) {
@@ -54272,6 +54315,72 @@ var BUNDLES = [
   }
 ];
 
+// src/lib/invoiceService.ts
+function generateInvoiceNumber() {
+  const now = /* @__PURE__ */ new Date();
+  const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const rand = Math.floor(Math.random() * 9e3) + 1e3;
+  return `INV-${ym}-${rand}`;
+}
+async function createInvoice(params) {
+  try {
+    const { userEmail, subscriptionId, planId, amountPaid, currency = "USD", paymentRef, isFirstMonth = true } = params;
+    let planName = "Starlink Plan";
+    let priceMonthly = amountPaid;
+    let hardwarePrice = 0;
+    try {
+      const [plan] = await db.select().from(plansTable).where(eq(plansTable.id, planId)).limit(1);
+      if (plan) {
+        planName = plan.name;
+        priceMonthly = parseFloat(String(plan.priceMonthly));
+        hardwarePrice = plan.hardwarePrice ? parseFloat(String(plan.hardwarePrice)) : 0;
+      }
+    } catch {
+    }
+    const lineItems = [];
+    if (isFirstMonth && hardwarePrice > 0) {
+      lineItems.push({ description: "Starlink Hardware Kit (one-time)", amount: hardwarePrice });
+      lineItems.push({ description: `${planName} \u2014 Monthly Service`, amount: priceMonthly });
+    } else {
+      lineItems.push({ description: `${planName} \u2014 Monthly Service`, amount: amountPaid });
+    }
+    const now = /* @__PURE__ */ new Date();
+    const dueDate = new Date(now);
+    dueDate.setDate(dueDate.getDate() + 30);
+    let invoiceNumber = generateInvoiceNumber();
+    let retries = 0;
+    while (retries < 5) {
+      try {
+        const [inv] = await db.insert(invoicesTable).values({
+          invoiceNumber,
+          userEmail: userEmail.toLowerCase(),
+          subscriptionId: subscriptionId ?? null,
+          amountUsd: String(amountPaid),
+          currency,
+          lineItems,
+          status: "paid",
+          dueDate,
+          paidAt: now,
+          paymentRef: paymentRef ?? null,
+          planName
+        }).returning();
+        return inv;
+      } catch (e) {
+        if (e?.code === "23505" || e?.message?.includes("unique")) {
+          invoiceNumber = generateInvoiceNumber();
+          retries++;
+        } else {
+          throw e;
+        }
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("[invoiceService] Failed to create invoice:", err);
+    return null;
+  }
+}
+
 // src/routes/paystack.ts
 var router10 = (0, import_express10.Router)();
 var PSK = () => process.env["PAYSTACK_SECRET_KEY"] ?? "";
@@ -54287,7 +54396,7 @@ function resolveCurrency(requested) {
 var APP_URL2 = (() => {
   const url = process.env["APP_URL"] ?? process.env["REPLIT_DEV_DOMAIN"];
   if (url) return url.startsWith("http") ? url : `https://${url}`;
-  return "https://www.orbitfuture.com";
+  return "https://orbitfuture.store";
 })();
 var PLAN_PRICES = {
   1: { name: "Starlink Residential", priceMonthly: 120, speed: "25\u2013100 Mbps" },
@@ -54575,6 +54684,24 @@ router10.post("/paystack-plan-verify", async (req, res) => {
         if (sub) {
           const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planIdNum)).limit(1);
           const planFeatures = dbPlan?.features ?? [];
+          const renewalDate = /* @__PURE__ */ new Date();
+          renewalDate.setDate(renewalDate.getDate() + 30);
+          await db.update(subscriptionsTable).set({
+            renewalDate,
+            nextBillingDate: renewalDate,
+            trackingStatus: "pending",
+            trackingHistory: [{ status: "pending", timestamp: (/* @__PURE__ */ new Date()).toISOString(), note: "Order received and payment confirmed.", updatedBy: "system" }]
+          }).where(eq(subscriptionsTable.id, sub.id));
+          createInvoice({
+            userEmail: customerEmail,
+            subscriptionId: sub.id,
+            planId: planIdNum,
+            amountPaid,
+            currency,
+            paymentRef: reference,
+            isFirstMonth: true
+          }).catch(() => {
+          });
           sendSubscriptionConfirmation({
             customerName,
             customerEmail,
@@ -55098,25 +55225,529 @@ router13.get("/track", async (req, res) => {
 });
 var track_default = router13;
 
-// src/routes/index.ts
+// src/routes/otp.ts
+var import_express14 = __toESM(require_express2(), 1);
+var import_jsonwebtoken5 = __toESM(require_jsonwebtoken(), 1);
 var router14 = (0, import_express14.Router)();
-router14.use(auth_default);
-router14.use(health_default);
-router14.use(plans_default);
-router14.use(subscriptions_default);
-router14.use(checkout_default);
-router14.use(admin_default);
-router14.use(wallet_default);
-router14.use(whatsapp_orders_default);
-router14.use(whatsapp_webhook_default);
-router14.use(paystack_default);
-router14.use(token_activation_default);
-router14.use(support_default);
-router14.use(track_default);
-var routes_default = router14;
+var JWT_EXPIRES2 = "30d";
+function generateOtp() {
+  return String(Math.floor(1e5 + Math.random() * 9e5));
+}
+function signToken2(payload) {
+  return import_jsonwebtoken5.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES2 });
+}
+var otpRateLimit = /* @__PURE__ */ new Map();
+function checkOtpRateLimit(key, max, windowMs) {
+  const now = Date.now();
+  const entry = otpRateLimit.get(key);
+  if (!entry || now > entry.resetAt) {
+    otpRateLimit.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count += 1;
+  return true;
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of otpRateLimit.entries()) {
+    if (now > v.resetAt) otpRateLimit.delete(k);
+  }
+}, 5 * 60 * 1e3);
+async function sendOtpEmail(email, otp, name) {
+  const key = process.env["RESEND_API_KEY"];
+  if (!key) return false;
+  try {
+    const { Resend } = require_dist4();
+    const resend = new Resend(key);
+    const fromEmail = process.env["EMAIL_FROM"] ?? "ORBITFUTURE <noreply@orbitfuture.store>";
+    await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: `Your OrbitFuture Login Code: ${otp}`,
+      html: `
+        <!DOCTYPE html>
+        <html><head><meta charset="UTF-8"></head>
+        <body style="margin:0;padding:0;background:#050D1A;font-family:'Helvetica Neue',Arial,sans-serif;">
+          <div style="max-width:480px;margin:40px auto;background:#0A1628;border:1px solid rgba(0,212,255,0.15);border-radius:16px;padding:40px 32px;text-align:center;">
+            <div style="width:56px;height:56px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+              <span style="font-size:24px;">\u{1F6F0}\uFE0F</span>
+            </div>
+            <h1 style="color:#fff;font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">ORBITFUTURE</h1>
+            <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 32px;text-transform:uppercase;letter-spacing:1px;">Login Verification Code</p>
+            <p style="color:rgba(255,255,255,0.7);font-size:14px;margin:0 0 24px;">Hi ${name || "there"},<br>Use the code below to sign in to your account.</p>
+            <div style="background:rgba(0,212,255,0.08);border:2px solid rgba(0,212,255,0.3);border-radius:12px;padding:24px;margin:0 0 24px;">
+              <p style="color:#00D4FF;font-size:42px;font-weight:900;letter-spacing:8px;margin:0;font-family:monospace;">${otp}</p>
+            </div>
+            <p style="color:rgba(255,255,255,0.4);font-size:12px;margin:0 0 8px;">This code expires in <strong style="color:rgba(255,255,255,0.6);">10 minutes</strong>.</p>
+            <p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">If you didn't request this, ignore this email. Your account is secure.</p>
+          </div>
+        </body></html>
+      `
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+router14.post("/auth/otp/send", async (req, res) => {
+  const { email } = req.body;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    res.status(400).json({ error: "Valid email address is required" });
+    return;
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!checkOtpRateLimit(`send:${normalizedEmail}`, 3, 10 * 60 * 1e3)) {
+    res.status(429).json({ error: "Too many OTP requests. Please wait 10 minutes." });
+    return;
+  }
+  try {
+    await db.update(otpCodesTable).set({ used: true }).where(and(eq(otpCodesTable.identifier, normalizedEmail), eq(otpCodesTable.used, false)));
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1e3);
+    await db.insert(otpCodesTable).values({
+      identifier: normalizedEmail,
+      otpCode: otp,
+      expiresAt,
+      used: false,
+      attempts: 0
+    });
+    const [user] = await db.select({ name: usersTable.name }).from(usersTable).where(eq(usersTable.email, normalizedEmail)).limit(1);
+    const sent = await sendOtpEmail(normalizedEmail, otp, user?.name ?? "");
+    if (sent) {
+      res.json({ success: true, message: "OTP sent to your email address", emailSent: true });
+    } else {
+      res.json({
+        success: true,
+        message: "OTP generated (email service not configured \u2014 dev mode)",
+        emailSent: false,
+        devOtp: otp
+      });
+    }
+  } catch (err) {
+    console.error("[otp/send]", err);
+    res.status(500).json({ error: "Failed to generate OTP" });
+  }
+});
+router14.post("/auth/otp/verify", async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    res.status(400).json({ error: "email and code are required" });
+    return;
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedCode = String(code).trim();
+  if (!checkOtpRateLimit(`verify:${normalizedEmail}`, 5, 5 * 60 * 1e3)) {
+    res.status(429).json({ error: "Too many verification attempts. Please try again in 5 minutes." });
+    return;
+  }
+  try {
+    const now = /* @__PURE__ */ new Date();
+    const [otpRecord] = await db.select().from(otpCodesTable).where(
+      and(
+        eq(otpCodesTable.identifier, normalizedEmail),
+        eq(otpCodesTable.used, false),
+        gt(otpCodesTable.expiresAt, now)
+      )
+    ).orderBy(desc(otpCodesTable.createdAt)).limit(1);
+    if (!otpRecord) {
+      res.status(400).json({ error: "No valid OTP found. Please request a new code." });
+      return;
+    }
+    await db.update(otpCodesTable).set({ attempts: otpRecord.attempts + 1 }).where(eq(otpCodesTable.id, otpRecord.id));
+    if (otpRecord.attempts >= 5) {
+      await db.update(otpCodesTable).set({ used: true }).where(eq(otpCodesTable.id, otpRecord.id));
+      res.status(400).json({ error: "Too many failed attempts. Please request a new code." });
+      return;
+    }
+    if (otpRecord.otpCode !== normalizedCode) {
+      res.status(400).json({ error: "Invalid code. Please try again." });
+      return;
+    }
+    await db.update(otpCodesTable).set({ used: true }).where(eq(otpCodesTable.id, otpRecord.id));
+    let user = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail)).limit(1).then((r) => r[0]);
+    if (!user) {
+      const autoName = normalizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      const [created] = await db.insert(usersTable).values({
+        email: normalizedEmail,
+        name: autoName,
+        passwordHash: "",
+        phone: null,
+        address: null
+      }).returning();
+      user = created;
+      const accountNumber = `ORB-${String(user.id).padStart(4, "0")}`;
+      await db.update(usersTable).set({ accountNumber }).where(eq(usersTable.id, user.id));
+      user.accountNumber = accountNumber;
+    }
+    const token = signToken2({ userId: user.id, email: user.email });
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        accountNumber: user.accountNumber,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (err) {
+    console.error("[otp/verify]", err);
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
+var otp_default = router14;
+
+// src/routes/billing.ts
+var import_express15 = __toESM(require_express2(), 1);
+var router15 = (0, import_express15.Router)();
+router15.get("/billing/invoices", requireAuth, async (req, res) => {
+  try {
+    const invoices = await db.select().from(invoicesTable).where(eq(invoicesTable.userEmail, req.user.email.toLowerCase())).orderBy(desc(invoicesTable.createdAt));
+    res.json({ invoices });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to fetch invoices");
+    res.status(500).json({ error: "Failed to fetch invoices" });
+  }
+});
+router15.get("/billing/invoices/:id", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const [inv] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).limit(1);
+    if (!inv) {
+      res.status(404).json({ error: "Invoice not found" });
+      return;
+    }
+    if (inv.userEmail.toLowerCase() !== req.user.email.toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    let subscription = null;
+    if (inv.subscriptionId) {
+      const [sub] = await db.select({ sub: subscriptionsTable, plan: plansTable }).from(subscriptionsTable).leftJoin(plansTable, eq(subscriptionsTable.planId, plansTable.id)).where(eq(subscriptionsTable.id, inv.subscriptionId)).limit(1);
+      subscription = sub ?? null;
+    }
+    res.json({ invoice: inv, subscription });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to fetch invoice");
+    res.status(500).json({ error: "Failed to fetch invoice" });
+  }
+});
+router15.get("/billing/summary", requireAuth, async (req, res) => {
+  try {
+    const email = req.user.email.toLowerCase();
+    const invoices = await db.select().from(invoicesTable).where(eq(invoicesTable.userEmail, email)).orderBy(desc(invoicesTable.createdAt));
+    const paid = invoices.filter((i) => i.status === "paid");
+    const unpaid = invoices.filter((i) => i.status !== "paid");
+    const totalPaid = paid.reduce((sum, i) => sum + parseFloat(String(i.amountUsd)), 0);
+    const totalOutstanding = unpaid.reduce((sum, i) => sum + parseFloat(String(i.amountUsd)), 0);
+    const activeSubs = await db.select({ sub: subscriptionsTable, plan: plansTable }).from(subscriptionsTable).leftJoin(plansTable, eq(subscriptionsTable.planId, plansTable.id)).where(eq(subscriptionsTable.email, email));
+    const nextBills = activeSubs.filter((r) => r.sub.status === "active" && r.sub.renewalDate).map((r) => ({
+      subscriptionId: r.sub.id,
+      planName: r.plan?.name ?? "Starlink Plan",
+      amount: parseFloat(String(r.plan?.priceMonthly ?? 0)),
+      renewalDate: r.sub.renewalDate,
+      autoRenew: r.sub.autoRenew
+    })).sort((a, b2) => new Date(a.renewalDate).getTime() - new Date(b2.renewalDate).getTime());
+    res.json({
+      invoiceCount: invoices.length,
+      totalPaid: Math.round(totalPaid * 100) / 100,
+      totalOutstanding: Math.round(totalOutstanding * 100) / 100,
+      unpaidCount: unpaid.length,
+      nextBills,
+      recentInvoices: invoices.slice(0, 5)
+    });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to fetch billing summary");
+    res.status(500).json({ error: "Failed to fetch billing summary" });
+  }
+});
+router15.patch("/subscriptions/:id/auto-renew", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const [existing] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.id, id)).limit(1);
+    if (!existing) {
+      res.status(404).json({ error: "Subscription not found" });
+      return;
+    }
+    if (existing.email.toLowerCase() !== req.user.email.toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    const { autoRenew } = req.body;
+    if (typeof autoRenew !== "boolean") {
+      res.status(400).json({ error: "autoRenew must be a boolean" });
+      return;
+    }
+    const [updated] = await db.update(subscriptionsTable).set({ autoRenew, updatedAt: /* @__PURE__ */ new Date() }).where(eq(subscriptionsTable.id, id)).returning();
+    res.json({ success: true, autoRenew: updated.autoRenew });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to update auto-renew");
+    res.status(500).json({ error: "Failed to update auto-renew" });
+  }
+});
+router15.get("/admin/billing/invoices", adminAuth, async (req, res) => {
+  try {
+    const status = req.query.status;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+    const whereClause = status && status !== "all" ? eq(invoicesTable.status, status) : void 0;
+    const invoices = await db.select().from(invoicesTable).where(whereClause).orderBy(desc(invoicesTable.createdAt)).limit(limit).offset(offset);
+    const [{ total }] = await db.select({ total: count() }).from(invoicesTable).where(whereClause);
+    const totalRevenue = await db.select({ sum: sql`COALESCE(SUM(amount_usd::numeric),0)` }).from(invoicesTable).where(eq(invoicesTable.status, "paid")).then((r) => parseFloat(r[0]?.sum ?? "0"));
+    const totalOutstanding = await db.select({ sum: sql`COALESCE(SUM(amount_usd::numeric),0)` }).from(invoicesTable).where(eq(invoicesTable.status, "unpaid")).then((r) => parseFloat(r[0]?.sum ?? "0"));
+    res.json({ invoices, total, page, limit, totalRevenue, totalOutstanding });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to fetch admin invoices");
+    res.status(500).json({ error: "Failed to fetch invoices" });
+  }
+});
+router15.patch("/admin/billing/invoices/:id/mark-paid", adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const [updated] = await db.update(invoicesTable).set({ status: "paid", paidAt: /* @__PURE__ */ new Date(), updatedAt: /* @__PURE__ */ new Date() }).where(eq(invoicesTable.id, id)).returning();
+    if (!updated) {
+      res.status(404).json({ error: "Invoice not found" });
+      return;
+    }
+    res.json({ success: true, invoice: updated });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to mark invoice paid");
+    res.status(500).json({ error: "Failed to mark invoice paid" });
+  }
+});
+router15.delete("/admin/billing/invoices/:id", adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    await db.delete(invoicesTable).where(eq(invoicesTable.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to delete invoice");
+    res.status(500).json({ error: "Failed to delete invoice" });
+  }
+});
+var billing_default = router15;
+
+// src/routes/tracking.ts
+var import_express16 = __toESM(require_express2(), 1);
+var import_jsonwebtoken6 = __toESM(require_jsonwebtoken(), 1);
+var router16 = (0, import_express16.Router)();
+var sseClients = /* @__PURE__ */ new Map();
+function broadcastTrackingUpdate(subscriptionId, data) {
+  const clients = sseClients.get(subscriptionId);
+  if (!clients || clients.size === 0) return;
+  const payload = `data: ${JSON.stringify(data)}
+
+`;
+  for (const res of clients) {
+    try {
+      res.write(payload);
+    } catch {
+    }
+  }
+}
+router16.get("/subscriptions/:id/tracking-stream", (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).end();
+    return;
+  }
+  const token = req.query.token;
+  if (token) {
+    try {
+      import_jsonwebtoken6.default.verify(token, JWT_SECRET);
+    } catch {
+      res.status(401).end();
+      return;
+    }
+  }
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+  if (!sseClients.has(id)) sseClients.set(id, /* @__PURE__ */ new Set());
+  sseClients.get(id).add(res);
+  res.write(`data: {"type":"connected","subscriptionId":${id}}
+
+`);
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(": heartbeat\n\n");
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 25e3);
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    const clients = sseClients.get(id);
+    if (clients) {
+      clients.delete(res);
+      if (clients.size === 0) sseClients.delete(id);
+    }
+  });
+});
+var TRACKING_STAGES = [
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "activated",
+  "completed"
+];
+var TRACKING_LABELS = {
+  pending: "Order Received",
+  processing: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  activated: "Activated",
+  completed: "Completed"
+};
+var TRACKING_NOTES = {
+  pending: "Your order has been received and is in our queue.",
+  processing: "Hardware is being prepared and configured for your plan.",
+  shipped: "Your Starlink kit is on its way. Expect delivery in 3\u20135 business days.",
+  delivered: "Hardware delivered! Please set up your dish at the installation address.",
+  activated: "Your service is now active and online. Welcome to the network!",
+  completed: "Setup complete. You're fully connected to the OrbitFuture network."
+};
+router16.patch("/subscriptions/:id/tracking-status", adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const { status, note } = req.body;
+    if (!status || !TRACKING_STAGES.includes(status)) {
+      res.status(400).json({ error: `status must be one of: ${TRACKING_STAGES.join(", ")}` });
+      return;
+    }
+    const [existing] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.id, id)).limit(1);
+    if (!existing) {
+      res.status(404).json({ error: "Subscription not found" });
+      return;
+    }
+    const historyEvent = {
+      status,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      note: note ?? TRACKING_NOTES[status] ?? "",
+      updatedBy: "admin"
+    };
+    const currentHistory = existing.trackingHistory ?? [];
+    const newHistory = [...currentHistory, historyEvent];
+    const [updated] = await db.update(subscriptionsTable).set({
+      trackingStatus: status,
+      trackingHistory: newHistory,
+      updatedAt: /* @__PURE__ */ new Date()
+    }).where(eq(subscriptionsTable.id, id)).returning();
+    const [plan] = await db.select().from(plansTable).where(eq(plansTable.id, updated.planId)).limit(1);
+    const broadcastPayload = {
+      type: "tracking_update",
+      subscriptionId: id,
+      trackingStatus: status,
+      label: TRACKING_LABELS[status] ?? status,
+      note: historyEvent.note,
+      timestamp: historyEvent.timestamp,
+      history: newHistory
+    };
+    broadcastTrackingUpdate(id, broadcastPayload);
+    res.json({
+      success: true,
+      subscription: {
+        id: updated.id,
+        trackingStatus: updated.trackingStatus,
+        trackingHistory: updated.trackingHistory,
+        planName: plan?.name ?? ""
+      }
+    });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to update tracking status");
+    res.status(500).json({ error: "Failed to update tracking status" });
+  }
+});
+router16.get("/subscriptions/:id/tracking", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const auth = req.headers.authorization;
+    let userEmail = null;
+    if (auth?.startsWith("Bearer ")) {
+      try {
+        const decoded = import_jsonwebtoken6.default.verify(auth.slice(7), JWT_SECRET);
+        userEmail = decoded.email ?? null;
+      } catch {
+      }
+    }
+    const [row] = await db.select({ sub: subscriptionsTable, plan: plansTable }).from(subscriptionsTable).leftJoin(plansTable, eq(subscriptionsTable.planId, plansTable.id)).where(eq(subscriptionsTable.id, id)).limit(1);
+    if (!row) {
+      res.status(404).json({ error: "Subscription not found" });
+      return;
+    }
+    if (userEmail && row.sub.email.toLowerCase() !== userEmail.toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    res.json({
+      id: row.sub.id,
+      trackingStatus: row.sub.trackingStatus,
+      trackingHistory: row.sub.trackingHistory ?? [],
+      planName: row.plan?.name ?? "",
+      email: row.sub.email,
+      createdAt: row.sub.createdAt
+    });
+  } catch (err) {
+    req.log?.error?.({ err }, "Failed to get tracking");
+    res.status(500).json({ error: "Failed to get tracking" });
+  }
+});
+var tracking_default = router16;
+
+// src/routes/index.ts
+var router17 = (0, import_express17.Router)();
+router17.use(auth_default);
+router17.use(otp_default);
+router17.use(billing_default);
+router17.use(tracking_default);
+router17.use(health_default);
+router17.use(plans_default);
+router17.use(subscriptions_default);
+router17.use(checkout_default);
+router17.use(admin_default);
+router17.use(wallet_default);
+router17.use(whatsapp_orders_default);
+router17.use(whatsapp_webhook_default);
+router17.use(paystack_default);
+router17.use(token_activation_default);
+router17.use(support_default);
+router17.use(track_default);
+var routes_default = router17;
 
 // src/app.ts
-var app = (0, import_express15.default)();
+var app = (0, import_express18.default)();
 var ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "").split(",").map((o) => o.trim()).filter(Boolean);
 var isDev = process.env.NODE_ENV !== "production";
 app.set("trust proxy", 1);
@@ -55133,8 +55764,6 @@ app.use(
       const allowed = [
         "https://orbitfuture.store",
         "https://www.orbitfuture.store",
-        "https://orbitfuture.com",
-        "https://www.orbitfuture.com",
         "https://fairy-2ff969.netlify.app",
         "https://space-x-puce.vercel.app",
         ...ALLOWED_ORIGINS
@@ -55168,14 +55797,14 @@ app.use((req, _res, next) => {
   }
   next();
 });
-app.use("/api/paystack-webhook", import_express15.default.raw({ type: "application/json" }));
-app.use(import_express15.default.json({ limit: "2mb" }));
-app.use(import_express15.default.urlencoded({ extended: true, limit: "2mb" }));
+app.use("/api/paystack-webhook", import_express18.default.raw({ type: "application/json" }));
+app.use(import_express18.default.json({ limit: "2mb" }));
+app.use(import_express18.default.urlencoded({ extended: true, limit: "2mb" }));
 app.use("/api", routes_default);
 if (process.env.NODE_ENV === "production") {
   const __dirname2 = path.dirname(fileURLToPath(import.meta.url));
   const frontendDist = path.resolve(__dirname2, "../../spacex-starlink/dist");
-  app.use(import_express15.default.static(frontendDist));
+  app.use(import_express18.default.static(frontendDist));
   app.get("/{*path}", (_req, res) => {
     res.sendFile(path.join(frontendDist, "index.html"));
   });
@@ -55303,6 +55932,20 @@ async function seedIfEmpty() {
     logger.warn({ err }, "Auto-seed skipped (table may not exist yet)");
   }
 }
+async function backfillAccountNumbers() {
+  try {
+    const users = await db.select({ id: usersTable.id }).from(usersTable).where(isNull(usersTable.accountNumber));
+    if (users.length === 0) return;
+    await Promise.all(
+      users.map(
+        (u) => db.update(usersTable).set({ accountNumber: `ORB-${String(u.id).padStart(4, "0")}` }).where(sql`${usersTable.id} = ${u.id} AND ${usersTable.accountNumber} IS NULL`)
+      )
+    );
+    logger.info({ count: users.length }, "Backfilled account numbers");
+  } catch (err) {
+    logger.warn({ err }, "Account number backfill skipped");
+  }
+}
 async function ensureTablesExist() {
   try {
     await db.execute(sql`SELECT 1 FROM plans LIMIT 1`);
@@ -55330,8 +55973,12 @@ app_default.listen(port, (err) => {
   logger.info({ port }, "Server listening");
   validateEnv().catch((e) => logger.warn({ err: e }, "Env validation failed"));
   ensureTablesExist().then((ok) => {
-    if (ok) seedIfEmpty();
-    else logger.warn("Skipping seed \u2014 tables not ready. Run db:push to fix.");
+    if (ok) {
+      seedIfEmpty();
+      backfillAccountNumbers();
+    } else {
+      logger.warn("Skipping seed \u2014 tables not ready. Run db:push to fix.");
+    }
   });
 });
 /*! Bundled license information:

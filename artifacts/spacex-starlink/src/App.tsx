@@ -37,6 +37,8 @@ const EnvConfig = lazy(() => import("@/pages/admin/env-config"));
 const AdminUsers = lazy(() => import("@/pages/admin/users"));
 const AdminTickets = lazy(() => import("@/pages/admin/tickets"));
 const SystemHealth = lazy(() => import("@/pages/admin/system-health"));
+const AdminBilling = lazy(() => import("@/pages/admin/billing"));
+const Billing = lazy(() => import("@/pages/billing"));
 
 initAuth();
 initAnalytics();
@@ -85,6 +87,8 @@ function Router() {
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/tickets" component={AdminTickets} />
         <Route path="/admin/system-health" component={SystemHealth} />
+        <Route path="/admin/billing" component={AdminBilling} />
+        <Route path="/billing" component={Billing} />
 
         <Route component={NotFound} />
       </Switch>

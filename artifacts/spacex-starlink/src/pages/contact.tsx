@@ -6,7 +6,7 @@ import { Mail, MessageCircle, MapPin, Clock, Send, ChevronRight, Check, CreditCa
 
 const WHATSAPP_NUMBER = "16206123994";
 const WHATSAPP_DISPLAY = "+1 (620) 612-3994";
-const EMAIL = "support@orbitfuture.com";
+const EMAIL = "support@orbitfuture.store";
 
 const PAYMENT_OPTIONS = [
   {

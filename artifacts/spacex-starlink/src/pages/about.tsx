@@ -97,11 +97,11 @@ export default function About() {
                   </div>
                   <div>
                     <p className="text-white font-bold text-sm mb-0.5">Email</p>
-                    <a href="mailto:support@orbitfuture.com" className="text-primary text-sm hover:underline">support@orbitfuture.com</a>
+                    <a href="mailto:support@orbitfuture.store" className="text-primary text-sm hover:underline">support@orbitfuture.store</a>
                     <br />
-                    <a href="mailto:sales@orbitfuture.com" className="text-primary text-sm hover:underline">sales@orbitfuture.com</a>
+                    <a href="mailto:sales@orbitfuture.store" className="text-primary text-sm hover:underline">sales@orbitfuture.store</a>
                     <br />
-                    <a href="mailto:billing@orbitfuture.com" className="text-primary text-sm hover:underline">billing@orbitfuture.com</a>
+                    <a href="mailto:billing@orbitfuture.store" className="text-primary text-sm hover:underline">billing@orbitfuture.store</a>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

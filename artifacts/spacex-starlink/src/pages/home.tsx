@@ -713,7 +713,7 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <a href="mailto:sales@orbitfuture.com?subject=Enterprise%20Inquiry">
+                  <a href="mailto:sales@orbitfuture.store?subject=Enterprise%20Inquiry">
                     <Button className="h-12 px-8 text-xs font-bold uppercase tracking-widest w-full sm:w-auto">
                       <Mail className="w-4 h-4 mr-2" />
                       Email Sales Team
@@ -736,7 +736,7 @@ export default function Home() {
                 <div className="bg-black/40 border border-white/8 rounded-2xl p-5">
                   <p className="text-xs font-black uppercase tracking-widest text-primary mb-2">General Support</p>
                   <p className="text-white font-bold">All tickets answered within 4 hours</p>
-                  <p className="text-gray-500 text-xs mt-1">support@orbitfuture.com · WhatsApp 24/7</p>
+                  <p className="text-gray-500 text-xs mt-1">support@orbitfuture.store · WhatsApp 24/7</p>
                 </div>
                 <div className="bg-black/40 border border-white/8 rounded-2xl p-5">
                   <p className="text-xs font-black uppercase tracking-widest text-primary mb-2">Refund Policy</p>

@@ -57,11 +57,11 @@ function getResend() {
   return new Resend(key);
 }
 
-const FROM_EMAIL = process.env.EMAIL_FROM ?? "ORBITFUTURE <noreply@orbitfuture.com>";
+const FROM_EMAIL = process.env.EMAIL_FROM ?? "ORBITFUTURE <noreply@orbitfuture.store>";
 const BRAND_NAME = "ORBITFUTURE";
 const BRAND_COLOR = "#00D4FF";
-const SUPPORT_EMAIL = "support@orbitfuture.com";
-const APP_URL = process.env.APP_URL ?? "https://orbitfuture.com";
+const SUPPORT_EMAIL = "support@orbitfuture.store";
+const APP_URL = process.env.APP_URL ?? "https://orbitfuture.store";
 
 const baseStyles = `
   body{margin:0;padding:0;background:#050D1A;font-family:'Helvetica Neue',Arial,sans-serif;}

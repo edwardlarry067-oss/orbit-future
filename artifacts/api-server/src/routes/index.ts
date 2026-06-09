@@ -12,10 +12,16 @@ import paystackRouter from "./paystack";
 import tokenActivationRouter from "./token-activation";
 import supportRouter from "./support";
 import trackRouter from "./track";
+import otpRouter from "./otp";
+import billingRouter from "./billing";
+import trackingRouter from "./tracking";
 
 const router: IRouter = Router();
 
 router.use(authRouter);
+router.use(otpRouter);
+router.use(billingRouter);
+router.use(trackingRouter);
 router.use(healthRouter);
 router.use(plansRouter);
 router.use(subscriptionsRouter);

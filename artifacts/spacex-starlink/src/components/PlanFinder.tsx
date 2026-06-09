@@ -124,7 +124,7 @@ export function PlanFinder({ onSelectPlan }: Props) {
             <p className="text-xs text-gray-400 mb-3 leading-relaxed">
               Aviation plans require custom hardware configuration and pricing based on aircraft type, routes, and data requirements. Contact our enterprise sales team for a bespoke quote.
             </p>
-            <a href="mailto:sales@orbitfuture.com?subject=Aviation%20Connectivity%20Enquiry" onClick={() => setOpen(false)}>
+            <a href="mailto:sales@orbitfuture.store?subject=Aviation%20Connectivity%20Enquiry" onClick={() => setOpen(false)}>
               <Button size="sm" className="text-xs font-bold uppercase tracking-widest w-full h-10">
                 <ArrowRight className="w-4 h-4 mr-2" />
                 Contact Enterprise Sales

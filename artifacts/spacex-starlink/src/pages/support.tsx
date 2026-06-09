@@ -163,13 +163,13 @@ export default function Support() {
                 </a>
 
                 <a
-                  href="mailto:support@orbitfuture.com?subject=OrbitFuture%20Support"
+                  href="mailto:support@orbitfuture.store?subject=OrbitFuture%20Support"
                   className="bg-card border border-border rounded-2xl p-8 hover:border-primary/40 transition-colors group text-center"
                 >
                   <Mail className="w-10 h-10 text-primary mx-auto mb-4" />
                   <h3 className="text-white font-black uppercase tracking-widest text-sm mb-2">Email</h3>
                   <p className="text-gray-500 text-xs mb-4">Detailed inquiries — reply within 2 hours</p>
-                  <span className="text-primary text-xs font-bold uppercase tracking-widest group-hover:underline">support@orbitfuture.com →</span>
+                  <span className="text-primary text-xs font-bold uppercase tracking-widest group-hover:underline">support@orbitfuture.store →</span>
                 </a>
 
                 <div className="bg-card border border-border rounded-2xl p-8 text-center">

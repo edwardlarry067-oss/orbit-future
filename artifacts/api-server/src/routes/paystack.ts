@@ -14,6 +14,7 @@ import {
   sendPaymentReceipt,
   sendAdminPaymentAlert,
 } from "../lib/email";
+import { createInvoice } from "../lib/invoiceService";
 
 const router = Router();
 
@@ -33,7 +34,7 @@ function resolveCurrency(requested?: string): string {
 const APP_URL = (() => {
   const url = process.env["APP_URL"] ?? process.env["REPLIT_DEV_DOMAIN"];
   if (url) return url.startsWith("http") ? url : `https://${url}`;
-  return "https://www.orbitfuture.com";
+  return "https://orbitfuture.store";
 })();
 
 const PLAN_PRICES: Record<number, { name: string; priceMonthly: number; speed: string }> = {
@@ -405,6 +406,27 @@ router.post("/paystack-plan-verify", async (req, res): Promise<void> => {
         if (sub) {
           const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planIdNum)).limit(1);
           const planFeatures = (dbPlan?.features as string[]) ?? [];
+
+          // Set renewal date and tracking status
+          const renewalDate = new Date();
+          renewalDate.setDate(renewalDate.getDate() + 30);
+          await db.update(subscriptionsTable).set({
+            renewalDate,
+            nextBillingDate: renewalDate,
+            trackingStatus: "pending",
+            trackingHistory: [{ status: "pending", timestamp: new Date().toISOString(), note: "Order received and payment confirmed.", updatedBy: "system" }],
+          }).where(eq(subscriptionsTable.id, sub.id));
+
+          // Auto-generate invoice
+          createInvoice({
+            userEmail: customerEmail,
+            subscriptionId: sub.id,
+            planId: planIdNum,
+            amountPaid,
+            currency,
+            paymentRef: reference,
+            isFirstMonth: true,
+          }).catch(() => {});
 
           sendSubscriptionConfirmation({
             customerName,

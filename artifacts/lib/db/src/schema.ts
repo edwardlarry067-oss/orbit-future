@@ -18,6 +18,13 @@ export const plansTable = pgTable("plans", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export type TrackingEvent = {
+  status: string;
+  timestamp: string;
+  note?: string;
+  updatedBy?: string;
+};
+
 export const subscriptionsTable = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
@@ -29,6 +36,14 @@ export const subscriptionsTable = pgTable("subscriptions", {
   stripeCustomerId: text("stripe_customer_id"),
   stripeSessionId: text("stripe_session_id"),
   amountPaid: text("amount_paid"),
+  // Billing cycle fields
+  renewalDate: timestamp("renewal_date"),
+  nextBillingDate: timestamp("next_billing_date"),
+  autoRenew: boolean("auto_renew").notNull().default(true),
+  billingCycleMonths: integer("billing_cycle_months").notNull().default(1),
+  // Order tracking fields
+  trackingStatus: text("tracking_status").notNull().default("pending"),
+  trackingHistory: jsonb("tracking_history").$type<TrackingEvent[]>().default([]),
   cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -41,6 +56,8 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   phone: text("phone"),
   address: text("address"),
+  accountNumber: text("account_number").unique(),
+  kycStatus: text("kyc_status").notNull().default("unverified"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -117,4 +134,35 @@ export const supportTicketsTable = pgTable("support_tickets", {
   adminRepliedAt: timestamp("admin_replied_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ── Invoices ──────────────────────────────────────────────────────────────────
+export type InvoiceLineItem = { description: string; amount: number; quantity?: number };
+
+export const invoicesTable = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  userEmail: text("user_email").notNull(),
+  subscriptionId: integer("subscription_id"),
+  amountUsd: numeric("amount_usd").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  lineItems: jsonb("line_items").$type<InvoiceLineItem[]>().default([]),
+  status: text("status").notNull().default("paid"),
+  dueDate: timestamp("due_date").notNull(),
+  paidAt: timestamp("paid_at"),
+  paymentRef: text("payment_ref"),
+  planName: text("plan_name").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ── OTP Codes ─────────────────────────────────────────────────────────────────
+export const otpCodesTable = pgTable("otp_codes", {
+  id: serial("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  otpCode: text("otp_code").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  attempts: integer("attempts").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });

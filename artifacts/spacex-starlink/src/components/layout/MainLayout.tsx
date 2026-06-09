@@ -249,7 +249,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </p>
               <div className="flex items-center gap-1.5">
                 <Globe className="w-3 h-3 text-primary" />
-                <span className="text-xs text-primary font-bold">orbitfuture.com</span>
+                <span className="text-xs text-primary font-bold">orbitfuture.store</span>
               </div>
             </div>
 
@@ -294,20 +294,20 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   <MessageCircle className="w-3.5 h-3.5 text-[#25D366] shrink-0" />
                   WhatsApp — 24/7 Support
                 </a>
-                <a href="mailto:support@orbitfuture.com"
+                <a href="mailto:support@orbitfuture.store"
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
                   <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
-                  support@orbitfuture.com
+                  support@orbitfuture.store
                 </a>
-                <a href="mailto:sales@orbitfuture.com"
+                <a href="mailto:sales@orbitfuture.store"
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
                   <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
-                  sales@orbitfuture.com
+                  sales@orbitfuture.store
                 </a>
-                <a href="mailto:billing@orbitfuture.com"
+                <a href="mailto:billing@orbitfuture.store"
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
                   <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
-                  billing@orbitfuture.com
+                  billing@orbitfuture.store
                 </a>
                 <div className="pt-1 space-y-1">
                   <p className="text-[10px] text-gray-600">Response time: <span className="text-gray-500 font-bold">under 4 hours</span></p>

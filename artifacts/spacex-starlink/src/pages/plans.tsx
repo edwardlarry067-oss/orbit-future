@@ -94,7 +94,7 @@ const PLANS_FAQS = [
   { q: "Is hardware charged separately?", a: "Yes. The Starlink hardware kit (dish + router) is a one-time purchase charged at the time of your first order. Monthly service fees are billed separately from month 2 onwards." },
   { q: "Can I change plans later?", a: "Yes. You can upgrade or change your plan from your dashboard. Contact our support team and we'll assist with the transition." },
   { q: "What's included in every order?", a: "Every order includes the Starlink hardware kit, free installation support from our team, a 12-month hardware warranty, and 24/7 WhatsApp and email support." },
-  { q: "How does aviation pricing work?", a: "Aviation connectivity requires custom configuration based on aircraft type, routes, and data requirements. Contact our sales team at sales@orbitfuture.com for a tailored enterprise quote." },
+  { q: "How does aviation pricing work?", a: "Aviation connectivity requires custom configuration based on aircraft type, routes, and data requirements. Contact our sales team at sales@orbitfuture.store for a tailored enterprise quote." },
 ];
 
 function ComparisonCell({ value, highlight }: { value: string | boolean; highlight?: boolean }) {
@@ -439,7 +439,7 @@ export default function Plans() {
                       </div>
                     </div>
                     <div className="shrink-0 flex flex-col gap-3 w-full md:w-auto">
-                      <a href="mailto:sales@orbitfuture.com?subject=Aviation%20Connectivity%20Enquiry">
+                      <a href="mailto:sales@orbitfuture.store?subject=Aviation%20Connectivity%20Enquiry">
                         <Button className="w-full md:w-auto h-12 px-8 font-bold uppercase tracking-widest text-xs">
                           <ArrowRight className="w-4 h-4 mr-2" />
                           Contact Enterprise Sales
@@ -450,7 +450,7 @@ export default function Plans() {
                           WhatsApp Sales Team
                         </Button>
                       </a>
-                      <p className="text-[10px] text-gray-600 text-center">sales@orbitfuture.com</p>
+                      <p className="text-[10px] text-gray-600 text-center">sales@orbitfuture.store</p>
                     </div>
                   </div>
                 </div>
