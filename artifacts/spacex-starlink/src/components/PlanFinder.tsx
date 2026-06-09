@@ -2,43 +2,31 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Home, MapPin, Ship, Briefcase, Plane, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
-import { useCurrency } from "@/hooks/useCurrency";
+import { PLANS, findPlanForCategory, type Plan, type PlanCategory } from "@/data/plans";
+import { getFirstPayment, formatNaira } from "@/utils/pricing";
 
-type Plan = {
-  id: number;
-  name: string;
-  category: string;
-  priceMonthly: number;
-  hardwarePrice?: number;
-  localPrices?: Record<string, { monthly: number; hardware?: number }>;
-  description: string;
-  popular: boolean;
-};
-
-type Option = {
-  id: string;
+type UseCaseOption = {
+  id: PlanCategory;
   label: string;
   sublabel: string;
   icon: React.ElementType;
 };
 
-const USE_CASE_OPTIONS: Option[] = [
-  { id: "residential", label: "Home Internet", sublabel: "Fixed home, house, or apartment", icon: Home },
-  { id: "roam", label: "Travel & Mobile Use", sublabel: "RV, van, camping, overland travel", icon: MapPin },
-  { id: "business", label: "Business or Teams", sublabel: "Office, remote site, or enterprise", icon: Briefcase },
-  { id: "maritime", label: "Maritime / Vessels", sublabel: "Boats, yachts, cargo ships", icon: Ship },
-  { id: "aviation", label: "Aviation", sublabel: "Commercial or private aircraft", icon: Plane },
+const USE_CASE_OPTIONS: UseCaseOption[] = [
+  { id: "residential", label: "Home Internet",       sublabel: "Fixed home, house, or apartment",      icon: Home },
+  { id: "roam",        label: "Travel & Mobile Use", sublabel: "RV, van, camping, overland travel",     icon: MapPin },
+  { id: "business",   label: "Business or Teams",    sublabel: "Office, remote site, or enterprise",   icon: Briefcase },
+  { id: "maritime",   label: "Maritime / Vessels",   sublabel: "Boats, yachts, cargo ships",           icon: Ship },
+  { id: "aviation",   label: "Aviation",             sublabel: "Commercial or private aircraft",        icon: Plane },
 ];
 
 type Props = {
-  plans: Plan[];
-  onSelectPlan: (planId: number) => void;
+  onSelectPlan: (planDbId: number) => void;
 };
 
-export function PlanFinder({ plans, onSelectPlan }: Props) {
-  const { formatPrice, formatMonthly, currency, symbol } = useCurrency();
+export function PlanFinder({ onSelectPlan }: Props) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<PlanCategory | null>(null);
   const [result, setResult] = useState<Plan | null>(null);
 
   const handleReset = () => {
@@ -51,31 +39,20 @@ export function PlanFinder({ plans, onSelectPlan }: Props) {
     if (!v) handleReset();
   };
 
-  const handleSelect = (categoryId: string) => {
-    setSelected(categoryId);
-    if (categoryId === "aviation") {
+  const handleSelect = (category: PlanCategory) => {
+    setSelected(category);
+    if (category === "aviation") {
       setResult(null);
       return;
     }
-    const popular = plans.find((p) => p.category === categoryId && p.popular);
-    const any = plans.find((p) => p.category === categoryId);
-    setResult(popular ?? any ?? null);
+    setResult(findPlanForCategory(category) ?? null);
   };
 
   const handleChoose = () => {
     if (!result) return;
-    onSelectPlan(result.id);
+    onSelectPlan(result.dbId);
     setOpen(false);
     handleReset();
-  };
-
-  const getLocalTotal = (plan: Plan) => {
-    const lp = plan.localPrices?.[currency];
-    if (lp && currency !== "USD") {
-      const total = lp.monthly + (lp.hardware ?? 0);
-      return `${symbol}${Math.round(total).toLocaleString()}`;
-    }
-    return formatPrice(plan.priceMonthly + (plan.hardwarePrice ?? 0));
   };
 
   return (
@@ -123,13 +100,9 @@ export function PlanFinder({ plans, onSelectPlan }: Props) {
                     : "border-white/8 bg-white/2 hover:border-white/20 hover:bg-white/4"
                 }`}
               >
-                <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
-                    isSelected
-                      ? "bg-primary/20 border-primary/30"
-                      : "bg-white/5 border-white/10"
-                  }`}
-                >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                  isSelected ? "bg-primary/20 border-primary/30" : "bg-white/5 border-white/10"
+                }`}>
                   <Icon className={`w-5 h-5 ${isSelected ? "text-primary" : "text-gray-400"}`} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -138,9 +111,7 @@ export function PlanFinder({ plans, onSelectPlan }: Props) {
                   </p>
                   <p className="text-[11px] text-gray-500 mt-0.5">{opt.sublabel}</p>
                 </div>
-                {isSelected && (
-                  <CheckCircle2 className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
-                )}
+                {isSelected && <CheckCircle2 className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />}
               </button>
             );
           })}
@@ -153,10 +124,7 @@ export function PlanFinder({ plans, onSelectPlan }: Props) {
             <p className="text-xs text-gray-400 mb-3 leading-relaxed">
               Aviation plans require custom hardware configuration and pricing based on aircraft type, routes, and data requirements. Contact our enterprise sales team for a bespoke quote.
             </p>
-            <a
-              href="mailto:sales@orbitfuture.com?subject=Aviation%20Connectivity%20Enquiry"
-              onClick={() => setOpen(false)}
-            >
+            <a href="mailto:sales@orbitfuture.com?subject=Aviation%20Connectivity%20Enquiry" onClick={() => setOpen(false)}>
               <Button size="sm" className="text-xs font-bold uppercase tracking-widest w-full h-10">
                 <ArrowRight className="w-4 h-4 mr-2" />
                 Contact Enterprise Sales
@@ -178,22 +146,31 @@ export function PlanFinder({ plans, onSelectPlan }: Props) {
                 </span>
               )}
             </div>
+
             <p className="text-lg font-bold text-white leading-tight">{result.name}</p>
-            <p className="text-xs text-gray-400 mt-1 mb-3 leading-relaxed">{result.description}</p>
+            <p className="text-xs text-gray-400 mt-1 mb-4 leading-relaxed">{result.description}</p>
 
-            <div className="flex items-baseline gap-1.5 mb-1">
-              <span className="text-2xl font-black text-primary">{formatMonthly(result.priceMonthly, result.localPrices)}</span>
+            {/* Pricing block — all values from plans.ts via pricing.ts */}
+            <div className="bg-black/40 border border-white/8 rounded-xl p-3 space-y-2 mb-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">Monthly</span>
+                <span className="font-black text-primary">{formatNaira(result.monthlyPrice)}/mo</span>
+              </div>
+              {result.hardwareFee > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">Hardware (one-time)</span>
+                  <span className="font-bold text-amber-400">{formatNaira(result.hardwareFee)}</span>
+                </div>
+              )}
+              <div className="border-t border-white/8 pt-2 flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                  {result.hardwareFee > 0 ? "First Payment" : "Monthly Total"}
+                </span>
+                <span className="font-black text-white">{formatNaira(getFirstPayment(result))}</span>
+              </div>
             </div>
-            {(result.hardwarePrice ?? 0) > 0 && (
-              <p className="text-[11px] text-gray-500 mb-3">
-                + {formatPrice(result.hardwarePrice ?? 0, result.localPrices, "hardware")} hardware (one-time) · First payment: {getLocalTotal(result)}
-              </p>
-            )}
 
-            <Button
-              onClick={handleChoose}
-              className="w-full h-11 text-xs font-bold uppercase tracking-widest mt-1"
-            >
+            <Button onClick={handleChoose} className="w-full h-11 text-xs font-bold uppercase tracking-widest">
               <ArrowRight className="w-4 h-4 mr-2" />
               Order {result.name}
             </Button>

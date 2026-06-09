@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useCurrency } from "@/hooks/useCurrency";
 import { useLocation } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -20,23 +19,15 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getApiBase } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
+import { findPlanByDbId } from "@/data/plans";
+import { getFirstPayment, formatNaira } from "@/utils/pricing";
+import { PricingDebugPanel } from "@/components/PricingDebugPanel";
 
 const checkoutSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   address: z.string().min(5, "Please provide your shipping address"),
 });
-
-const PAYSTACK_NATIVE_CURRENCIES = new Set(["NGN", "GHS", "ZAR", "KES"]);
-const PAYSTACK_CURRENCY_LABELS: Record<string, string> = {
-  NGN: "Paystack · Pay in ₦ Naira",
-  GHS: "Paystack · Pay in GH₵ Cedis",
-  ZAR: "Paystack · Pay in R Rand",
-  KES: "Paystack · Pay in KSh Shillings",
-};
-function getPaystackLabel(currency: string) {
-  return PAYSTACK_CURRENCY_LABELS[currency] ?? "Paystack · Card / Bank Transfer";
-}
 
 function CheckoutProgress({ step }: { step: 1 | 2 | 3 }) {
   const steps = [
@@ -64,7 +55,7 @@ function CheckoutProgress({ step }: { step: 1 | 2 | 3 }) {
           </div>
           {i < steps.length - 1 && (
             <div className={`w-16 sm:w-24 h-0.5 mb-4 mx-1 transition-all ${
-              step > s.num + 0 ? "bg-primary" : "bg-white/10"
+              step > s.num ? "bg-primary" : "bg-white/10"
             }`} />
           )}
         </React.Fragment>
@@ -74,7 +65,6 @@ function CheckoutProgress({ step }: { step: 1 | 2 | 3 }) {
 }
 
 export default function Checkout() {
-  const { formatPrice, formatMonthly, currency, symbol } = useCurrency();
   const urlParams = new URLSearchParams(window.location.search);
   const planIdParam = urlParams.get("planId");
   const planId = planIdParam ? parseInt(planIdParam, 10) : 0;
@@ -89,9 +79,11 @@ export default function Checkout() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const { data: plan, isLoading: isLoadingPlan } = useGetPlan(planId, {
+  const { data: apiPlan, isLoading: isLoadingPlan } = useGetPlan(planId, {
     query: { enabled: !!planId, queryKey: getGetPlanQueryKey(planId) }
   });
+
+  const staticPlan = findPlanByDbId(planId);
 
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
@@ -126,83 +118,14 @@ export default function Checkout() {
   }, [emailValue, fetchWallet]);
 
   useEffect(() => {
-    if (plan && planId) {
-      const p = plan as any;
-      const monthly = parseFloat(String(p.priceMonthly ?? 0));
-      const hw = parseFloat(String(p.hardwarePrice ?? 0));
+    if (staticPlan) {
       trackInitiateCheckout({
-        planName: (plan as any).name ?? "Starlink Plan",
+        planName: staticPlan.name,
         planId,
-        price: monthly + hw,
+        price: staticPlan.usdMonthly + staticPlan.usdHardware,
       });
     }
-  }, [plan?.id]);
-
-  const priceMonthly = plan ? parseFloat(String((plan as any).priceMonthly ?? 0)) : 0;
-  const hardwarePrice = plan ? parseFloat(String((plan as any).hardwarePrice ?? 0)) : 0;
-  const firstMonthTotal = priceMonthly + hardwarePrice;
-  const priceTokens = Math.ceil(firstMonthTotal);
-  const hasSufficientTokens = walletBalance !== null && walletBalance >= priceTokens;
-
-  const planLocalPrices = (plan as any)?.localPrices as Record<string, { monthly: number; hardware?: number }> | undefined;
-  const localCurrencyPrices = planLocalPrices?.[currency];
-  const formatLocalTotal = () => {
-    if (localCurrencyPrices && currency !== "USD") {
-      const total = localCurrencyPrices.monthly + (localCurrencyPrices.hardware ?? 0);
-      return `${symbol}${Math.round(total).toLocaleString()}`;
-    }
-    return formatPrice(firstMonthTotal);
-  };
-
-  const onSubmit = async (data: z.infer<typeof checkoutSchema>) => {
-    if (!plan) return;
-    setError("");
-    setPaying(true);
-
-    try {
-      if (paymentMethod === "paystack") {
-        const res = await fetch(`${getApiBase()}/api/paystack-plan-pay`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address, currency }),
-        });
-        const json = await res.json();
-        if (json.paymentLink) {
-          localStorage.setItem("orbit_name", data.name);
-          localStorage.setItem("orbit_email", data.email);
-          window.location.href = json.paymentLink;
-        } else {
-          setError(json.error || "Failed to create checkout session. Please try again.");
-        }
-      } else {
-        const res = await fetch(`${getApiBase()}/api/checkout/wallet-pay`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planId: plan.id, email: data.email, name: data.name, address: data.address }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          if (res.status === 402) {
-            setError(`You need ${json.required} tokens but only have ${json.available}. Please top up your wallet.`);
-          } else {
-            setError(json.error || "Payment failed. Please try again.");
-          }
-        } else {
-          setSuccess(true);
-          trackPurchase({
-            orderId: `wallet-${Date.now()}`,
-            planName: (plan as any)?.name ?? "Starlink Plan",
-            planId: plan?.id ?? 0,
-            value: firstMonthTotal,
-          });
-          setTimeout(() => navigate("/dashboard"), 2500);
-        }
-      }
-    } catch {
-      setError("Network error. Please try again.");
-    }
-    setPaying(false);
-  };
+  }, [planId]);
 
   if (!planId) {
     return (
@@ -221,6 +144,88 @@ export default function Checkout() {
     );
   }
 
+  if (!isLoadingPlan && !apiPlan) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto px-4 py-20 text-center">
+          <Alert variant="destructive" className="max-w-md mx-auto text-left">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Plan Not Found</AlertTitle>
+            <AlertDescription>The selected plan could not be found. Please choose another.</AlertDescription>
+          </Alert>
+          <Button className="mt-8 uppercase tracking-widest font-bold" onClick={() => navigate("/plans")}>
+            View Plans
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const firstPayment = staticPlan ? getFirstPayment(staticPlan) : 0;
+  const priceTokens = staticPlan ? Math.ceil(staticPlan.usdMonthly + staticPlan.usdHardware) : 0;
+  const hasSufficientTokens = walletBalance !== null && walletBalance >= priceTokens;
+
+  const onSubmit = async (data: z.infer<typeof checkoutSchema>) => {
+    if (!apiPlan) return;
+    setError("");
+    setPaying(true);
+
+    try {
+      if (paymentMethod === "paystack") {
+        const res = await fetch(`${getApiBase()}/api/paystack-plan-pay`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planId: apiPlan.id,
+            email: data.email,
+            name: data.name,
+            address: data.address,
+            currency: "NGN",
+          }),
+        });
+        const json = await res.json();
+        if (json.paymentLink) {
+          localStorage.setItem("orbit_name", data.name);
+          localStorage.setItem("orbit_email", data.email);
+          window.location.href = json.paymentLink;
+        } else {
+          setError(json.error || "Failed to create checkout session. Please try again.");
+        }
+      } else {
+        const res = await fetch(`${getApiBase()}/api/checkout/wallet-pay`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planId: apiPlan.id,
+            email: data.email,
+            name: data.name,
+            address: data.address,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          if (res.status === 402) {
+            setError(`You need ${json.required} tokens but only have ${json.available}. Please top up your wallet.`);
+          } else {
+            setError(json.error || "Payment failed. Please try again.");
+          }
+        } else {
+          setSuccess(true);
+          trackPurchase({
+            orderId: `wallet-${Date.now()}`,
+            planName: staticPlan?.name ?? "Starlink Plan",
+            planId,
+            value: staticPlan ? staticPlan.usdMonthly + staticPlan.usdHardware : 0,
+          });
+          setTimeout(() => navigate("/dashboard"), 2500);
+        }
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    }
+    setPaying(false);
+  };
+
   if (success) {
     return (
       <MainLayout>
@@ -232,7 +237,7 @@ export default function Checkout() {
             </div>
             <CheckoutProgress step={3} />
             <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-3">Subscription Active!</h2>
-            <p className="text-gray-400 mb-2">Your {plan?.name} plan is now live.</p>
+            <p className="text-gray-400 mb-2">Your {staticPlan?.name} plan is now live.</p>
             <p className="text-gray-500 text-sm mb-6">A confirmation email will be sent to your inbox shortly.</p>
             <div className="flex items-center justify-center gap-2 text-primary text-sm">
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -243,6 +248,11 @@ export default function Checkout() {
       </MainLayout>
     );
   }
+
+  const planName = staticPlan?.name ?? (apiPlan as any)?.name ?? "Starlink Plan";
+  const planSpeed = staticPlan?.speed ?? (apiPlan as any)?.speed ?? "";
+  const planCategory = staticPlan?.category ?? (apiPlan as any)?.category ?? "";
+  const planFeatures = staticPlan?.features ?? (apiPlan as any)?.features ?? [];
 
   return (
     <MainLayout>
@@ -256,10 +266,8 @@ export default function Checkout() {
           <p className="text-muted-foreground">Everything included — no hidden fees</p>
         </div>
 
-        {/* Progress indicator */}
         <CheckoutProgress step={paying ? 2 : 1} />
 
-        {/* Trust banner */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {[
             { icon: Shield, label: "Paystack Secured" },
@@ -277,7 +285,6 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left: form */}
           <div className="lg:col-span-7 space-y-5">
-
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -306,20 +313,12 @@ export default function Checkout() {
                 >
                   <div className="flex items-center gap-2">
                     <CreditCard className={`w-4 h-4 ${paymentMethod === "paystack" ? "text-primary" : "text-gray-500"}`} />
-                    <span className="text-xs font-black uppercase tracking-widest text-white">
-                      {PAYSTACK_NATIVE_CURRENCIES.has(currency) ? "Paystack" : "Card / Paystack"}
-                    </span>
-                    {currency === "NGN" && (
-                      <span className="text-[9px] font-black bg-green-500/15 text-green-400 border border-green-500/20 rounded-full px-2 py-0.5 uppercase tracking-wider">NGN</span>
-                    )}
+                    <span className="text-xs font-black uppercase tracking-widest text-white">Card / Paystack</span>
+                    <span className="text-[9px] font-black bg-green-500/15 text-green-400 border border-green-500/20 rounded-full px-2 py-0.5 uppercase tracking-wider">NGN</span>
                     {paymentMethod === "paystack" && <span className="ml-auto w-2 h-2 bg-primary rounded-full" />}
                   </div>
                   <p className="text-[10px] text-gray-500">
-                    {currency === "NGN"
-                      ? "Card, Bank Transfer, USSD, Mobile Money — in ₦ Naira"
-                      : currency === "GHS"
-                      ? "Card, Mobile Money, Bank — in GH₵ Cedis"
-                      : "Visa, Mastercard, Bank Transfer, USSD, Mobile Money"}
+                    Card, Bank Transfer, USSD, Mobile Money — in ₦ Naira
                   </p>
                 </button>
 
@@ -344,7 +343,7 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* Wallet status if wallet selected */}
+            {/* Wallet status */}
             {paymentMethod === "wallet" && (
               <div className={`rounded-xl border p-4 flex items-center gap-4 ${
                 hasSufficientTokens
@@ -451,36 +450,36 @@ export default function Checkout() {
                 <CardTitle className="text-lg uppercase tracking-wider">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-4">
-                {isLoadingPlan ? (
+                {isLoadingPlan && !staticPlan ? (
                   <div className="space-y-3">
                     <Skeleton className="h-6 w-full" />
                     <Skeleton className="h-4 w-2/3" />
                   </div>
-                ) : plan ? (
+                ) : staticPlan ? (
                   <>
                     <div>
-                      <h3 className="font-bold text-base uppercase tracking-wide text-white">{plan.name}</h3>
-                      <p className="text-xs text-muted-foreground capitalize mt-0.5">{(plan as any).category} · {plan.speed}</p>
+                      <h3 className="font-bold text-base uppercase tracking-wide text-white">{planName}</h3>
+                      <p className="text-xs text-muted-foreground capitalize mt-0.5">{planCategory} · {planSpeed}</p>
                     </div>
 
-                    {/* Line items */}
+                    {/* Line items — all values from plans.ts via pricing.ts */}
                     <div className="space-y-2.5 border-t border-border/50 pt-4">
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <Wifi className="w-3.5 h-3.5 text-primary" />
                           <span className="text-gray-400">Monthly service</span>
                         </div>
-                        <span className="font-bold text-white">{formatMonthly(priceMonthly, planLocalPrices)}</span>
+                        <span className="font-bold text-white">{formatNaira(staticPlan.monthlyPrice)}/mo</span>
                       </div>
 
-                      {hardwarePrice > 0 && (
+                      {staticPlan.hardwareFee > 0 && (
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
                             <Package className="w-3.5 h-3.5 text-amber-400" />
                             <span className="text-gray-400">Hardware kit</span>
                             <span className="text-[9px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5 uppercase font-bold">One-time</span>
                           </div>
-                          <span className="font-bold text-amber-400">{formatPrice(hardwarePrice, planLocalPrices, "hardware")}</span>
+                          <span className="font-bold text-amber-400">{formatNaira(staticPlan.hardwareFee)}</span>
                         </div>
                       )}
 
@@ -491,32 +490,36 @@ export default function Checkout() {
 
                       <div className="border-t border-border/50 pt-3 flex items-center justify-between">
                         <span className="text-sm font-bold uppercase tracking-wider text-white">
-                          {hardwarePrice > 0 ? "First Month Total" : "Monthly Total"}
+                          {staticPlan.hardwareFee > 0 ? "First Month Total" : "Monthly Total"}
                         </span>
-                        <span className="text-2xl font-black text-white">{formatLocalTotal()}</span>
+                        <span className="text-2xl font-black text-white">{formatNaira(firstPayment)}</span>
                       </div>
 
-                      {hardwarePrice > 0 && (
+                      {staticPlan.hardwareFee > 0 && (
                         <p className="text-[10px] text-gray-600">
-                          Then {formatMonthly(priceMonthly, planLocalPrices)} from month 2 onwards. Hardware is a one-time fee.
+                          Then {formatNaira(staticPlan.monthlyPrice)}/mo from month 2. Hardware is a one-time fee.
                         </p>
                       )}
 
-                      {/* Explicit charge confirmation */}
+                      {/* Charge confirmation */}
                       <div className="mt-2 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2.5">
                         <p className="text-[11px] text-gray-300 leading-relaxed">
-                          <span className="font-black text-white">You will be charged exactly {formatLocalTotal()} today.</span>
-                          {hardwarePrice > 0 && <span className="text-gray-400"> Then {formatMonthly(priceMonthly, planLocalPrices)} from month 2.</span>}
+                          <span className="font-black text-white">
+                            You will be charged exactly {formatNaira(firstPayment)} today.
+                          </span>
+                          {staticPlan.hardwareFee > 0 && (
+                            <span className="text-gray-400"> Then {formatNaira(staticPlan.monthlyPrice)}/mo from month 2.</span>
+                          )}
                           {" "}<span className="text-gray-500">No additional fees unless you select optional add-ons.</span>
                         </p>
                       </div>
                     </div>
 
                     {/* Features */}
-                    {(plan as any).features?.length > 0 && (
+                    {planFeatures.length > 0 && (
                       <div className="space-y-1.5 pt-2 border-t border-border/50">
                         <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">What's Included</p>
-                        {((plan as any).features as string[]).slice(0, 5).map((f: string) => (
+                        {(planFeatures as string[]).slice(0, 5).map((f: string) => (
                           <div key={f} className="flex items-center gap-2">
                             <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                             <span className="text-xs text-gray-400">{f}</span>
@@ -545,12 +548,14 @@ export default function Checkout() {
                       </div>
                     </div>
 
-                    {/* Order protection badge */}
+                    {/* Order protection */}
                     <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex items-start gap-2.5">
                       <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-0.5">Order Protection</p>
-                        <p className="text-[10px] text-gray-500 leading-relaxed">14-day return on unopened hardware. Cancel anytime before your next billing date. Your card details are never stored on our servers.</p>
+                        <p className="text-[10px] text-gray-500 leading-relaxed">
+                          14-day return on unopened hardware. Cancel anytime before your next billing date. Your card details are never stored on our servers.
+                        </p>
                       </div>
                     </div>
                   </>
@@ -565,6 +570,7 @@ export default function Checkout() {
                   disabled={
                     isLoadingPlan ||
                     paying ||
+                    !staticPlan ||
                     (paymentMethod === "wallet" && walletBalance !== null && !hasSufficientTokens)
                   }
                 >
@@ -576,7 +582,7 @@ export default function Checkout() {
                   ) : paymentMethod === "paystack" ? (
                     <span className="flex items-center gap-2">
                       <Shield className="w-5 h-5" />
-                      Pay Securely — {formatPrice(firstMonthTotal, (plan as any)?.localPrices)}
+                      Pay Securely — {staticPlan ? formatNaira(firstPayment) : "…"}
                       <ExternalLink className="w-4 h-4" />
                     </span>
                   ) : !hasSufficientTokens && walletBalance !== null ? (
@@ -613,6 +619,9 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+
+      {/* Dev-only pricing debug panel */}
+      <PricingDebugPanel dbPlanId={planId} />
     </MainLayout>
   );
 }

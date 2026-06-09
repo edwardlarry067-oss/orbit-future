@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useCurrency";
 import { PlanFinder } from "@/components/PlanFinder";
+import { findPlanByDbId, findPlanByName } from "@/data/plans";
+import { getFirstPayment, formatNaira } from "@/utils/pricing";
 import { trackViewContent, trackAddToCart, trackPurchase } from "@/lib/analytics";
 
 type Plan = {
@@ -181,9 +183,13 @@ export default function Plans() {
   const aviationPlans = plans.filter((p) => p.category === "aviation");
   const showAviation = activeCategory === "all" || activeCategory === "aviation";
 
-  const handleGetStarted = async (plan: Plan) => {
-    const cost = totalCost(plan);
-    trackAddToCart({ planName: plan.name, planId: plan.id, price: cost.firstMonth });
+  const handleGetStarted = (plan: Plan) => {
+    const sp = findPlanByDbId(plan.id) ?? findPlanByName(plan.name);
+    trackAddToCart({
+      planName: plan.name,
+      planId: plan.id,
+      price: sp ? (sp.usdMonthly + sp.usdHardware) : (plan.priceMonthly + (plan.hardwarePrice ?? 0)),
+    });
     navigate(`/checkout?planId=${plan.id}`);
   };
 
@@ -249,14 +255,12 @@ export default function Plans() {
         {/* Category filter + Plan Finder */}
         <div className="flex flex-wrap gap-2 justify-center items-center mb-12">
           <PlanFinder
-            plans={plans}
-            onSelectPlan={(id) => {
-              const plan = plans.find((p) => p.id === id);
-              if (plan) {
-                const cost = totalCost(plan);
-                trackAddToCart({ planName: plan.name, planId: plan.id, price: cost.firstMonth });
+            onSelectPlan={(dbId) => {
+              const sp = findPlanByDbId(dbId);
+              if (sp) {
+                trackAddToCart({ planName: sp.name, planId: dbId, price: sp.usdMonthly + sp.usdHardware });
               }
-              navigate(`/checkout?planId=${id}`);
+              navigate(`/checkout?planId=${dbId}`);
             }}
           />
           {allCategories.map((cat) => (
@@ -286,11 +290,11 @@ export default function Plans() {
           <>
             <div id="plan-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 lg:pb-0">
               {filtered.map((plan) => {
-                const cost = totalCost(plan);
-                const lp = plan.localPrices;
-                const localMonthly = lp?.[currency]?.monthly;
-                const localHardware = lp?.[currency]?.hardware ?? 0;
-                const localFirst = localMonthly != null ? localMonthly + localHardware : undefined;
+                const sp = findPlanByDbId(plan.id) ?? findPlanByName(plan.name);
+                const displayMonthly = sp ? formatNaira(sp.monthlyPrice) : formatMonthly(plan.priceMonthly, plan.localPrices);
+                const displayHardware = sp ? formatNaira(sp.hardwareFee) : formatPrice(plan.hardwarePrice ?? 0, plan.localPrices, "hardware");
+                const displayFirst = sp ? formatNaira(getFirstPayment(sp)) : formatPrice((plan.priceMonthly) + (plan.hardwarePrice ?? 0), plan.localPrices);
+                const hasHardware = sp ? sp.hardwareFee > 0 : (plan.hardwarePrice ?? 0) > 0;
                 const rec = RECOMMENDED_FOR[plan.category];
                 return (
                   <div
@@ -322,24 +326,26 @@ export default function Plans() {
                       <p className="text-gray-400 text-sm leading-relaxed">{plan.description}</p>
                     </div>
 
-                    {/* Pricing block */}
+                    {/* Pricing block — sourced from /data/plans.ts via /utils/pricing.ts */}
                     <div className="px-7 py-5 border-t border-b border-white/5 bg-white/2 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Wifi className="w-3.5 h-3.5 text-primary" />
                           <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Monthly</span>
                         </div>
-                        <span className="font-black text-white text-lg">{formatPrice(cost.monthly, lp, "monthly")}<span className="text-gray-500 text-xs font-normal">/mo</span></span>
+                        <span className="font-black text-white text-lg">
+                          {displayMonthly}<span className="text-gray-500 text-xs font-normal">/mo</span>
+                        </span>
                       </div>
 
-                      {(cost.hardware > 0 || localHardware > 0) && (
+                      {hasHardware && (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Package className="w-3.5 h-3.5 text-amber-400" />
                             <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Hardware</span>
                             <span className="text-[9px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5 uppercase font-bold">Once</span>
                           </div>
-                          <span className="font-bold text-amber-400">{formatPrice(cost.hardware, lp, "hardware")}</span>
+                          <span className="font-bold text-amber-400">{displayHardware}</span>
                         </div>
                       )}
 
@@ -347,19 +353,15 @@ export default function Plans() {
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
                           <span className="text-xs text-emerald-400 uppercase tracking-wider font-bold">
-                            {(cost.hardware > 0 || localHardware > 0) ? "First Payment" : "Monthly"}
+                            {hasHardware ? "First Payment" : "Monthly"}
                           </span>
                         </div>
-                        <span className="font-black text-emerald-400 text-xl">
-                          {localFirst != null
-                            ? `${currency === "NGN" ? "₦" : ""}${Math.round(localFirst).toLocaleString()}`
-                            : formatPrice(cost.firstMonth)}
-                        </span>
+                        <span className="font-black text-emerald-400 text-xl">{displayFirst}</span>
                       </div>
 
                       <p className="text-[10px] text-gray-600 leading-relaxed">
-                        {(cost.hardware > 0 || localHardware > 0)
-                          ? `Then ${formatMonthly(cost.monthly, lp)}. Hardware charged once on first payment.`
+                        {hasHardware
+                          ? `Then ${displayMonthly}/mo. Hardware charged once on first payment.`
                           : `Billed monthly. Cancel anytime.`}
                       </p>
                     </div>
@@ -395,9 +397,7 @@ export default function Plans() {
                         ) : (
                           <span className="flex items-center gap-2">
                             <Shield className="w-4 h-4" />
-                            Order Securely — {localFirst != null
-                              ? `${currency === "NGN" ? "₦" : ""}${Math.round(localFirst).toLocaleString()}`
-                              : formatPrice(cost.firstMonth)}
+                            Order Securely — {displayFirst}
                             <ArrowRight className="w-4 h-4" />
                           </span>
                         )}
