@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Satellite, Zap, Globe, Shield, Lock, HeadphonesIcon, CheckCircle2, Star, ChevronDown, ChevronUp, ArrowRight, Package, Award, Clock } from "lucide-react";
+import { Satellite, Zap, Globe, Shield, Lock, HeadphonesIcon, CheckCircle2, Star, ChevronDown, ChevronUp, ArrowRight, Package, Award, Clock, Home as HomeIcon, Briefcase, Navigation, Ship, Plane, Users, Mail, Phone } from "lucide-react";
 
 const LIVE_FEED = [
   { name: "Chukwuemeka O.", location: "Lagos, Nigeria", plan: "Starlink Residential", action: "just ordered" },
@@ -207,6 +207,76 @@ const INCLUDED = [
   { icon: Award, title: "Priority Support", desc: "24/7 WhatsApp and email support for all customers." },
 ];
 
+const HOW_IT_WORKS = [
+  {
+    step: "01",
+    icon: Globe,
+    title: "Choose Your Plan",
+    desc: "Browse residential, business, roam, maritime, or aviation plans. Select what matches your location and usage needs.",
+  },
+  {
+    step: "02",
+    icon: Shield,
+    title: "Secure Checkout",
+    desc: "Complete your order in minutes. Pay securely via card, bank transfer, or your Orbit Wallet. No contracts required.",
+  },
+  {
+    step: "03",
+    icon: Package,
+    title: "Receive Your Kit",
+    desc: "Your Starlink hardware ships directly to you — dish, Wi-Fi router, power supply, mount, and all cables included.",
+  },
+  {
+    step: "04",
+    icon: Zap,
+    title: "Go Live in 20 Min",
+    desc: "Position the dish with a clear sky view, plug it in, and connect. Our team activates your account remotely.",
+  },
+];
+
+const WHO_ITS_FOR = [
+  {
+    icon: HomeIcon,
+    label: "Home Users",
+    title: "Reliable Home Internet",
+    desc: "No more buffering, dropouts, or data caps. Stream 4K, work from home, and video call — from any location.",
+    tags: ["Unlimited data", "Self-install in 20 min", "No contracts"],
+    href: "/plans",
+  },
+  {
+    icon: Briefcase,
+    label: "Businesses",
+    title: "Enterprise Connectivity",
+    desc: "Keep operations running with priority-class speeds. SLA-backed uptime for offices, farms, and remote sites.",
+    tags: ["Priority data", "SLA uptime", "Business dashboard"],
+    href: "/plans",
+  },
+  {
+    icon: Navigation,
+    label: "Travelers",
+    title: "Internet on the Move",
+    desc: "Roam plan lets you use Starlink wherever you go on land. Perfect for digital nomads, overlanders, and campers.",
+    tags: ["Use anywhere on land", "Pause anytime", "In-vehicle use"],
+    href: "/plans",
+  },
+  {
+    icon: Ship,
+    label: "Maritime",
+    title: "At-Sea Connectivity",
+    desc: "High-speed internet on open water. Crew welfare, vessel operations, and cargo coordination — anywhere at sea.",
+    tags: ["Global ocean coverage", "In-motion use", "Priority data"],
+    href: "/plans",
+  },
+  {
+    icon: Plane,
+    label: "Aviation",
+    title: "In-Flight Internet",
+    desc: "Custom enterprise packages for commercial and private aircraft. FAA/EASA-compatible hardware. Global flight coverage.",
+    tags: ["Global air coverage", "Custom packages", "Enterprise SLA"],
+    href: "/support",
+  },
+];
+
 function SatelliteGlobe() {
   return (
     <div className="relative w-72 h-72 md:w-80 md:h-80 mx-auto flex items-center justify-center">
@@ -371,6 +441,50 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── HOW IT WORKS ── */}
+      <section className="py-20 md:py-24 bg-background">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-6 text-xs font-bold uppercase tracking-widest text-primary">
+              <Zap className="w-3.5 h-3.5" />
+              Simple 4-Step Process
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white mb-4">
+              How It Works
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              From order to online in four straightforward steps. No technical knowledge needed.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+            {/* Connector line — desktop only */}
+            <div className="hidden lg:block absolute top-8 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent z-0" />
+            {HOW_IT_WORKS.map(({ step, icon: Icon, title, desc }, i) => (
+              <div key={step} className="relative z-10 flex flex-col items-center text-center group">
+                <div className="relative mb-5">
+                  <div className="w-16 h-16 bg-primary/10 border border-primary/30 rounded-2xl flex items-center justify-center group-hover:bg-primary/15 transition-colors shadow-[0_0_20px_rgba(0,212,255,0.08)]">
+                    <Icon className="w-7 h-7 text-primary" />
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary text-black text-[10px] font-black rounded-full flex items-center justify-center">
+                    {i + 1}
+                  </div>
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-widest text-white mb-2">{title}</h3>
+                <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-12">
+            <Link href="/plans">
+              <Button className="h-12 px-10 text-xs font-bold uppercase tracking-widest shadow-[0_0_30px_rgba(0,212,255,0.15)]">
+                <Zap className="w-4 h-4 mr-2" />
+                Get Started Now
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── WHY ORBITFUTURE ── */}
       <section className="py-20 md:py-24 bg-background">
         <div className="container mx-auto px-4 max-w-6xl">
@@ -402,6 +516,49 @@ export default function Home() {
                 <h3 className="text-base font-bold uppercase tracking-widest text-white mb-3">{title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{desc}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHO IT'S FOR ── */}
+      <section className="py-20 md:py-24 bg-black border-y border-white/5">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-6 text-xs font-bold uppercase tracking-widest text-primary">
+              <Users className="w-3.5 h-3.5" />
+              Built for Every Use Case
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white mb-4">
+              Who It's For
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Whether you're at home, running a business, traveling, at sea, or in the air — we have the right connectivity solution for you.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+            {WHO_ITS_FOR.map(({ icon: Icon, label, title, desc, tags, href }) => (
+              <Link key={label} href={href}>
+                <div className="group bg-card border border-border rounded-2xl p-6 flex flex-col h-full hover:border-primary/40 hover:shadow-[0_0_30px_rgba(0,212,255,0.06)] transition-all cursor-pointer">
+                  <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                    <Icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">{label}</p>
+                  <h3 className="text-sm font-bold text-white mb-2 leading-snug">{title}</h3>
+                  <p className="text-gray-500 text-xs leading-relaxed flex-1 mb-4">{desc}</p>
+                  <div className="space-y-1.5">
+                    {tags.map((tag) => (
+                      <div key={tag} className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                        <span className="text-[10px] text-gray-500 font-bold">{tag}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1 mt-4 text-primary text-[10px] font-black uppercase tracking-widest group-hover:gap-2 transition-all">
+                    View Plans <ArrowRight className="w-3 h-3" />
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -566,6 +723,74 @@ export default function Home() {
                 View All FAQs →
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── ENTERPRISE / BUSINESS INQUIRY ── */}
+      <section className="py-16 bg-black border-y border-white/5">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="bg-gradient-to-br from-primary/8 via-primary/4 to-transparent border border-primary/20 rounded-3xl p-8 md:p-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-6 text-xs font-bold uppercase tracking-widest text-primary">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  Enterprise & Business
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white mb-4">
+                  Need a Custom<br />
+                  <span className="text-primary">Enterprise Solution?</span>
+                </h2>
+                <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                  For large-scale deployments, aviation connectivity, maritime fleets, or multi-site business networks — our enterprise team provides custom quotes, SLA agreements, and dedicated account management.
+                </p>
+                <div className="space-y-3 mb-8">
+                  {[
+                    "Custom data packages and pricing",
+                    "Multi-site deployment support",
+                    "Dedicated account manager",
+                    "SLA-backed uptime guarantees",
+                    "Priority enterprise onboarding",
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                      <span className="text-gray-300 text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <a href="mailto:sales@orbitfuture.com?subject=Enterprise%20Inquiry">
+                    <Button className="h-12 px-8 text-xs font-bold uppercase tracking-widest w-full sm:w-auto">
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email Sales Team
+                    </Button>
+                  </a>
+                  <a href="https://wa.me/16206123994?text=Hi%2C%20I%27d%20like%20to%20discuss%20an%20enterprise%20connectivity%20solution." target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="h-12 px-8 text-xs font-bold uppercase tracking-widest border-white/20 hover:border-white/40 w-full sm:w-auto">
+                      <Phone className="w-4 h-4 mr-2" />
+                      WhatsApp Us
+                    </Button>
+                  </a>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="bg-black/40 border border-white/8 rounded-2xl p-5">
+                  <p className="text-xs font-black uppercase tracking-widest text-primary mb-2">Response Time</p>
+                  <p className="text-white font-bold">Enterprise inquiries answered within 2 hours</p>
+                  <p className="text-gray-500 text-xs mt-1">Mon–Sun, 24 hours</p>
+                </div>
+                <div className="bg-black/40 border border-white/8 rounded-2xl p-5">
+                  <p className="text-xs font-black uppercase tracking-widest text-primary mb-2">General Support</p>
+                  <p className="text-white font-bold">All tickets answered within 4 hours</p>
+                  <p className="text-gray-500 text-xs mt-1">support@orbitfuture.com · WhatsApp 24/7</p>
+                </div>
+                <div className="bg-black/40 border border-white/8 rounded-2xl p-5">
+                  <p className="text-xs font-black uppercase tracking-widest text-primary mb-2">Refund Policy</p>
+                  <p className="text-white font-bold">14-day hardware return guarantee</p>
+                  <p className="text-gray-500 text-xs mt-1">Unopened hardware, full refund. No questions asked.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

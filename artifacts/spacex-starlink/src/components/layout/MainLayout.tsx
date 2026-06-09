@@ -292,7 +292,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 <a href="https://wa.me/16206123994?text=Hi%2C%20I%27m%20interested%20in%20OrbitFuture." target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
                   <MessageCircle className="w-3.5 h-3.5 text-[#25D366] shrink-0" />
-                  WhatsApp Support
+                  WhatsApp — 24/7 Support
                 </a>
                 <a href="mailto:support@orbitfuture.com"
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
@@ -309,7 +309,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
                   billing@orbitfuture.com
                 </a>
-                <p className="text-[10px] text-gray-600 pt-1">Support hours: 24/7</p>
+                <div className="pt-1 space-y-1">
+                  <p className="text-[10px] text-gray-600">Response time: <span className="text-gray-500 font-bold">under 4 hours</span></p>
+                  <p className="text-[10px] text-gray-600">Enterprise: <span className="text-gray-500 font-bold">under 2 hours</span></p>
+                  <p className="text-[10px] text-gray-600">Available 24 hours, 7 days a week</p>
+                </div>
               </div>
             </div>
           </div>

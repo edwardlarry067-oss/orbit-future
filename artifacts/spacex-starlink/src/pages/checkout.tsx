@@ -505,6 +505,35 @@ export default function Checkout() {
                         ))}
                       </div>
                     )}
+
+                    {/* What happens next */}
+                    <div className="pt-3 border-t border-border/50">
+                      <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">After You Order</p>
+                      <div className="space-y-2.5">
+                        {[
+                          { num: "1", text: "Order confirmation email within 5 minutes" },
+                          { num: "2", text: "Our team contacts you within 2 hours" },
+                          { num: "3", text: "Hardware ships to your address" },
+                          { num: "4", text: "We activate your service remotely" },
+                        ].map(({ num, text }) => (
+                          <div key={num} className="flex items-start gap-2.5">
+                            <div className="w-4 h-4 bg-primary/15 border border-primary/30 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                              <span className="text-[8px] font-black text-primary">{num}</span>
+                            </div>
+                            <span className="text-[11px] text-gray-400 leading-tight">{text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Order protection badge */}
+                    <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex items-start gap-2.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-0.5">Order Protection</p>
+                        <p className="text-[10px] text-gray-500 leading-relaxed">14-day return on unopened hardware. Cancel anytime before your next billing date. Your card details are never stored on our servers.</p>
+                      </div>
+                    </div>
                   </>
                 ) : null}
               </CardContent>

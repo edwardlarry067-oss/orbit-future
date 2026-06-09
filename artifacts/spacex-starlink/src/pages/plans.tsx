@@ -227,6 +227,23 @@ export default function Plans() {
           <p className="text-gray-400 max-w-xl mx-auto text-sm">
             All plans include hardware, installation support, and 24/7 expert help. No contracts, no hidden fees. OrbitFuture handles everything from order to activation.
           </p>
+
+          {/* Pricing transparency notice */}
+          <div className="mt-6 max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { icon: Shield, label: "Secure Checkout", desc: "Paystack PCI-DSS Level 1" },
+              { icon: Package, label: "Pricing Clarity", desc: "Hardware charged once. Monthly from month 2." },
+              { icon: CheckCircle2, label: "No Hidden Fees", desc: "Price shown = price you pay" },
+            ].map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="flex items-center gap-2.5 bg-white/2 border border-white/8 rounded-xl px-4 py-3">
+                <Icon className="w-4 h-4 text-primary shrink-0" />
+                <div className="text-left">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white">{label}</p>
+                  <p className="text-[10px] text-gray-500">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Category filter + Plan Finder */}
