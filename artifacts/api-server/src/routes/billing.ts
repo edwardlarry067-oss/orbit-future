@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { invoicesTable, subscriptionsTable, plansTable } from "@workspace/db";
-import { eq, desc, sql, and, count } from "drizzle-orm";
+import { eq, desc, sql, and, count, gte, lte } from "drizzle-orm";
 import { requireAuth } from "./auth";
 import { adminAuth } from "../middlewares/adminAuth";
 import jwt from "jsonwebtoken";
@@ -144,11 +144,24 @@ router.patch("/subscriptions/:id/auto-renew", requireAuth, async (req: any, res)
 router.get("/admin/billing/invoices", adminAuth, async (req, res): Promise<void> => {
   try {
     const status = req.query.status as string | undefined;
+    const fromDate = req.query.from as string | undefined;
+    const toDate = req.query.to as string | undefined;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = (page - 1) * limit;
 
-    const whereClause = status && status !== "all" ? eq(invoicesTable.status, status) : undefined;
+    const conditions: any[] = [];
+    if (status && status !== "all") conditions.push(eq(invoicesTable.status, status));
+    if (fromDate) {
+      const from = new Date(fromDate);
+      if (!isNaN(from.getTime())) conditions.push(gte(invoicesTable.createdAt, from));
+    }
+    if (toDate) {
+      const to = new Date(toDate);
+      to.setHours(23, 59, 59, 999);
+      if (!isNaN(to.getTime())) conditions.push(lte(invoicesTable.createdAt, to));
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const invoices = await db
       .select()

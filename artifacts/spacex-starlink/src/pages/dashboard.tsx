@@ -296,6 +296,7 @@ export default function Dashboard() {
 
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -317,13 +318,16 @@ export default function Dashboard() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Fetch subscriptions and billing summary in parallel
+    // Fetch subscriptions, billing summary, and wallet balance in parallel
     Promise.all([
       fetch(`${apiBase}/api/subscriptions?email=${encodeURIComponent(user.email)}`, { headers })
         .then(r => r.ok ? r.json() : { subscriptions: [] }),
       fetch(`${apiBase}/api/billing/summary`, { headers })
         .then(r => r.ok ? r.json() : null),
-    ]).then(([subData, billData]) => {
+      fetch(`${apiBase}/api/wallet/${encodeURIComponent(user.email)}`, { headers })
+        .then(r => r.ok ? r.json() : null),
+    ]).then(([subData, billData, walletData]) => {
+      if (walletData?.balance !== undefined) setWalletBalance(walletData.balance);
       const subs: Subscription[] = (subData.subscriptions ?? []).map((s: any) => ({
         id: s.id,
         email: s.email,
@@ -469,6 +473,7 @@ export default function Dashboard() {
               <p className="text-2xl font-black text-primary">${billingSummary?.totalPaid?.toFixed(0) ?? "0"}</p>
             </CardContent>
           </Card>
+          {/* Next bill — shows due date AND amount */}
           <Card className="bg-card border-border">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
@@ -476,21 +481,34 @@ export default function Dashboard() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Next Bill</p>
               </div>
               {billingSummary?.nextBills?.[0] ? (
-                <p className="text-sm font-black text-white">
-                  {format(new Date(billingSummary.nextBills[0].renewalDate), "MMM d")}
-                </p>
+                <>
+                  <p className="text-sm font-black text-white leading-tight">
+                    {format(new Date(billingSummary.nextBills[0].renewalDate), "MMM d, yyyy")}
+                  </p>
+                  <p className="text-[11px] text-violet-400 font-bold mt-0.5">
+                    ${billingSummary.nextBills[0].amount.toFixed(2)}
+                  </p>
+                </>
               ) : (
                 <p className="text-sm font-black text-gray-600">—</p>
               )}
             </CardContent>
           </Card>
+          {/* Wallet balance */}
           <Card className="bg-card border-border">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
-                <Shield className="w-3.5 h-3.5 text-amber-400" />
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Member Since</p>
+                <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Wallet</p>
               </div>
-              <p className="text-sm font-black text-white">{format(new Date(user.createdAt), "MMM yyyy")}</p>
+              {walletBalance !== null ? (
+                <>
+                  <p className="text-2xl font-black text-amber-400">{walletBalance}</p>
+                  <p className="text-[10px] text-muted-foreground">tokens</p>
+                </>
+              ) : (
+                <p className="text-sm font-black text-gray-600">—</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -534,8 +552,8 @@ export default function Dashboard() {
         {/* ── Quick actions ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           {[
+            { label: "Top Up", href: "/wallet", icon: CreditCard, color: "text-amber-400" },
             { label: "Browse Plans", href: "/plans", icon: Satellite, color: "text-primary" },
-            { label: "Billing", href: "/billing", icon: Receipt, color: "text-amber-400" },
             { label: "Track Order", href: "/track", icon: Package, color: "text-violet-400" },
             { label: "Get Support", href: "/support", icon: HeadphonesIcon, color: "text-emerald-400" },
           ].map(a => {

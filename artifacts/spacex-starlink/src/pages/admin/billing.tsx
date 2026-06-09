@@ -119,6 +119,8 @@ export default function AdminBilling() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalOutstanding, setTotalOutstanding] = useState(0);
   const [total, setTotal] = useState(0);
@@ -127,7 +129,10 @@ export default function AdminBilling() {
     setLoading(true);
     try {
       const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const params = new URLSearchParams({ limit: "100", ...(filter !== "all" ? { status: filter } : {}) });
+      const params = new URLSearchParams({ limit: "100" });
+      if (filter !== "all") params.set("status", filter);
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
       const res = await fetch(`${base}/api/admin/billing/invoices?${params}`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` },
       });
@@ -140,7 +145,7 @@ export default function AdminBilling() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchInvoices(); }, [filter]);
+  useEffect(() => { fetchInvoices(); }, [filter, dateFrom, dateTo]);
 
   const handleMarkPaid = async (id: number) => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -202,7 +207,7 @@ export default function AdminBilling() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex flex-wrap items-center gap-2 mb-5">
         {["all", "paid", "unpaid", "overdue"].map(f => (
           <button
             key={f}
@@ -212,9 +217,30 @@ export default function AdminBilling() {
             {f}
           </button>
         ))}
-        <button onClick={fetchInvoices} className="ml-auto text-xs text-muted-foreground hover:text-white border border-white/10 rounded-lg px-3 py-1.5">
-          Refresh
-        </button>
+        <div className="flex items-center gap-2 ml-auto">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">From</label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="text-xs bg-card border border-white/10 rounded-lg px-2 py-1.5 text-white focus:outline-none focus:border-primary/40 [color-scheme:dark]"
+          />
+          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">To</label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="text-xs bg-card border border-white/10 rounded-lg px-2 py-1.5 text-white focus:outline-none focus:border-primary/40 [color-scheme:dark]"
+          />
+          {(dateFrom || dateTo) && (
+            <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-[10px] text-muted-foreground hover:text-white border border-white/10 rounded-lg px-2 py-1.5">
+              Clear
+            </button>
+          )}
+          <button onClick={fetchInvoices} className="text-xs text-muted-foreground hover:text-white border border-white/10 rounded-lg px-3 py-1.5">
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Invoice list */}

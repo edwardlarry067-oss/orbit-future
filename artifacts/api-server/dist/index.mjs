@@ -55565,10 +55565,23 @@ router15.patch("/subscriptions/:id/auto-renew", requireAuth, async (req, res) =>
 router15.get("/admin/billing/invoices", adminAuth, async (req, res) => {
   try {
     const status = req.query.status;
+    const fromDate = req.query.from;
+    const toDate = req.query.to;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
-    const whereClause = status && status !== "all" ? eq(invoicesTable.status, status) : void 0;
+    const conditions = [];
+    if (status && status !== "all") conditions.push(eq(invoicesTable.status, status));
+    if (fromDate) {
+      const from = new Date(fromDate);
+      if (!isNaN(from.getTime())) conditions.push(gte(invoicesTable.createdAt, from));
+    }
+    if (toDate) {
+      const to = new Date(toDate);
+      to.setHours(23, 59, 59, 999);
+      if (!isNaN(to.getTime())) conditions.push(lte(invoicesTable.createdAt, to));
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : void 0;
     const invoices = await db.select().from(invoicesTable).where(whereClause).orderBy(desc(invoicesTable.createdAt)).limit(limit).offset(offset);
     const [{ total }] = await db.select({ total: count() }).from(invoicesTable).where(whereClause);
     const totalRevenue = await db.select({ sum: sql`COALESCE(SUM(amount_usd::numeric),0)` }).from(invoicesTable).where(eq(invoicesTable.status, "paid")).then((r) => parseFloat(r[0]?.sum ?? "0"));
