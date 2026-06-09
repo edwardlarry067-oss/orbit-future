@@ -72,6 +72,7 @@ router.get("/billing/summary", requireAuth, async (req: any, res): Promise<void>
 
     const paid = invoices.filter(i => i.status === "paid");
     const unpaid = invoices.filter(i => i.status !== "paid");
+    const overdue = invoices.filter(i => i.status === "overdue");
 
     const totalPaid = paid.reduce((sum, i) => sum + parseFloat(String(i.amountUsd)), 0);
     const totalOutstanding = unpaid.reduce((sum, i) => sum + parseFloat(String(i.amountUsd)), 0);
@@ -99,6 +100,7 @@ router.get("/billing/summary", requireAuth, async (req: any, res): Promise<void>
       totalPaid: Math.round(totalPaid * 100) / 100,
       totalOutstanding: Math.round(totalOutstanding * 100) / 100,
       unpaidCount: unpaid.length,
+      overdueCount: overdue.length,
       nextBills,
       recentInvoices: invoices.slice(0, 5),
     });

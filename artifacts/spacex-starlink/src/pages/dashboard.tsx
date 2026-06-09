@@ -53,6 +53,7 @@ type BillingSummary = {
   totalPaid: number;
   totalOutstanding: number;
   unpaidCount: number;
+  overdueCount: number;
   nextBills: { subscriptionId: number; planName: string; amount: number; renewalDate: string; autoRenew: boolean }[];
 };
 
@@ -387,7 +388,7 @@ export default function Dashboard() {
   if (!user) return null;
 
   const activeCount = subscriptions.filter(s => s.status === "active").length;
-  const hasOverdue = billingSummary && billingSummary.unpaidCount > 0;
+  const hasOverdue = billingSummary && (billingSummary.overdueCount ?? 0) > 0;
 
   return (
     <MainLayout>

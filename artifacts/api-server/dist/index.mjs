@@ -53155,7 +53155,7 @@ router4.post("/checkout/wallet-pay", async (req, res) => {
       amountPaid: priceTokens,
       currency: "USD",
       paymentRef: sub.stripeSessionId ?? void 0,
-      isFirstMonth: true
+      isFirstMonth: false
     }).catch(() => {
     });
     sendSubscriptionConfirmation({
@@ -55511,6 +55511,7 @@ router15.get("/billing/summary", requireAuth, async (req, res) => {
     const invoices = await db.select().from(invoicesTable).where(eq(invoicesTable.userEmail, email)).orderBy(desc(invoicesTable.createdAt));
     const paid = invoices.filter((i) => i.status === "paid");
     const unpaid = invoices.filter((i) => i.status !== "paid");
+    const overdue = invoices.filter((i) => i.status === "overdue");
     const totalPaid = paid.reduce((sum, i) => sum + parseFloat(String(i.amountUsd)), 0);
     const totalOutstanding = unpaid.reduce((sum, i) => sum + parseFloat(String(i.amountUsd)), 0);
     const activeSubs = await db.select({ sub: subscriptionsTable, plan: plansTable }).from(subscriptionsTable).leftJoin(plansTable, eq(subscriptionsTable.planId, plansTable.id)).where(eq(subscriptionsTable.email, email));
@@ -55526,6 +55527,7 @@ router15.get("/billing/summary", requireAuth, async (req, res) => {
       totalPaid: Math.round(totalPaid * 100) / 100,
       totalOutstanding: Math.round(totalOutstanding * 100) / 100,
       unpaidCount: unpaid.length,
+      overdueCount: overdue.length,
       nextBills,
       recentInvoices: invoices.slice(0, 5)
     });

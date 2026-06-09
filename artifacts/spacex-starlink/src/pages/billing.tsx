@@ -53,7 +53,7 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   );
 }
 
-function InvoiceRow({ invoice }: { invoice: Invoice }) {
+function InvoiceRow({ invoice, accountNumber }: { invoice: Invoice; accountNumber?: string }) {
   const [expanded, setExpanded] = useState(false);
 
   const handlePrint = () => {
@@ -69,14 +69,16 @@ function InvoiceRow({ invoice }: { invoice: Invoice }) {
       td{padding:10px;border-bottom:1px solid #eee;font-size:14px;}
       .total{font-weight:900;font-size:18px;}
       .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${invoice.status === "paid" ? "#d1fae5" : "#fef3c7"};color:${invoice.status === "paid" ? "#065f46" : "#92400e"};}
+      .meta{color:#444;font-size:13px;margin:4px 0;}
     </style></head><body>
     <div class="header">
       <div><h1>ORBITFUTURE</h1><p style="margin:0;color:#666;font-size:13px;">orbitfuture.store</p></div>
       <div style="text-align:right"><p style="margin:0;font-size:13px;color:#666;">Invoice</p><p style="margin:4px 0 0;font-size:18px;font-weight:900;">${invoice.invoiceNumber}</p></div>
     </div>
-    <p><strong>To:</strong> ${invoice.userEmail}</p>
-    <p><strong>Date:</strong> ${format(new Date(invoice.createdAt), "MMMM d, yyyy")}</p>
-    <p><strong>Status:</strong> <span class="badge">${invoice.status.toUpperCase()}</span></p>
+    <p class="meta"><strong>To:</strong> ${invoice.userEmail}</p>
+    ${accountNumber ? `<p class="meta"><strong>Account Number:</strong> <span style="font-family:monospace;font-weight:700;">${accountNumber}</span></p>` : ""}
+    <p class="meta"><strong>Date:</strong> ${format(new Date(invoice.createdAt), "MMMM d, yyyy")}</p>
+    <p class="meta"><strong>Status:</strong> <span class="badge">${invoice.status.toUpperCase()}</span></p>
     <table><thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>
     ${(invoice.lineItems ?? []).map(l => `<tr><td>${l.description}</td><td style="text-align:right">$${l.amount.toFixed(2)}</td></tr>`).join("")}
     </tbody><tfoot><tr><td class="total">Total</td><td class="total" style="text-align:right">$${parseFloat(invoice.amountUsd).toFixed(2)} ${invoice.currency}</td></tr></tfoot></table>
@@ -255,7 +257,7 @@ export default function Billing() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map(inv => <InvoiceRow key={inv.id} invoice={inv} />)}
+            {filtered.map(inv => <InvoiceRow key={inv.id} invoice={inv} accountNumber={user?.accountNumber ?? undefined} />)}
           </div>
         )}
       </div>

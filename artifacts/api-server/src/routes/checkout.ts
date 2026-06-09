@@ -81,6 +81,8 @@ router.post("/checkout/wallet-pay", async (req, res): Promise<void> => {
       })
       .returning();
 
+    // Wallet-pay only charges monthly tokens (no hardware) — use isFirstMonth:false
+    // to ensure invoice line items match actual charged amount exactly
     createInvoice({
       userEmail: email,
       subscriptionId: sub.id,
@@ -88,7 +90,7 @@ router.post("/checkout/wallet-pay", async (req, res): Promise<void> => {
       amountPaid: priceTokens,
       currency: "USD",
       paymentRef: sub.stripeSessionId ?? undefined,
-      isFirstMonth: true,
+      isFirstMonth: false,
     }).catch(() => {});
 
     sendSubscriptionConfirmation({
