@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   CheckCircle2, Zap, ArrowRight, Package, CreditCard, Wifi,
-  Globe, Shield, HeadphonesIcon, CheckCheck, Minus
+  Globe, Shield, HeadphonesIcon, CheckCheck, Minus, Phone, Home, Ship, Briefcase, MapPin
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useCurrency";
 
@@ -31,6 +31,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   maritime: "Maritime",
   business: "Business",
   aviation: "Aviation",
+};
+
+const RECOMMENDED_FOR: Record<string, { label: string; icon: React.ElementType }> = {
+  residential: { label: "Homes & Families", icon: Home },
+  roam: { label: "Travelers & Vehicles", icon: MapPin },
+  maritime: { label: "Vessels & Boats", icon: Ship },
+  business: { label: "Offices & Enterprises", icon: Briefcase },
+  aviation: { label: "Aircraft Operators", icon: Phone },
 };
 
 const COMPARISON_FEATURES = [
@@ -78,6 +86,13 @@ const COMPARISON_DATA: Record<string, Record<string, string | boolean>> = {
   },
 };
 
+const PLANS_FAQS = [
+  { q: "Is hardware charged separately?", a: "Yes. The Starlink hardware kit (dish + router) is a one-time purchase charged at the time of your first order. Monthly service fees are billed separately from month 2 onwards." },
+  { q: "Can I change plans later?", a: "Yes. You can upgrade or change your plan from your dashboard. Contact our support team and we'll assist with the transition." },
+  { q: "What's included in every order?", a: "Every order includes the Starlink hardware kit, free installation support from our team, a 12-month hardware warranty, and 24/7 WhatsApp and email support." },
+  { q: "How does aviation pricing work?", a: "Aviation connectivity requires custom configuration based on aircraft type, routes, and data requirements. Contact our sales team at sales@orbitfuture.com for a tailored enterprise quote." },
+];
+
 function ComparisonCell({ value, highlight }: { value: string | boolean; highlight?: boolean }) {
   if (value === true) {
     return <CheckCheck className={`w-5 h-5 mx-auto ${highlight ? "text-primary" : "text-emerald-400"}`} />;
@@ -99,6 +114,7 @@ export default function Plans() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [payingPlanId, setPayingPlanId] = useState<number | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [, navigate] = useLocation();
 
@@ -139,7 +155,6 @@ export default function Plans() {
       .catch(() => setToastMsg({ type: "error", text: "Could not verify payment. Contact support." }));
   }, [navigate]);
 
-  // Auto-dismiss toast
   useEffect(() => {
     if (!toastMsg) return;
     const t = setTimeout(() => setToastMsg(null), 6000);
@@ -147,37 +162,14 @@ export default function Plans() {
   }, [toastMsg]);
 
   const allCategories = ["all", ...Array.from(new Set(plans.map((p) => p.category)))];
-  const filtered = activeCategory === "all" ? plans : plans.filter((p) => p.category === activeCategory);
+  // Show aviation separately — always last
+  const filtered = (activeCategory === "all" ? plans : plans.filter((p) => p.category === activeCategory))
+    .filter((p) => p.category !== "aviation");
+  const aviationPlans = plans.filter((p) => p.category === "aviation");
+  const showAviation = activeCategory === "all" || activeCategory === "aviation";
 
   const handleGetStarted = async (plan: Plan) => {
     navigate(`/checkout?planId=${plan.id}`);
-  };
-
-  const handlePaystackPay = async (plan: Plan) => {
-    setPayingPlanId(plan.id);
-    try {
-      const name = localStorage.getItem("orbit_name") || "";
-      const email = localStorage.getItem("orbit_email") || "";
-      if (!name || !email) {
-        navigate(`/checkout?planId=${plan.id}`);
-        setPayingPlanId(null);
-        return;
-      }
-      const res = await fetch(`${getApiBase()}/api/paystack-plan-pay`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: plan.id, email, name }),
-      });
-      const data = await res.json();
-      if (data.paymentLink) {
-        window.location.href = data.paymentLink;
-      } else {
-        navigate(`/checkout?planId=${plan.id}`);
-      }
-    } catch {
-      navigate(`/checkout?planId=${plan.id}`);
-    }
-    setPayingPlanId(null);
   };
 
   const totalCost = (plan: Plan) => {
@@ -202,7 +194,7 @@ export default function Plans() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-6 text-xs font-bold uppercase tracking-widest text-primary">
             <Wifi className="w-3.5 h-3.5" />
-            Global Coverage · 100+ Countries
+            Starlink Plans · Available in 100+ Countries
           </div>
           {currency !== "USD" && (
             <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5 mb-4 text-[11px] font-bold uppercase tracking-widest text-emerald-400">
@@ -218,7 +210,7 @@ export default function Plans() {
             Starlink Plans
           </h1>
           <p className="text-gray-400 max-w-xl mx-auto text-sm">
-            All plans include hardware, free shipping, installation support, and 24/7 expert help. No contracts, no hidden fees.
+            All plans include hardware, installation support, and 24/7 expert help. No contracts, no hidden fees. OrbitFuture handles everything from order to activation.
           </p>
         </div>
 
@@ -247,122 +239,179 @@ export default function Plans() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((plan) => {
-              const cost = totalCost(plan);
-              const lp = plan.localPrices;
-              const localMonthly = lp?.[currency]?.monthly;
-              const localHardware = lp?.[currency]?.hardware ?? 0;
-              const localFirst = localMonthly != null ? localMonthly + localHardware : undefined;
-              return (
-                <div
-                  key={plan.id}
-                  className={`relative bg-card border rounded-2xl flex flex-col transition-all hover:border-primary/40 hover:shadow-[0_0_40px_rgba(0,212,255,0.06)] ${
-                    plan.popular ? "border-primary/40 shadow-[0_0_40px_rgba(0,212,255,0.08)]" : "border-border"
-                  }`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-6">
-                      <Badge className="bg-primary text-black text-[10px] font-black uppercase tracking-widest px-3">
-                        Most Popular
-                      </Badge>
-                    </div>
-                  )}
-
-                  <div className="p-7 pb-5">
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2 capitalize">{plan.category}</p>
-                    <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                    <p className="text-gray-400 text-sm leading-relaxed">{plan.description}</p>
-                  </div>
-
-                  {/* Pricing block */}
-                  <div className="px-7 py-5 border-t border-b border-white/5 bg-white/2 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Wifi className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Monthly</span>
-                      </div>
-                      <span className="font-black text-white text-lg">{formatPrice(cost.monthly, lp, "monthly")}<span className="text-gray-500 text-xs font-normal">/mo</span></span>
-                    </div>
-
-                    {(cost.hardware > 0 || localHardware > 0) && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-3.5 h-3.5 text-amber-400" />
-                          <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Hardware</span>
-                          <span className="text-[9px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5 uppercase font-bold">Once</span>
-                        </div>
-                        <span className="font-bold text-amber-400">{formatPrice(cost.hardware, lp, "hardware")}</span>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filtered.map((plan) => {
+                const cost = totalCost(plan);
+                const lp = plan.localPrices;
+                const localMonthly = lp?.[currency]?.monthly;
+                const localHardware = lp?.[currency]?.hardware ?? 0;
+                const localFirst = localMonthly != null ? localMonthly + localHardware : undefined;
+                const rec = RECOMMENDED_FOR[plan.category];
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative bg-card border rounded-2xl flex flex-col transition-all hover:border-primary/40 hover:shadow-[0_0_40px_rgba(0,212,255,0.06)] ${
+                      plan.popular ? "border-primary/40 shadow-[0_0_40px_rgba(0,212,255,0.08)]" : "border-border"
+                    }`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-6">
+                        <Badge className="bg-primary text-black text-[10px] font-black uppercase tracking-widest px-3">
+                          Most Popular
+                        </Badge>
                       </div>
                     )}
 
-                    <div className="border-t border-white/8 pt-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-xs text-emerald-400 uppercase tracking-wider font-bold">
-                          {(cost.hardware > 0 || localHardware > 0) ? "First Payment" : "Monthly"}
-                        </span>
+                    <div className="p-7 pb-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-bold uppercase tracking-widest text-primary capitalize">{plan.category}</p>
+                        {rec && (
+                          <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
+                            <rec.icon className="w-3 h-3 text-gray-400" />
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{rec.label}</span>
+                          </div>
+                        )}
                       </div>
-                      <span className="font-black text-emerald-400 text-xl">
-                        {localFirst != null
-                          ? `${currency === "NGN" ? "₦" : ""}${Math.round(localFirst).toLocaleString()}`
-                          : formatPrice(cost.firstMonth)}
-                      </span>
+                      <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                      <p className="text-gray-400 text-sm leading-relaxed">{plan.description}</p>
                     </div>
 
-                    <p className="text-[10px] text-gray-600 leading-relaxed">
-                      {(cost.hardware > 0 || localHardware > 0)
-                        ? `Then ${formatMonthly(cost.monthly, lp)}. Hardware charged once on first payment.`
-                        : `Billed monthly. Cancel anytime.`}
-                    </p>
-                  </div>
-
-                  {/* Speed + features */}
-                  <div className="px-7 py-5 flex-1">
-                    <div className="inline-flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-lg px-3 py-1.5 mb-4">
-                      <Zap className="w-3 h-3 text-primary" />
-                      <span className="text-xs font-bold text-primary">{plan.speed}</span>
-                    </div>
-                    <div className="space-y-2">
-                      {plan.features.slice(0, 5).map((f) => (
-                        <div key={f} className="flex items-center gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span className="text-xs text-gray-400">{f}</span>
+                    {/* Pricing block */}
+                    <div className="px-7 py-5 border-t border-b border-white/5 bg-white/2 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Wifi className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Monthly</span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        <span className="font-black text-white text-lg">{formatPrice(cost.monthly, lp, "monthly")}<span className="text-gray-500 text-xs font-normal">/mo</span></span>
+                      </div>
 
-                  {/* CTA */}
-                  <div className="p-5 pt-0">
-                    <Button
-                      className="w-full font-bold uppercase tracking-widest text-xs h-12"
-                      onClick={() => handleGetStarted(plan)}
-                      disabled={payingPlanId === plan.id}
-                    >
-                      {payingPlanId === plan.id ? (
-                        <span className="flex items-center gap-2">
-                          <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                          Preparing Checkout…
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          <Zap className="w-4 h-4" />
-                          Get Started — {localFirst != null
+                      {(cost.hardware > 0 || localHardware > 0) && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Package className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Hardware</span>
+                            <span className="text-[9px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5 uppercase font-bold">Once</span>
+                          </div>
+                          <span className="font-bold text-amber-400">{formatPrice(cost.hardware, lp, "hardware")}</span>
+                        </div>
+                      )}
+
+                      <div className="border-t border-white/8 pt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-xs text-emerald-400 uppercase tracking-wider font-bold">
+                            {(cost.hardware > 0 || localHardware > 0) ? "First Payment" : "Monthly"}
+                          </span>
+                        </div>
+                        <span className="font-black text-emerald-400 text-xl">
+                          {localFirst != null
                             ? `${currency === "NGN" ? "₦" : ""}${Math.round(localFirst).toLocaleString()}`
                             : formatPrice(cost.firstMonth)}
-                          <ArrowRight className="w-4 h-4" />
                         </span>
-                      )}
-                    </Button>
-                    <p className="text-center text-[10px] text-gray-600 mt-2 uppercase tracking-widest">
-                      Paystack · Secure Checkout · Cancel Anytime
-                    </p>
+                      </div>
+
+                      <p className="text-[10px] text-gray-600 leading-relaxed">
+                        {(cost.hardware > 0 || localHardware > 0)
+                          ? `Then ${formatMonthly(cost.monthly, lp)}. Hardware charged once on first payment.`
+                          : `Billed monthly. Cancel anytime.`}
+                      </p>
+                    </div>
+
+                    {/* Speed + features */}
+                    <div className="px-7 py-5 flex-1">
+                      <div className="inline-flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-lg px-3 py-1.5 mb-4">
+                        <Zap className="w-3 h-3 text-primary" />
+                        <span className="text-xs font-bold text-primary">{plan.speed}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {plan.features.slice(0, 5).map((f) => (
+                          <div key={f} className="flex items-center gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="text-xs text-gray-400">{f}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* CTA */}
+                    <div className="p-5 pt-0">
+                      <Button
+                        className="w-full font-bold uppercase tracking-widest text-xs h-12"
+                        onClick={() => handleGetStarted(plan)}
+                        disabled={payingPlanId === plan.id}
+                      >
+                        {payingPlanId === plan.id ? (
+                          <span className="flex items-center gap-2">
+                            <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                            Preparing Checkout…
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Shield className="w-4 h-4" />
+                            Order Securely — {localFirst != null
+                              ? `${currency === "NGN" ? "₦" : ""}${Math.round(localFirst).toLocaleString()}`
+                              : formatPrice(cost.firstMonth)}
+                            <ArrowRight className="w-4 h-4" />
+                          </span>
+                        )}
+                      </Button>
+                      <p className="text-center text-[10px] text-gray-600 mt-2 uppercase tracking-widest">
+                        Paystack · Secure Checkout · Cancel Anytime
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Aviation — Enterprise Contact Card */}
+            {showAviation && aviationPlans.length > 0 && (
+              <div className="mt-8">
+                <div className="bg-gradient-to-r from-primary/5 via-primary/3 to-transparent border border-primary/20 rounded-2xl p-8 md:p-10">
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-center shrink-0">
+                          <Phone className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-widest text-primary">Aviation · For Aircraft Operators</span>
+                      </div>
+                      <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-white mb-3">
+                        Aviation Connectivity
+                      </h3>
+                      <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                        In-flight high-speed internet for commercial and private aircraft. Coverage is global. Pricing, hardware configuration, and data packages are custom-quoted based on aircraft type, routes, and requirements.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        {["In-flight connectivity", "Global coverage", "FAA/EASA compatible hardware", "Dedicated aviation support", "Custom data packages", "Enterprise SLA"].map((f) => (
+                          <div key={f} className="flex items-center gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="text-xs text-gray-400">{f}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex flex-col gap-3 w-full md:w-auto">
+                      <a href="mailto:sales@orbitfuture.com?subject=Aviation%20Connectivity%20Enquiry">
+                        <Button className="w-full md:w-auto h-12 px-8 font-bold uppercase tracking-widest text-xs">
+                          <ArrowRight className="w-4 h-4 mr-2" />
+                          Contact Enterprise Sales
+                        </Button>
+                      </a>
+                      <a href="https://wa.me/16206123994?text=Hi%2C%20I%27m%20interested%20in%20aviation%20connectivity%20pricing." target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" className="w-full md:w-auto h-12 px-8 font-bold uppercase tracking-widest text-xs border-white/20">
+                          WhatsApp Sales Team
+                        </Button>
+                      </a>
+                      <p className="text-[10px] text-gray-600 text-center">sales@orbitfuture.com</p>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Comparison table toggle */}
@@ -371,7 +420,7 @@ export default function Plans() {
             <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-white mb-1">
               How We Compare
             </h2>
-            <p className="text-gray-500 text-sm">ORBITFUTURE vs Traditional ISP vs Other Satellite providers</p>
+            <p className="text-gray-500 text-sm">OrbitFuture vs Traditional ISP vs Other Satellite providers</p>
           </div>
           <button
             onClick={() => setShowComparison(!showComparison)}
@@ -430,7 +479,7 @@ export default function Plans() {
         {/* Included with every plan */}
         <div className="bg-card border border-border rounded-2xl p-8 mb-12">
           <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">
-            ✦ Included with Every Plan
+            ✦ Included with Every Order
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -449,14 +498,14 @@ export default function Plans() {
           </div>
         </div>
 
-        {/* Trust bar */}
-        <div className="border-t border-white/5 pt-12">
+        {/* Trust / stats bar */}
+        <div className="border-t border-white/5 pt-12 mb-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
               { label: "Countries Served", value: "100+" },
-              { label: "Active Subscribers", value: "4M+" },
               { label: "Avg Download Speed", value: "200Mbps" },
-              { label: "Uptime SLA", value: "99.9%" },
+              { label: "Avg Latency", value: "20ms" },
+              { label: "Uptime (Starlink Network)", value: "99.9%" },
             ].map((s) => (
               <div key={s.label}>
                 <div className="text-3xl font-black text-primary mb-1">{s.value}</div>
@@ -464,6 +513,47 @@ export default function Plans() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* FAQ section */}
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-white mb-6 text-center">
+            Pricing Questions
+          </h2>
+          <div className="space-y-3 mb-8">
+            {PLANS_FAQS.map((faq, i) => (
+              <div key={i} className="border border-white/8 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-white/3 transition-colors"
+                >
+                  <span className="text-white text-sm font-bold pr-4">{faq.q}</span>
+                  {openFaq === i
+                    ? <span className="text-primary text-sm shrink-0">▲</span>
+                    : <span className="text-gray-500 text-sm shrink-0">▼</span>}
+                </button>
+                {openFaq === i && (
+                  <div className="px-6 pb-5 text-gray-400 text-sm leading-relaxed border-t border-white/5 pt-4">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <Link href="/faq">
+              <Button variant="outline" className="h-11 px-8 text-xs font-bold uppercase tracking-widest border-white/20 hover:border-white/40">
+                View All FAQs →
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Legal disclaimer */}
+        <div className="mt-12 text-center">
+          <p className="text-gray-700 text-[10px] leading-relaxed max-w-2xl mx-auto">
+            OrbitFuture is an independent satellite internet solutions company. We are not affiliated with, endorsed by, or operated by SpaceX or Starlink. "Starlink" is a registered trademark of Space Exploration Technologies Corp. References to Starlink describe the satellite internet service that OrbitFuture helps customers access and manage.
+          </p>
         </div>
       </div>
     </MainLayout>

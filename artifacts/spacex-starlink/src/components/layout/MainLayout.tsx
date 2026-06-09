@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LayoutDashboard, Globe, Mail, MessageCircle, Coins, LogOut, User, Shield, Lock, HeadphonesIcon, Info } from "lucide-react";
+import { Menu, X, LayoutDashboard, Globe, Mail, MessageCircle, Coins, LogOut, User, Shield, Lock, HeadphonesIcon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { getApiBase } from "@workspace/api-client-react";
@@ -33,6 +33,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     { label: "Track Order", href: "/track" },
   ];
 
+  const isCheckoutPage = location === "/checkout";
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col relative dark">
       <header className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-xl border-b border-white/8 shadow-[0_1px_0_rgba(255,255,255,0.04)]">
@@ -41,11 +43,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <Globe className="w-3 h-3 text-primary" />
-              <span className="text-[10px] text-gray-500 font-medium">Available Worldwide · 100+ Countries</span>
+              <span className="text-[10px] text-gray-500 font-medium">Starlink Available in 100+ Countries</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Shield className="w-3 h-3 text-emerald-500" />
-              <span className="text-[10px] text-gray-500 font-medium">SSL Protected · Secure Payments</span>
+              <span className="text-[10px] text-gray-500 font-medium">SSL Protected · Secure Payments via Paystack</span>
             </div>
           </div>
           <span className="text-[10px] text-emerald-500 font-bold">● All Systems Operational</span>
@@ -108,7 +110,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             )}
             <Link href="/plans">
               <Button className="h-9 px-5 text-xs font-black uppercase tracking-widest bg-primary text-black hover:bg-primary/90 rounded-sm shadow-[0_0_20px_rgba(0,212,255,0.2)]">
-                Order Starlink Now
+                Check Availability
               </Button>
             </Link>
           </div>
@@ -162,7 +164,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               )}
               <Link href="/plans" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full h-12 text-xs font-black uppercase tracking-widest bg-primary text-black hover:bg-primary/90">
-                  Order Starlink Now
+                  Check Availability & Order
                 </Button>
               </Link>
             </div>
@@ -179,15 +181,31 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
       <WhatsAppButton />
 
+      {/* Sticky mobile CTA — hidden on checkout to avoid friction */}
+      {!isCheckoutPage && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-xl border-t border-white/10 px-4 py-3 flex items-center gap-3 shadow-[0_-4px_24px_rgba(0,0,0,0.6)]">
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-xs font-bold leading-tight">Starlink — Available in 100+ Countries</p>
+            <p className="text-gray-500 text-[10px] leading-tight">Secure checkout · No contracts · 24/7 support</p>
+          </div>
+          <Link href="/plans" className="shrink-0">
+            <Button className="h-10 px-5 text-xs font-black uppercase tracking-widest bg-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(0,212,255,0.25)]">
+              <Zap className="w-3.5 h-3.5 mr-1.5" />
+              Order Now
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Trust bar */}
       <div className="bg-[#030303] border-t border-white/5 py-3 z-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
             {[
-              { icon: Shield, label: "Secure Payments" },
-              { icon: Lock, label: "SSL Protected" },
+              { icon: Shield, label: "Paystack Secure Payments" },
+              { icon: Lock, label: "SSL Encrypted" },
               { icon: HeadphonesIcon, label: "24/7 Support" },
-              { icon: Globe, label: "Global Coverage" },
+              { icon: Globe, label: "100+ Countries" },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <Icon className="w-3 h-3 text-primary" />
@@ -201,6 +219,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       <footer className="bg-[#030303] border-t border-white/5 pt-14 pb-8 z-10">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            {/* Brand col */}
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-primary">
@@ -209,8 +228,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 </svg>
                 <span className="font-black text-sm tracking-tighter uppercase text-white">OrbitFuture</span>
               </div>
-              <p className="text-gray-600 text-xs leading-relaxed mb-4">
-                Production-grade global satellite internet. Serving 4M+ subscribers across 100+ countries.
+              <p className="text-gray-600 text-xs leading-relaxed mb-2">
+                Independent satellite internet solutions. Helping customers worldwide order, activate, and manage Starlink connectivity.
+              </p>
+              <p className="text-gray-700 text-[10px] leading-relaxed mb-4">
+                Not affiliated with SpaceX or Starlink.
               </p>
               <div className="flex items-center gap-1.5">
                 <Globe className="w-3 h-3 text-primary" />
@@ -218,12 +240,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
+            {/* Services col */}
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 font-bold mb-4">Services</p>
               <div className="space-y-2.5">
                 {[
                   { label: "Residential Plans", href: "/plans" },
                   { label: "Business Plans", href: "/plans" },
+                  { label: "Maritime Plans", href: "/plans" },
                   { label: "Coverage Areas", href: "/coverage" },
                   { label: "About Us", href: "/about" },
                 ].map((l) => (
@@ -232,6 +256,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
+            {/* Support col */}
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 font-bold mb-4">Support</p>
               <div className="space-y-2.5">
@@ -240,48 +265,76 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   { label: "FAQ", href: "/faq" },
                   { label: "My Dashboard", href: "/dashboard" },
                   { label: "Orbit Wallet", href: "/wallet" },
+                  { label: "Track Order", href: "/track" },
                 ].map((l) => (
                   <Link key={l.label} href={l.href} className="block text-xs text-gray-500 hover:text-white transition-colors">{l.label}</Link>
                 ))}
               </div>
             </div>
 
+            {/* Contact col */}
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 font-bold mb-4">Contact</p>
               <div className="space-y-3">
                 <a href="https://wa.me/16206123994?text=Hi%2C%20I%27m%20interested%20in%20OrbitFuture." target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
                   <MessageCircle className="w-3.5 h-3.5 text-[#25D366] shrink-0" />
-                  +1 (620) 612-3994
+                  WhatsApp Support
                 </a>
-                <a href="mailto:managementstarlinkhq@gmail.com"
+                <a href="mailto:support@orbitfuture.com"
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
                   <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="break-all">managementstarlinkhq@gmail.com</span>
+                  support@orbitfuture.com
                 </a>
-                <div className="pt-1 space-y-2">
-                  <Link href="/contact" className="block text-xs text-gray-500 hover:text-white transition-colors">Contact Page</Link>
-                  <Link href="/faq#refund" className="block text-xs text-gray-500 hover:text-white transition-colors">Refund Policy</Link>
-                  <Link href="/faq#privacy" className="block text-xs text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
-                  <Link href="/faq#terms" className="block text-xs text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
-                </div>
+                <a href="mailto:sales@orbitfuture.com"
+                  className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
+                  <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
+                  sales@orbitfuture.com
+                </a>
+                <a href="mailto:billing@orbitfuture.com"
+                  className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
+                  <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
+                  billing@orbitfuture.com
+                </a>
+                <p className="text-[10px] text-gray-600 pt-1">Support hours: 24/7</p>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-white/5 pt-6 mb-5">
+          {/* Legal links row */}
+          <div className="border-t border-white/5 py-5">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              {[
+                { label: "Terms of Service", href: "/faq#terms" },
+                { label: "Privacy Policy", href: "/faq#privacy" },
+                { label: "Refund Policy", href: "/faq#refund" },
+                { label: "Contact", href: "/contact" },
+              ].map((l) => (
+                <Link key={l.label} href={l.href} className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold uppercase tracking-widest">{l.label}</Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment methods */}
+          <div className="border-t border-white/5 pt-5 mb-5">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span className="text-[10px] text-gray-600 uppercase tracking-widest">We Accept:</span>
-              {["Paystack", "Visa", "Mastercard", "Verve", "Bank Transfer", "USSD", "Orbit Wallet"].map((p) => (
+              {["Paystack", "Visa", "Mastercard", "Verve", "Bank Transfer", "USSD", "Mobile Money", "Orbit Wallet"].map((p) => (
                 <span key={p} className="text-[10px] text-gray-500 font-bold uppercase tracking-widest border border-white/8 rounded px-2 py-1 bg-white/2">{p}</span>
               ))}
             </div>
           </div>
 
+          {/* Bottom bar */}
           <div className="border-t border-white/5 pt-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-            <p className="text-xs text-gray-700">
-              © {new Date().getFullYear()} OrbitFuture Ltd. All rights reserved.
-            </p>
+            <div>
+              <p className="text-xs text-gray-700">
+                © {new Date().getFullYear()} OrbitFuture Ltd. All rights reserved.
+              </p>
+              <p className="text-[10px] text-gray-700 mt-1">
+                OrbitFuture is an independent company. Not affiliated with, endorsed by, or operated by SpaceX or Starlink.
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
               <span className="text-[10px] text-gray-600 uppercase tracking-widest">All Systems Operational</span>
@@ -289,6 +342,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </footer>
+
+      {/* Mobile bottom padding so sticky CTA doesn't cover content */}
+      {!isCheckoutPage && <div className="lg:hidden h-16" />}
     </div>
   );
 }

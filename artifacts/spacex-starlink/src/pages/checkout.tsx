@@ -14,7 +14,7 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import {
   AlertCircle, ShieldCheck, CheckCircle2, Lock,
-  ArrowRight, RefreshCw, Zap, Package, Wifi, CreditCard, ExternalLink
+  ArrowRight, RefreshCw, Zap, Package, Wifi, CreditCard, ExternalLink, Shield
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getApiBase } from "@workspace/api-client-react";
@@ -35,6 +35,41 @@ const PAYSTACK_CURRENCY_LABELS: Record<string, string> = {
 };
 function getPaystackLabel(currency: string) {
   return PAYSTACK_CURRENCY_LABELS[currency] ?? "Paystack · Card / Bank Transfer";
+}
+
+function CheckoutProgress({ step }: { step: 1 | 2 | 3 }) {
+  const steps = [
+    { label: "Your Details", num: 1 },
+    { label: "Secure Payment", num: 2 },
+    { label: "Confirmation", num: 3 },
+  ];
+  return (
+    <div className="flex items-center justify-center gap-0 mb-10">
+      {steps.map((s, i) => (
+        <React.Fragment key={s.num}>
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
+              step > s.num
+                ? "bg-primary border-primary text-black"
+                : step === s.num
+                ? "bg-primary/10 border-primary text-primary"
+                : "bg-transparent border-white/20 text-gray-600"
+            }`}>
+              {step > s.num ? <CheckCircle2 className="w-4 h-4" /> : s.num}
+            </div>
+            <span className={`text-[9px] font-bold uppercase tracking-widest mt-1.5 ${
+              step >= s.num ? "text-primary" : "text-gray-600"
+            }`}>{s.label}</span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className={`w-16 sm:w-24 h-0.5 mb-4 mx-1 transition-all ${
+              step > s.num + 0 ? "bg-primary" : "bg-white/10"
+            }`} />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
 }
 
 export default function Checkout() {
@@ -165,8 +200,10 @@ export default function Checkout() {
               <CheckCircle2 className="w-12 h-12 text-emerald-400" />
               <div className="absolute inset-0 bg-emerald-400/10 rounded-full animate-ping" />
             </div>
+            <CheckoutProgress step={3} />
             <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-3">Subscription Active!</h2>
-            <p className="text-gray-400 mb-6">Your {plan?.name} plan is now live.</p>
+            <p className="text-gray-400 mb-2">Your {plan?.name} plan is now live.</p>
+            <p className="text-gray-500 text-sm mb-6">A confirmation email will be sent to your inbox shortly.</p>
             <div className="flex items-center justify-center gap-2 text-primary text-sm">
               <RefreshCw className="w-4 h-4 animate-spin" />
               Redirecting to your dashboard…
@@ -180,13 +217,31 @@ export default function Checkout() {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-12 max-w-5xl">
-        <div className="mb-10 text-center">
+        <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4 text-xs font-bold uppercase tracking-widest text-primary">
             <ShieldCheck className="w-3.5 h-3.5" />
             Secure Checkout
           </div>
           <h1 className="text-4xl font-black uppercase tracking-tighter mb-2">Complete Your Order</h1>
           <p className="text-muted-foreground">Everything included — no hidden fees</p>
+        </div>
+
+        {/* Progress indicator */}
+        <CheckoutProgress step={paying ? 2 : 1} />
+
+        {/* Trust banner */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+          {[
+            { icon: Shield, label: "Paystack Secured" },
+            { icon: Lock, label: "SSL Encrypted" },
+            { icon: CheckCircle2, label: "No Hidden Fees" },
+            { icon: ShieldCheck, label: "Cancel Anytime" },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-2 bg-white/2 border border-white/8 rounded-lg px-3 py-2.5">
+              <Icon className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
+            </div>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -352,7 +407,7 @@ export default function Checkout() {
                   <p className="text-xs font-bold text-white mb-0.5">Sign in for faster checkout</p>
                   <p className="text-[11px] text-gray-500">
                     <a href="/login?redirect=/checkout" className="text-primary hover:underline font-bold">Create an account</a>{" "}
-                    to auto-fill your details instantly.
+                    to auto-fill your details instantly and track your order.
                   </p>
                 </div>
               </div>
@@ -448,12 +503,12 @@ export default function Checkout() {
                   {paying ? (
                     <span className="flex items-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {paymentMethod === "paystack" ? "Opening Paystack…" : "Processing…"}
+                      {paymentMethod === "paystack" ? "Opening Secure Payment…" : "Processing…"}
                     </span>
                   ) : paymentMethod === "paystack" ? (
                     <span className="flex items-center gap-2">
-                      <CreditCard className="w-5 h-5" />
-                      Pay {formatPrice(firstMonthTotal, (plan as any)?.localPrices)} with {getPaystackLabel(currency).split("·")[0].trim()}
+                      <Shield className="w-5 h-5" />
+                      Pay Securely — {formatPrice(firstMonthTotal, (plan as any)?.localPrices)}
                       <ExternalLink className="w-4 h-4" />
                     </span>
                   ) : !hasSufficientTokens && walletBalance !== null ? (
@@ -464,20 +519,27 @@ export default function Checkout() {
                   ) : (
                     <span className="flex items-center gap-2">
                       <Zap className="w-5 h-5" />
-                      Pay {priceTokens} Tokens
+                      Activate with {priceTokens} Tokens
                       <ArrowRight className="w-4 h-4" />
                     </span>
                   )}
                 </Button>
 
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
-                  {["Secure", "No hidden fees", "Cancel anytime"].map(t => (
+                  {["Paystack Secured", "No hidden fees", "Cancel anytime"].map(t => (
                     <span key={t} className="flex items-center gap-1 text-[10px] text-gray-600 uppercase tracking-widest font-bold">
                       <CheckCircle2 className="w-3 h-3 text-primary" />
                       {t}
                     </span>
                   ))}
                 </div>
+
+                <p className="text-[10px] text-gray-700 text-center mt-3 leading-relaxed px-2">
+                  By placing your order you agree to our{" "}
+                  <a href="/faq#terms" className="text-gray-500 hover:text-gray-300 underline">Terms of Service</a>
+                  {" "}and{" "}
+                  <a href="/faq#refund" className="text-gray-500 hover:text-gray-300 underline">Refund Policy</a>.
+                </p>
               </CardFooter>
             </Card>
           </div>

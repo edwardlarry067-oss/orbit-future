@@ -5,26 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Satellite, Zap, Globe, Shield, Lock, HeadphonesIcon, CheckCircle2, Star, ChevronDown, ChevronUp, ArrowRight, Package, Award, Clock } from "lucide-react";
 
 const LIVE_FEED = [
-  { name: "Chukwuemeka O.", location: "Lagos, Nigeria", plan: "Starlink Standard", action: "just ordered" },
-  { name: "Sarah K.", location: "Rural Montana, USA", plan: "Starlink Standard Plus", action: "just connected" },
+  { name: "Chukwuemeka O.", location: "Lagos, Nigeria", plan: "Starlink Residential", action: "just ordered" },
+  { name: "Sarah K.", location: "Rural Montana, USA", plan: "Starlink Residential", action: "just connected" },
   { name: "Babatunde F.", location: "Port Harcourt, Nigeria", plan: "Starlink Business", action: "just ordered" },
   { name: "James T.", location: "Auckland, New Zealand", plan: "Starlink Roam", action: "just activated" },
-  { name: "Ngozi A.", location: "Abuja, Nigeria", plan: "Starlink Standard", action: "just ordered" },
+  { name: "Ngozi A.", location: "Abuja, Nigeria", plan: "Starlink Residential", action: "just ordered" },
   { name: "Felix W.", location: "Vancouver, Canada", plan: "Starlink Roam", action: "just connected" },
-  { name: "Emeka K.", location: "Enugu, Nigeria", plan: "Starlink Standard Plus", action: "just ordered" },
-  { name: "Hans B.", location: "Bavaria, Germany", plan: "Starlink Standard Plus", action: "just activated" },
+  { name: "Emeka K.", location: "Enugu, Nigeria", plan: "Starlink Residential", action: "just ordered" },
+  { name: "Hans B.", location: "Bavaria, Germany", plan: "Starlink Residential", action: "just activated" },
   { name: "Adaeze N.", location: "Owerri, Nigeria", plan: "Starlink Business", action: "just ordered" },
   { name: "Captain J. Moore", location: "North Atlantic", plan: "Starlink Maritime", action: "just connected" },
-  { name: "Tunde M.", location: "Ibadan, Nigeria", plan: "Starlink Standard", action: "just ordered" },
+  { name: "Tunde M.", location: "Ibadan, Nigeria", plan: "Starlink Residential", action: "just ordered" },
   { name: "Sophie D.", location: "Brittany, France", plan: "Starlink Roam", action: "just activated" },
-  { name: "Chioma I.", location: "Lagos, Nigeria", plan: "Starlink Standard Plus", action: "just ordered" },
-  { name: "Dr. Claire M.", location: "Ontario, Canada", plan: "Starlink Standard", action: "just connected" },
+  { name: "Chioma I.", location: "Lagos, Nigeria", plan: "Starlink Residential", action: "just ordered" },
+  { name: "Dr. Claire M.", location: "Ontario, Canada", plan: "Starlink Residential", action: "just connected" },
   { name: "Segun A.", location: "Kano, Nigeria", plan: "Starlink Business", action: "just ordered" },
-  { name: "Emma & Tom L.", location: "Yorkshire, UK", plan: "Starlink Standard", action: "just activated" },
-  { name: "Funmi B.", location: "Abuja, Nigeria", plan: "Starlink Standard", action: "just ordered" },
+  { name: "Emma & Tom L.", location: "Yorkshire, UK", plan: "Starlink Residential", action: "just activated" },
+  { name: "Funmi B.", location: "Abuja, Nigeria", plan: "Starlink Residential", action: "just ordered" },
   { name: "Michael R.", location: "Austin, Texas", plan: "Starlink Business", action: "just connected" },
-  { name: "Obinna C.", location: "Port Harcourt, Nigeria", plan: "Starlink Standard Plus", action: "just ordered" },
-  { name: "Maria L.", location: "São Paulo, Brazil", plan: "Starlink Standard", action: "just activated" },
+  { name: "Obinna C.", location: "Port Harcourt, Nigeria", plan: "Starlink Residential", action: "just ordered" },
+  { name: "Maria L.", location: "São Paulo, Brazil", plan: "Starlink Residential", action: "just activated" },
 ];
 
 const TICKER_TIMES = [2, 3, 4, 5, 6, 7, 8, 1, 3, 5, 2, 6, 4, 7, 3, 5, 2, 8, 4, 6];
@@ -78,23 +78,23 @@ const TESTIMONIALS = [
     location: "Lagos, Nigeria",
     plan: "Starlink Business",
     rating: 5,
-    text: "Running a logistics company across Lagos, we needed reliable internet across all our offices. ORBITFUTURE delivered instantly. Our operations team can now coordinate in real time, even in areas with poor GSM coverage.",
+    text: "Running a logistics company across Lagos, we needed reliable internet across all our offices. OrbitFuture handled the setup and support — our operations team can now coordinate in real time, even in areas with poor GSM coverage.",
     avatar: "CO",
   },
   {
     name: "Sarah K.",
     location: "Rural Montana, USA",
-    plan: "Starlink Standard Plus",
+    plan: "Starlink Residential",
     rating: 5,
-    text: "I work remotely from a ranch that had zero reliable internet. Setup took 20 minutes. Now I stream 4K and have video meetings all day without issues. Truly life-changing.",
+    text: "I work remotely from a ranch that had zero reliable internet. OrbitFuture's team helped me get set up in 20 minutes. Now I stream 4K and have video meetings all day without issues. Truly life-changing.",
     avatar: "SK",
   },
   {
     name: "Adaeze N.",
     location: "Abuja, Nigeria",
-    plan: "Starlink Standard",
+    plan: "Starlink Residential",
     rating: 5,
-    text: "As a remote worker serving international clients, I needed internet that matched big-city speeds. ORBITFUTURE gives me 200Mbps+ even here in Abuja. Client calls are crystal clear. I'm never dropping a deadline again.",
+    text: "As a remote worker serving international clients, I needed internet that matched big-city speeds. OrbitFuture got me connected fast — client calls are crystal clear. I'm never dropping a deadline again.",
     avatar: "AN",
   },
   {
@@ -102,23 +102,23 @@ const TESTIMONIALS = [
     location: "North Atlantic",
     plan: "Starlink Maritime",
     rating: 5,
-    text: "We operate a vessel on long transatlantic routes. ORBITFUTURE keeps our crew connected for welfare and our operations team connected for safety communications. Exceptional.",
+    text: "We operate a vessel on long transatlantic routes. OrbitFuture keeps our crew connected for welfare and our operations team connected for safety communications. Exceptional service and support.",
     avatar: "JT",
   },
   {
     name: "Babatunde F.",
     location: "Port Harcourt, Nigeria",
-    plan: "Starlink Standard Plus",
+    plan: "Starlink Residential",
     rating: 5,
-    text: "I run a media production studio and we upload huge video files daily. Before ORBITFUTURE, we'd lose hours waiting on uploads. Now 4K footage goes up in minutes. The dish paid for itself in the first week.",
+    text: "I run a media production studio and upload huge video files daily. Before OrbitFuture, we'd lose hours waiting on uploads. Now 4K footage goes up in minutes. The service paid for itself in the first week.",
     avatar: "BF",
   },
   {
     name: "Dr. Claire M.",
     location: "Ontario, Canada",
-    plan: "Starlink Standard",
+    plan: "Starlink Residential",
     rating: 5,
-    text: "Our clinic is 80km from the nearest city. ORBITFUTURE lets us do telemedicine, send lab results digitally, and keep patient records in the cloud. It has improved patient outcomes.",
+    text: "Our clinic is 80km from the nearest city. OrbitFuture lets us do telemedicine, send lab results digitally, and keep patient records in the cloud. It has genuinely improved patient outcomes.",
     avatar: "CM",
   },
   {
@@ -126,23 +126,23 @@ const TESTIMONIALS = [
     location: "Enugu, Nigeria",
     plan: "Starlink Business",
     rating: 5,
-    text: "We run an EdTech platform for students across southeastern Nigeria. ORBITFUTURE made it possible to stream live classes with zero buffering. Our student retention rate shot up 40% since we switched.",
+    text: "We run an EdTech platform for students across southeastern Nigeria. OrbitFuture made it possible to stream live classes with zero buffering. Our student retention rate shot up 40% since we switched.",
     avatar: "NA",
   },
   {
     name: "Hans & Greta B.",
     location: "Bavaria, Germany",
-    plan: "Starlink Standard Plus",
+    plan: "Starlink Residential",
     rating: 5,
-    text: "Living in the Alps meant poor connectivity for years. ORBITFUTURE changed everything — fast, reliable internet even in deep winter. We can now work from home full-time.",
+    text: "Living in the Alps meant poor connectivity for years. OrbitFuture changed everything — fast, reliable internet even in deep winter. We can now work from home full-time.",
     avatar: "HB",
   },
   {
     name: "Emeka K.",
     location: "Kano, Nigeria",
-    plan: "Starlink Standard",
+    plan: "Starlink Residential",
     rating: 5,
-    text: "I've tried every internet provider in Kano — none came close. ORBITFUTURE is in a different league. Consistent 150Mbps, no power outage disruptions, and setup was genuinely 20 minutes. Best investment I've made this year.",
+    text: "I've tried every internet provider in Kano — none came close. OrbitFuture is in a different league. Consistent speeds, no power outage disruptions, and setup was genuinely 20 minutes. Best investment I've made.",
     avatar: "EK",
   },
   {
@@ -150,15 +150,15 @@ const TESTIMONIALS = [
     location: "Vancouver, Canada",
     plan: "Starlink Roam",
     rating: 5,
-    text: "I'm a travel content creator driving across North America. ORBITFUTURE Roam goes everywhere I do. I've uploaded 4K footage from the middle of the Rockies. Nothing else comes close.",
+    text: "I'm a travel content creator driving across North America. Starlink Roam via OrbitFuture goes everywhere I do. I've uploaded 4K footage from the middle of the Rockies. Nothing else comes close.",
     avatar: "FW",
   },
   {
     name: "Chioma I.",
     location: "Lagos, Nigeria",
-    plan: "Starlink Standard Plus",
+    plan: "Starlink Residential",
     rating: 5,
-    text: "Finally — internet that actually matches the price I pay. I host virtual fitness classes for over 300 subscribers globally. ORBITFUTURE means my streams never freeze, even during peak hours. My clients are happier than ever.",
+    text: "Finally — internet that actually matches the price I pay. I host virtual fitness classes for over 300 subscribers globally. OrbitFuture means my streams never freeze. My clients are happier than ever.",
     avatar: "CI",
   },
   {
@@ -166,15 +166,19 @@ const TESTIMONIALS = [
     location: "Brittany, France",
     plan: "Starlink Roam",
     rating: 5,
-    text: "As a remote worker who travels the French coast, I needed internet that kept up with me. ORBITFUTURE Roam is flawless — cafés and campsites, I'm always connected.",
+    text: "As a remote worker who travels the French coast, I needed internet that kept up with me. OrbitFuture's Roam setup is flawless — cafés and campsites, I'm always connected.",
     avatar: "SD",
   },
 ];
 
 const HOME_FAQS = [
   {
+    q: "What exactly does OrbitFuture do?",
+    a: "OrbitFuture is an independent satellite internet solutions company. We help customers worldwide order, activate, deploy, and manage Starlink connectivity. We handle the ordering process, provide installation guidance, and offer ongoing technical support — so you get connected faster with less friction.",
+  },
+  {
     q: "How quickly can I get connected?",
-    a: "Most customers are online within 20 minutes of unboxing. The dish self-aligns automatically — just position it with a clear sky view, plug it in, and you're connected.",
+    a: "Most customers are online within 20–30 minutes of receiving their equipment. The Starlink dish self-aligns automatically — just position it with a clear sky view, plug it in, and you're connected. Our support team is available to walk you through every step.",
   },
   {
     q: "Is there a long-term contract?",
@@ -182,19 +186,15 @@ const HOME_FAQS = [
   },
   {
     q: "What speeds can I realistically expect?",
-    a: "Residential plans deliver 50–300 Mbps download with 20–40ms latency. Business plans reach 500 Mbps+. Enterprise plans support 1 Gbps+.",
+    a: "Residential plans typically deliver 50–300 Mbps download with 20–40ms latency. Business plans reach higher priority speeds. Exact speeds depend on your location and local network conditions.",
   },
   {
     q: "Do I need a technician to install it?",
-    a: "No. The kit is fully plug-and-play with step-by-step instructions. 95% of customers self-install in under 30 minutes.",
+    a: "No. The kit is fully plug-and-play with step-by-step instructions. 95% of customers self-install in under 30 minutes. Our team is available via WhatsApp and email if you need any help.",
   },
   {
     q: "What payment methods do you accept?",
-    a: "Visa, Mastercard, Verve via Paystack. Also Orbit Wallet tokens (pre-loaded via Paystack). No crypto.",
-  },
-  {
-    q: "Is my payment secure?",
-    a: "Yes. All payments are processed by Paystack, a PCI-DSS compliant processor. Your card details are never stored on our servers.",
+    a: "We accept Visa, Mastercard, and Verve cards via Paystack. You can also use your Orbit Wallet token balance. All payments are PCI-DSS compliant — your card details are never stored on our servers.",
   },
 ];
 
@@ -204,7 +204,7 @@ const INCLUDED = [
   { icon: HeadphonesIcon, title: "Installation Support", desc: "Free call with our team to walk you through setup." },
   { icon: Shield, title: "12-Month Warranty", desc: "Full hardware replacement warranty on all equipment." },
   { icon: Clock, title: "Account Activation", desc: "We activate your service remotely — no waiting." },
-  { icon: Award, title: "Priority Support", desc: "24/7 WhatsApp and email support for all subscribers." },
+  { icon: Award, title: "Priority Support", desc: "24/7 WhatsApp and email support for all customers." },
 ];
 
 function SatelliteGlobe() {
@@ -262,7 +262,7 @@ function SatelliteGlobe() {
       </svg>
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 border border-primary/30 rounded-full px-3 py-1">
         <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Live Coverage</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Starlink Coverage Active</span>
       </div>
     </div>
   );
@@ -283,25 +283,25 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center relative z-10 max-w-5xl">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-8 text-xs font-bold uppercase tracking-widest text-primary">
             <Satellite className="w-3.5 h-3.5" />
-            Now Available Worldwide · 100+ Countries
+            Independent Starlink Solutions · 100+ Countries
           </div>
           <h1 className="text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter text-white mb-6 leading-none">
             Internet<br />
             <span className="text-primary">Anywhere.</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Fast satellite internet powered by cutting-edge LEO technology. Professional installation support, secure checkout, and global coverage from a single provider.
+            OrbitFuture helps you order, activate, and deploy Starlink satellite internet anywhere in the world. Expert support, secure checkout, and full setup assistance — all in one place.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/plans">
               <Button size="lg" className="w-full sm:w-auto h-14 px-10 text-sm font-bold uppercase tracking-widest shadow-[0_0_40px_rgba(0,212,255,0.2)]">
                 <Zap className="w-5 h-5 mr-2" />
-                Order Starlink Now
+                Check Availability & Order
               </Button>
             </Link>
             <Link href="/contact">
               <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-10 text-sm font-bold uppercase tracking-widest border-white/20 hover:border-white/40">
-                Contact Support
+                Talk to Our Team
               </Button>
             </Link>
           </div>
@@ -310,7 +310,7 @@ export default function Home() {
               { icon: Shield, label: "Secure Payments" },
               { icon: Lock, label: "SSL Protected" },
               { icon: HeadphonesIcon, label: "24/7 Support" },
-              { icon: Globe, label: "Global Coverage" },
+              { icon: Globe, label: "100+ Countries" },
               { icon: CheckCircle2, label: "Verified Checkout" },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-1.5">
@@ -337,8 +337,18 @@ export default function Home() {
           </p>
           <div className="mt-3 flex items-center justify-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-primary text-xs font-bold uppercase tracking-widest">Signal Active</span>
+            <span className="text-primary text-xs font-bold uppercase tracking-widest">Starlink Signal Active</span>
           </div>
+        </div>
+      </section>
+
+      {/* ── POSITIONING BANNER ── */}
+      <section className="py-10 bg-primary/5 border-y border-primary/10">
+        <div className="container mx-auto px-4 max-w-4xl text-center">
+          <p className="text-gray-300 text-sm leading-relaxed">
+            <span className="text-white font-bold">OrbitFuture</span> is an independent satellite internet solutions company. We help customers worldwide order, activate, and manage{" "}
+            <span className="text-primary font-bold">Starlink</span> connectivity — with dedicated setup support, expert guidance, and flexible payment options. We are not affiliated with or operated by SpaceX.
+          </p>
         </div>
       </section>
 
@@ -347,10 +357,10 @@ export default function Home() {
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
-              { stat: "4M+", label: "Subscribers Worldwide" },
-              { stat: "100+", label: "Countries Covered" },
-              { stat: "1 Gbps", label: "Max Speed" },
-              { stat: "99.9%", label: "Uptime SLA" },
+              { stat: "100+", label: "Countries Served" },
+              { stat: "20ms", label: "Avg Latency" },
+              { stat: "300+", label: "Mbps Typical Speed" },
+              { stat: "24/7", label: "Expert Support" },
             ].map(({ stat, label }) => (
               <div key={label}>
                 <div className="text-3xl md:text-4xl font-black text-white mb-1">{stat}</div>
@@ -367,23 +377,23 @@ export default function Home() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-6 text-xs font-bold uppercase tracking-widest text-primary">
               <Award className="w-3.5 h-3.5" />
-              Why Choose ORBITFUTURE
+              Why Choose OrbitFuture
             </div>
             <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white mb-4">
               Built for Real Customers.
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
-              We don't just sell internet. We ensure you get connected, stay connected, and have expert support at every step.
+              We don't just process orders. We ensure you get connected, stay connected, and have expert support at every step from order to activation.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {[
-              { icon: Zap, title: "Ultra-Fast Speeds", desc: "Up to 1 Gbps download with 20–40ms latency. Perfect for gaming, 4K streaming, VoIP, and remote work." },
-              { icon: Globe, title: "Truly Global", desc: "Available in 100+ countries across 6 continents. Rural, maritime, aviation — wherever you need connectivity." },
-              { icon: Shield, title: "Always Reliable", desc: "99.9% uptime SLA with redundant satellite coverage and automatic failover. When you need it most." },
-              { icon: Package, title: "Complete Hardware", desc: "Premium dish, Wi-Fi router, mount, and all cables included. No surprise hardware costs or third-party sourcing." },
-              { icon: HeadphonesIcon, title: "Expert Support", desc: "Our team guides you from order to being live online. WhatsApp and email support available 24/7, 365 days." },
-              { icon: Clock, title: "15-Minute Setup", desc: "The dish self-aligns. No drilling. No professional installer needed. Most customers are online in under 20 minutes." },
+              { icon: Zap, title: "Ultra-Fast Starlink Speeds", desc: "Starlink delivers up to 300 Mbps download with 20–40ms latency — perfect for 4K streaming, VoIP, and remote work." },
+              { icon: Globe, title: "Truly Global Reach", desc: "Starlink service available in 100+ countries across 6 continents. Rural, maritime, aviation — wherever you need connectivity." },
+              { icon: Shield, title: "Dedicated Setup Support", desc: "Our team guides you from order to being live online. WhatsApp and email support available 24/7, 365 days a year." },
+              { icon: Package, title: "Complete Hardware", desc: "Premium Starlink dish, Wi-Fi router, mount, and all cables included. No surprise hardware costs or third-party sourcing." },
+              { icon: HeadphonesIcon, title: "Expert Activation Help", desc: "We handle remote service activation and troubleshoot any issues — so you're never left figuring it out alone." },
+              { icon: Clock, title: "20-Minute Setup", desc: "The Starlink dish self-aligns automatically. No drilling. No professional installer needed. Most customers are online in under 30 minutes." },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="bg-card border border-border rounded-2xl p-6 md:p-8 hover:border-primary/30 transition-all hover:shadow-[0_0_30px_rgba(0,212,255,0.05)]">
                 <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center mb-6">
@@ -405,7 +415,7 @@ export default function Home() {
               Everything <span className="text-primary">Included.</span>
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
-              Every ORBITFUTURE order comes with hardware, support, and setup assistance. No hidden extras.
+              Every OrbitFuture order comes with hardware, support, and setup assistance. No hidden extras, no surprises.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -441,7 +451,7 @@ export default function Home() {
               Customer Stories
             </div>
             <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white mb-4">
-              Trusted by Thousands
+              Trusted by Customers Worldwide
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
               From remote homesteads to cargo vessels — real customers, real results.
@@ -488,7 +498,7 @@ export default function Home() {
                 <span className="text-primary">you can connect.</span>
               </h2>
               <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                Our low-Earth orbit satellite network covers 100+ countries. Rural, remote, maritime, or airborne — ORBITFUTURE reaches where fibre and cable cannot.
+                Starlink's low-Earth orbit satellite network covers 100+ countries. Rural, remote, maritime, or airborne — we help you access connectivity where fibre and cable cannot reach.
               </p>
               <div className="space-y-3 mb-8">
                 {[
@@ -565,16 +575,16 @@ export default function Home() {
             <div className="relative z-10">
               <Satellite className="w-10 h-10 text-primary mx-auto mb-6" />
               <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white mb-6">
-                Ready to Connect?
+                Ready to Get Connected?
               </h2>
               <p className="text-gray-400 mb-10 max-w-md mx-auto">
-                Join 4 million+ customers connected worldwide. Setup takes just 15 minutes. No contracts. Cancel anytime.
+                Check availability in your country and get your Starlink service set up — with expert guidance from our team every step of the way.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/plans">
                   <Button size="lg" className="w-full sm:w-auto h-14 px-12 text-sm font-bold uppercase tracking-widest shadow-[0_0_40px_rgba(0,212,255,0.2)]">
                     <Zap className="w-5 h-5 mr-2" />
-                    Order Now — Starting $90/mo
+                    Check Availability & Order
                   </Button>
                 </Link>
                 <Link href="/support">
