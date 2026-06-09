@@ -53056,6 +53056,68 @@ var checkout_default = router4;
 // src/routes/admin.ts
 var import_express5 = __toESM(require_express2(), 1);
 var import_jsonwebtoken3 = __toESM(require_jsonwebtoken(), 1);
+
+// src/lib/envValidator.ts
+var REQUIRED_SECRETS = [
+  { key: "SESSION_SECRET", feature: "JWT auth signing" },
+  { key: "ADMIN_PASSWORD", feature: "Admin panel login" },
+  { key: "PAYSTACK_SECRET_KEY", feature: "Paystack payments" },
+  { key: "STRIPE_SECRET_KEY", feature: "Stripe payments" },
+  { key: "STRIPE_WEBHOOK_SECRET", feature: "Stripe webhooks" },
+  { key: "FLW_SECRET_KEY", feature: "Flutterwave payments" },
+  { key: "FLW_WEBHOOK_SECRET", feature: "Flutterwave webhooks" },
+  { key: "RESEND_API_KEY", feature: "Transactional email" },
+  { key: "APP_URL", feature: "Redirect URLs / email links" },
+  { key: "PAYSTACK_CURRENCY", feature: "Paystack currency setting" }
+];
+var _cachedStatus = null;
+function getEnvStatus() {
+  return _cachedStatus ?? REQUIRED_SECRETS.map((s) => ({
+    ...s,
+    set: !!process.env[s.key],
+    source: process.env[s.key] ? "env" : "missing"
+  }));
+}
+async function loadEnvFromDb() {
+  try {
+    const rows = await db.select().from(siteSettingsTable);
+    for (const row of rows) {
+      if (!process.env[row.key] && row.value) {
+        process.env[row.key] = row.value;
+        logger.info({ key: row.key }, "Loaded env var from DB settings");
+      }
+    }
+  } catch (err) {
+    logger.warn({ err }, "Could not load env vars from DB \u2014 table may not exist yet");
+  }
+}
+async function validateEnv() {
+  await loadEnvFromDb();
+  _cachedStatus = REQUIRED_SECRETS.map((s) => {
+    const val = process.env[s.key];
+    return {
+      ...s,
+      set: !!val,
+      source: val ? "env" : "missing"
+    };
+  });
+  const missing = _cachedStatus.filter((s) => !s.set);
+  const present = _cachedStatus.filter((s) => s.set);
+  if (present.length > 0) {
+    logger.info(
+      { keys: present.map((s) => s.key) },
+      `[ENV] ${present.length}/${REQUIRED_SECRETS.length} required secrets are configured`
+    );
+  }
+  if (missing.length > 0) {
+    logger.warn(
+      { missing: missing.map((s) => `${s.key} (${s.feature})`) },
+      `[ENV] ${missing.length} secret(s) missing \u2014 affected features degraded gracefully`
+    );
+  }
+}
+
+// src/routes/admin.ts
 var router5 = (0, import_express5.Router)();
 router5.post("/admin/login", async (req, res) => {
   const { password } = req.body;
@@ -53432,6 +53494,46 @@ var OFFICIAL_STARLINK_PLANS = [
     popular: false
   }
 ];
+router5.get("/admin/system-health", adminAuth, async (req, res) => {
+  const health = {};
+  try {
+    await db.execute(sql`SELECT 1`);
+    health.db = { status: "connected" };
+  } catch (err) {
+    health.db = { status: "error", message: err?.message ?? "Unknown DB error" };
+  }
+  const tableChecks = {};
+  const tables = ["plans", "subscriptions", "users", "wallets", "wallet_transactions", "support_tickets", "site_settings"];
+  for (const table of tables) {
+    try {
+      await db.execute(sql.raw(`SELECT 1 FROM ${table} LIMIT 1`));
+      tableChecks[table] = true;
+    } catch {
+      tableChecks[table] = false;
+    }
+  }
+  health.tables = tableChecks;
+  health.missingTables = Object.entries(tableChecks).filter(([, ok]) => !ok).map(([t]) => t);
+  const envStatus = getEnvStatus();
+  health.env = {
+    configured: envStatus.filter((s) => s.set).map((s) => s.key),
+    missing: envStatus.filter((s) => !s.set).map((s) => ({ key: s.key, feature: s.feature })),
+    allConfigured: envStatus.every((s) => s.set)
+  };
+  try {
+    const [activeSubs] = await db.select({ count: count() }).from(subscriptionsTable).where(eq(subscriptionsTable.status, "active"));
+    const [pendingSubs] = await db.select({ count: count() }).from(subscriptionsTable).where(eq(subscriptionsTable.status, "pending"));
+    const recentOrders = await db.select({ id: subscriptionsTable.id, email: subscriptionsTable.email, planId: subscriptionsTable.planId, status: subscriptionsTable.status, createdAt: subscriptionsTable.createdAt, amountPaid: subscriptionsTable.amountPaid }).from(subscriptionsTable).orderBy(desc(subscriptionsTable.createdAt)).limit(5);
+    health.payments = { activeSubs: activeSubs.count, pendingSubs: pendingSubs.count, recentOrders };
+  } catch {
+    health.payments = { error: "Could not fetch payment data" };
+  }
+  const missingEnv = health.env.missing.length;
+  const missingTables = (health.missingTables ?? []).length;
+  const dbOk = health.db.status === "connected";
+  health.overall = dbOk && missingTables === 0 && missingEnv === 0 ? "healthy" : missingEnv > 3 || !dbOk ? "critical" : "degraded";
+  res.json(health);
+});
 router5.post("/admin/seed-plans", adminAuth, async (req, res) => {
   try {
     const force = req.body?.force === true;
@@ -54266,7 +54368,7 @@ router10.post("/paystack-token-buy", requireAuth, async (req, res) => {
     const result = await paystackInit({
       email: req.user.email,
       amount: toSubunit(amountUsd),
-      currency: CURRENCY,
+      currency: DEFAULT_CURRENCY,
       reference,
       callback_url: `${APP_URL2}/wallet?paystack_token_success=1&reference=${reference}`,
       metadata: {
@@ -54321,7 +54423,7 @@ router10.post("/paystack-token-verify", requireAuth, async (req, res) => {
       customerEmail: email,
       item: `${bundleName} \u2014 ${tokens.toLocaleString()} tokens`,
       amountPaid: (result.data.amount ?? 0) / 100,
-      currency: result.data.currency ?? CURRENCY,
+      currency: result.data.currency ?? DEFAULT_CURRENCY,
       transactionId: reference
     }).catch(() => {
     });
@@ -54331,6 +54433,17 @@ router10.post("/paystack-token-verify", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Verification failed" });
   }
 });
+var PLAN_USD_PRICES = {
+  1: { monthly: 120, hardware: 599 },
+  2: { monthly: 150, hardware: 599 },
+  3: { monthly: 50, hardware: 0 },
+  4: { monthly: 250, hardware: 2500 },
+  5: { monthly: 500, hardware: 2500 },
+  6: { monthly: 1500, hardware: 0 },
+  7: { monthly: 250, hardware: 2500 },
+  8: { monthly: 1e3, hardware: 2500 },
+  9: { monthly: 12500, hardware: 15e4 }
+};
 router10.post("/paystack-plan-pay", async (req, res) => {
   try {
     const { planId, email, name, address, currency: requestedCurrency } = req.body;
@@ -54371,6 +54484,16 @@ router10.post("/paystack-plan-pay", async (req, res) => {
       planName = fallback.name;
       priceMonthly = fallback.priceMonthly;
       planSpeed = fallback.speed;
+    }
+    if (currency === "USD" && PLAN_USD_PRICES[planId]) {
+      const expected = PLAN_USD_PRICES[planId];
+      const monthlyOk = Math.abs(priceMonthly - expected.monthly) / Math.max(expected.monthly, 1) <= 0.01;
+      const hardwareOk = Math.abs(hardwarePrice - expected.hardware) / Math.max(expected.hardware, 1) <= 0.01;
+      if (!monthlyOk || !hardwareOk) {
+        req.log?.error({ planId, priceMonthly, hardwarePrice, expected }, "PRICE MISMATCH DETECTED");
+        res.status(422).json({ error: "PRICE MISMATCH DETECTED \u2014 pricing inconsistency blocked for security." });
+        return;
+      }
     }
     let chargeAmount;
     let chargeHardware = hardwarePrice;
@@ -54434,7 +54557,7 @@ router10.post("/paystack-plan-verify", async (req, res) => {
     const planSpeed = meta.planSpeed ?? PLAN_PRICES[planIdNum]?.speed ?? "";
     const planCategory = meta.planCategory ?? "";
     const amountPaid = (result.data.amount ?? 0) / 100;
-    const currency = result.data.currency ?? CURRENCY;
+    const currency = result.data.currency ?? DEFAULT_CURRENCY;
     const [existingSub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.stripeSessionId, reference)).limit(1);
     let subscriptionId = existingSub?.id ?? null;
     if (!existingSub) {
@@ -55180,6 +55303,15 @@ async function seedIfEmpty() {
     logger.warn({ err }, "Auto-seed skipped (table may not exist yet)");
   }
 }
+async function ensureTablesExist() {
+  try {
+    await db.execute(sql`SELECT 1 FROM plans LIMIT 1`);
+    return true;
+  } catch {
+    logger.warn("DB tables missing \u2014 schema may need migration. Run db:push or restart.");
+    return false;
+  }
+}
 var rawPort = process.env["PORT"];
 if (!rawPort) {
   throw new Error(
@@ -55196,7 +55328,11 @@ app_default.listen(port, (err) => {
     process.exit(1);
   }
   logger.info({ port }, "Server listening");
-  seedIfEmpty();
+  validateEnv().catch((e) => logger.warn({ err: e }, "Env validation failed"));
+  ensureTablesExist().then((ok) => {
+    if (ok) seedIfEmpty();
+    else logger.warn("Skipping seed \u2014 tables not ready. Run db:push to fix.");
+  });
 });
 /*! Bundled license information:
 

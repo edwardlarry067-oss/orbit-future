@@ -11,7 +11,8 @@ import {
   MessageCircle,
   Package,
   Bot,
-  KeyRound
+  KeyRound,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAdminToken, removeAdminToken } from "@/lib/auth";
@@ -40,6 +41,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/admin/whatsapp-bot", label: "WA Capture Bot", icon: Bot },
     { href: "/admin/whatsapp-templates", label: "WA Templates", icon: MessageCircle },
     { href: "/admin/env-config", label: "API Keys", icon: KeyRound },
+    { href: "/admin/system-health", label: "System Health", icon: Activity },
   ];
 
   if (!getAdminToken()) {

@@ -6,6 +6,9 @@ ARTIFACTS=/home/runner/workspace/artifacts
 echo "==> Installing dependencies..."
 cd "$ARTIFACTS" && pnpm install --no-frozen-lockfile 2>&1 | tail -5
 
+echo "==> Running database migrations (safe — no data loss)..."
+cd "$ARTIFACTS/lib/db" && pnpm run db:push && echo "   DB migrations OK"
+
 echo "==> Building API server..."
 cd "$ARTIFACTS/api-server" && pnpm run build
 

@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { db } from "@workspace/db";
 import { plansTable } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import { validateEnv } from "./lib/envValidator";
 
 // ── Auto-seed plans if table is empty ────────────────────────────────────────
 async function seedIfEmpty() {
@@ -128,6 +129,17 @@ async function seedIfEmpty() {
   }
 }
 
+// ── Startup DB table check ────────────────────────────────────────────────────
+async function ensureTablesExist(): Promise<boolean> {
+  try {
+    await db.execute(sql`SELECT 1 FROM plans LIMIT 1`);
+    return true;
+  } catch {
+    logger.warn("DB tables missing — schema may need migration. Run db:push or restart.");
+    return false;
+  }
+}
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {
@@ -150,6 +162,12 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
 
-  // Seed plans on first boot if table is empty
-  seedIfEmpty();
+  // P1: Validate env vars + load from DB on startup
+  validateEnv().catch((e) => logger.warn({ err: e }, "Env validation failed"));
+
+  // P1: Verify DB tables exist, then seed if empty
+  ensureTablesExist().then((ok) => {
+    if (ok) seedIfEmpty();
+    else logger.warn("Skipping seed — tables not ready. Run db:push to fix.");
+  });
 });

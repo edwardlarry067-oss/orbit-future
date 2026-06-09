@@ -4,6 +4,7 @@ import { plansTable, subscriptionsTable, siteSettingsTable, usersTable } from "@
 import { eq, desc, count, gte, sql, ilike, or } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { adminAuth, ADMIN_PASSWORD, JWT_SECRET } from "../middlewares/adminAuth";
+import { getEnvStatus } from "../lib/envValidator";
 
 const router = Router();
 
@@ -477,6 +478,63 @@ const OFFICIAL_STARLINK_PLANS = [
     popular: false,
   },
 ];
+
+// ── GET /api/admin/system-health ─────────────────────────────────────────────
+router.get("/admin/system-health", adminAuth, async (req, res): Promise<void> => {
+  const health: Record<string, unknown> = {};
+
+  // DB status
+  try {
+    await db.execute(sql`SELECT 1`);
+    health.db = { status: "connected" };
+  } catch (err: any) {
+    health.db = { status: "error", message: err?.message ?? "Unknown DB error" };
+  }
+
+  // Table existence
+  const tableChecks: Record<string, boolean> = {};
+  const tables = ["plans", "subscriptions", "users", "wallets", "wallet_transactions", "support_tickets", "site_settings"];
+  for (const table of tables) {
+    try {
+      await db.execute(sql.raw(`SELECT 1 FROM ${table} LIMIT 1`));
+      tableChecks[table] = true;
+    } catch {
+      tableChecks[table] = false;
+    }
+  }
+  health.tables = tableChecks;
+  health.missingTables = Object.entries(tableChecks).filter(([, ok]) => !ok).map(([t]) => t);
+
+  // Env vars status
+  const envStatus = getEnvStatus();
+  health.env = {
+    configured: envStatus.filter((s) => s.set).map((s) => s.key),
+    missing: envStatus.filter((s) => !s.set).map((s) => ({ key: s.key, feature: s.feature })),
+    allConfigured: envStatus.every((s) => s.set),
+  };
+
+  // Recent activity
+  try {
+    const [activeSubs] = await db.select({ count: count() }).from(subscriptionsTable).where(eq(subscriptionsTable.status, "active"));
+    const [pendingSubs] = await db.select({ count: count() }).from(subscriptionsTable).where(eq(subscriptionsTable.status, "pending"));
+    const recentOrders = await db
+      .select({ id: subscriptionsTable.id, email: subscriptionsTable.email, planId: subscriptionsTable.planId, status: subscriptionsTable.status, createdAt: subscriptionsTable.createdAt, amountPaid: subscriptionsTable.amountPaid })
+      .from(subscriptionsTable)
+      .orderBy(desc(subscriptionsTable.createdAt))
+      .limit(5);
+    health.payments = { activeSubs: activeSubs.count, pendingSubs: pendingSubs.count, recentOrders };
+  } catch {
+    health.payments = { error: "Could not fetch payment data" };
+  }
+
+  // Overall health score
+  const missingEnv = (health.env as any).missing.length;
+  const missingTables = ((health.missingTables as string[]) ?? []).length;
+  const dbOk = (health.db as any).status === "connected";
+  health.overall = dbOk && missingTables === 0 && missingEnv === 0 ? "healthy" : missingEnv > 3 || !dbOk ? "critical" : "degraded";
+
+  res.json(health);
+});
 
 // POST /api/admin/seed-plans
 // Pass { "force": true } to wipe and replace all plans with official 2025 Starlink pricing.

@@ -36,6 +36,7 @@ const WhatsAppBot = lazy(() => import("@/pages/admin/whatsapp-bot"));
 const EnvConfig = lazy(() => import("@/pages/admin/env-config"));
 const AdminUsers = lazy(() => import("@/pages/admin/users"));
 const AdminTickets = lazy(() => import("@/pages/admin/tickets"));
+const SystemHealth = lazy(() => import("@/pages/admin/system-health"));
 
 initAuth();
 initAnalytics();
@@ -83,6 +84,7 @@ function Router() {
         <Route path="/admin/env-config" component={EnvConfig} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/tickets" component={AdminTickets} />
+        <Route path="/admin/system-health" component={SystemHealth} />
 
         <Route component={NotFound} />
       </Switch>

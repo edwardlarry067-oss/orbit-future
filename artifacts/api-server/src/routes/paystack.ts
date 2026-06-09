@@ -141,7 +141,7 @@ router.post("/paystack-token-buy", requireAuth, async (req: any, res): Promise<v
     const result = await paystackInit({
       email: req.user.email,
       amount: toSubunit(amountUsd),
-      currency: CURRENCY,
+      currency: DEFAULT_CURRENCY,
       reference,
       callback_url: `${APP_URL}/wallet?paystack_token_success=1&reference=${reference}`,
       metadata: {
@@ -208,7 +208,7 @@ router.post("/paystack-token-verify", requireAuth, async (req: any, res): Promis
       customerEmail: email,
       item: `${bundleName} — ${tokens.toLocaleString()} tokens`,
       amountPaid: (result.data.amount ?? 0) / 100,
-      currency: result.data.currency ?? CURRENCY,
+      currency: result.data.currency ?? DEFAULT_CURRENCY,
       transactionId: reference,
     }).catch(() => {});
 
@@ -218,6 +218,20 @@ router.post("/paystack-token-verify", requireAuth, async (req: any, res): Promis
     res.status(500).json({ error: "Verification failed" });
   }
 });
+
+// ── Frontend plan prices (source of truth mirror) — kept in sync with data/plans.ts
+// These are USD prices only. Used for server-side price integrity validation.
+const PLAN_USD_PRICES: Record<number, { monthly: number; hardware: number }> = {
+  1: { monthly: 120,    hardware: 599 },
+  2: { monthly: 150,    hardware: 599 },
+  3: { monthly: 50,     hardware: 0 },
+  4: { monthly: 250,    hardware: 2500 },
+  5: { monthly: 500,    hardware: 2500 },
+  6: { monthly: 1500,   hardware: 0 },
+  7: { monthly: 250,    hardware: 2500 },
+  8: { monthly: 1000,   hardware: 2500 },
+  9: { monthly: 12500,  hardware: 150000 },
+};
 
 // ── POST /api/paystack-plan-pay ───────────────────────────────────────────────
 router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
@@ -268,6 +282,19 @@ router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
       planName = fallback.name;
       priceMonthly = fallback.priceMonthly;
       planSpeed = fallback.speed;
+    }
+
+    // ── Price integrity validation (P5) ──────────────────────────────────────
+    // Reject if USD pricing deviates >1% from the known source-of-truth table
+    if (currency === "USD" && PLAN_USD_PRICES[planId]) {
+      const expected = PLAN_USD_PRICES[planId];
+      const monthlyOk = Math.abs(priceMonthly - expected.monthly) / Math.max(expected.monthly, 1) <= 0.01;
+      const hardwareOk = Math.abs(hardwarePrice - expected.hardware) / Math.max(expected.hardware, 1) <= 0.01;
+      if (!monthlyOk || !hardwareOk) {
+        req.log?.error({ planId, priceMonthly, hardwarePrice, expected }, "PRICE MISMATCH DETECTED");
+        res.status(422).json({ error: "PRICE MISMATCH DETECTED — pricing inconsistency blocked for security." });
+        return;
+      }
     }
 
     // Use local currency pricing if available (e.g. NGN for Nigeria)
@@ -349,7 +376,7 @@ router.post("/paystack-plan-verify", async (req, res): Promise<void> => {
     const planSpeed = meta.planSpeed ?? PLAN_PRICES[planIdNum]?.speed ?? "";
     const planCategory = meta.planCategory ?? "";
     const amountPaid = (result.data.amount ?? 0) / 100;
-    const currency = result.data.currency ?? CURRENCY;
+    const currency = result.data.currency ?? DEFAULT_CURRENCY;
 
     const [existingSub] = await db
       .select()
