@@ -36,17 +36,46 @@ function formatSub(sub: typeof subscriptionsTable.$inferSelect, plan: typeof pla
 
 router.get("/subscriptions", async (req, res): Promise<void> => {
   try {
+    // Determine caller identity — admin token or user token
+    const auth = req.headers.authorization as string | undefined;
+    let callerIsAdmin = false;
+    let callerEmail: string | null = null;
+
+    if (auth?.startsWith("Bearer ")) {
+      try {
+        const decoded = jwt.verify(auth.slice(7), JWT_SECRET) as Record<string, unknown>;
+        if (decoded.role === "admin") {
+          callerIsAdmin = true;
+        } else if (typeof decoded.email === "string") {
+          callerEmail = decoded.email.toLowerCase();
+        }
+      } catch {
+        res.status(401).json({ error: "Invalid or expired token" });
+        return;
+      }
+    } else {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const status = req.query.status as string | undefined;
-    const email = req.query.email as string | undefined;
+    const emailQuery = req.query.email as string | undefined;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
 
+    // Non-admin users can only see their own subscriptions
+    const email = callerIsAdmin ? emailQuery : callerEmail ?? undefined;
+
     let whereClause: any;
     if (email) {
       whereClause = eq(subscriptionsTable.email, email.toLowerCase());
-    } else if (status && status !== "all") {
+    } else if (callerIsAdmin && status && status !== "all") {
       whereClause = eq(subscriptionsTable.status, status);
+    } else if (!callerIsAdmin) {
+      // Shouldn't happen — user always has callerEmail — but guard defensively
+      res.status(400).json({ error: "email parameter required" });
+      return;
     }
 
     const rows = await db

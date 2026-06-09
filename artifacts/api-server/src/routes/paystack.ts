@@ -589,7 +589,10 @@ router.post("/paystack-webhook", async (req, res): Promise<void> => {
       return;
     }
 
-    // Insert subscription
+    // Insert subscription with renewal + tracking fields
+    const webhookRenewalDate = new Date();
+    webhookRenewalDate.setDate(webhookRenewalDate.getDate() + 30);
+
     const [sub] = await db
       .insert(subscriptionsTable)
       .values({
@@ -600,6 +603,11 @@ router.post("/paystack-webhook", async (req, res): Promise<void> => {
         address: customerAddress,
         amountPaid: String(amountPaid),
         stripeSessionId: reference,
+        renewalDate: webhookRenewalDate,
+        nextBillingDate: webhookRenewalDate,
+        autoRenew: true,
+        trackingStatus: "pending",
+        trackingHistory: [{ status: "pending", timestamp: new Date().toISOString(), note: "Order received and payment confirmed.", updatedBy: "system" }],
       })
       .returning();
 
@@ -609,6 +617,19 @@ router.post("/paystack-webhook", async (req, res): Promise<void> => {
     );
 
     if (!sub) return;
+
+    // Auto-generate invoice (idempotent via paymentRef = reference)
+    createInvoice({
+      userEmail: customerEmail,
+      subscriptionId: sub.id,
+      planId: planIdNum,
+      amountPaid,
+      currency: eventCurrency,
+      paymentRef: reference,
+      isFirstMonth: true,
+    }).catch((err) => {
+      req.log?.error({ err, reference }, "Webhook: failed to create invoice");
+    });
 
     // Fire confirmation + receipt emails asynchronously (non-blocking)
     const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planIdNum)).limit(1).catch(() => [null]);

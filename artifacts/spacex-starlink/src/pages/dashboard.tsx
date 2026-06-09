@@ -155,7 +155,24 @@ function ServiceCard({ sub, token }: { sub: Subscription; token: string }) {
   const [liveStatus, setLiveStatus] = useState<string | undefined>(undefined);
   const [connected, setConnected] = useState(false);
   const [showTracking, setShowTracking] = useState(true);
+  const [autoRenew, setAutoRenew] = useState<boolean>(sub.autoRenew ?? true);
+  const [togglingRenew, setTogglingRenew] = useState(false);
   const esRef = useRef<EventSource | null>(null);
+  const apiBase = getApiBase();
+
+  const handleToggleAutoRenew = async () => {
+    setTogglingRenew(true);
+    const next = !autoRenew;
+    try {
+      const r = await fetch(`${apiBase}/api/subscriptions/${sub.id}/auto-renew`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ autoRenew: next }),
+      });
+      if (r.ok) setAutoRenew(next);
+    } catch { /* silent */ }
+    setTogglingRenew(false);
+  };
 
   useEffect(() => {
     const base = getApiBase();
@@ -234,6 +251,24 @@ function ServiceCard({ sub, token }: { sub: Subscription; token: string }) {
           <div className="flex items-start gap-2 mb-4">
             <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground truncate">{sub.address}</p>
+          </div>
+        )}
+
+        {/* Auto-renew toggle */}
+        {sub.status === "active" && (
+          <div className="flex items-center justify-between border-t border-white/5 pt-3 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+              <RefreshCw className="w-3 h-3" /> Auto-Renew
+            </span>
+            <button
+              onClick={handleToggleAutoRenew}
+              disabled={togglingRenew}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+                autoRenew ? "bg-primary" : "bg-white/15"
+              }`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${autoRenew ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
           </div>
         )}
 

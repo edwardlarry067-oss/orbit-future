@@ -52834,16 +52834,39 @@ function formatSub(sub, plan) {
 }
 router3.get("/subscriptions", async (req, res) => {
   try {
+    const auth = req.headers.authorization;
+    let callerIsAdmin = false;
+    let callerEmail = null;
+    if (auth?.startsWith("Bearer ")) {
+      try {
+        const decoded = import_jsonwebtoken2.default.verify(auth.slice(7), JWT_SECRET);
+        if (decoded.role === "admin") {
+          callerIsAdmin = true;
+        } else if (typeof decoded.email === "string") {
+          callerEmail = decoded.email.toLowerCase();
+        }
+      } catch {
+        res.status(401).json({ error: "Invalid or expired token" });
+        return;
+      }
+    } else {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     const status = req.query.status;
-    const email = req.query.email;
+    const emailQuery = req.query.email;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
+    const email = callerIsAdmin ? emailQuery : callerEmail ?? void 0;
     let whereClause;
     if (email) {
       whereClause = eq(subscriptionsTable.email, email.toLowerCase());
-    } else if (status && status !== "all") {
+    } else if (callerIsAdmin && status && status !== "all") {
       whereClause = eq(subscriptionsTable.status, status);
+    } else if (!callerIsAdmin) {
+      res.status(400).json({ error: "email parameter required" });
+      return;
     }
     const rows = await db.select({ sub: subscriptionsTable, plan: plansTable }).from(subscriptionsTable).leftJoin(plansTable, eq(subscriptionsTable.planId, plansTable.id)).where(whereClause).orderBy(desc(subscriptionsTable.createdAt)).limit(limit).offset(offset);
     const [{ total }] = await db.select({ total: count() }).from(subscriptionsTable).where(whereClause);
@@ -54840,6 +54863,8 @@ router10.post("/paystack-webhook", async (req, res) => {
       req.log?.info({ reference, subscriptionId: existingSub.id }, "Webhook: subscription already exists \u2014 skipped");
       return;
     }
+    const webhookRenewalDate = /* @__PURE__ */ new Date();
+    webhookRenewalDate.setDate(webhookRenewalDate.getDate() + 30);
     const [sub] = await db.insert(subscriptionsTable).values({
       email: customerEmail,
       name: customerName,
@@ -54847,13 +54872,29 @@ router10.post("/paystack-webhook", async (req, res) => {
       status: "active",
       address: customerAddress,
       amountPaid: String(amountPaid),
-      stripeSessionId: reference
+      stripeSessionId: reference,
+      renewalDate: webhookRenewalDate,
+      nextBillingDate: webhookRenewalDate,
+      autoRenew: true,
+      trackingStatus: "pending",
+      trackingHistory: [{ status: "pending", timestamp: (/* @__PURE__ */ new Date()).toISOString(), note: "Order received and payment confirmed.", updatedBy: "system" }]
     }).returning();
     req.log?.info(
       { reference, subscriptionId: sub?.id, planId: planIdNum, email: customerEmail },
       "Webhook: subscription activated"
     );
     if (!sub) return;
+    createInvoice({
+      userEmail: customerEmail,
+      subscriptionId: sub.id,
+      planId: planIdNum,
+      amountPaid,
+      currency: eventCurrency,
+      paymentRef: reference,
+      isFirstMonth: true
+    }).catch((err) => {
+      req.log?.error({ err, reference }, "Webhook: failed to create invoice");
+    });
     const [dbPlan] = await db.select().from(plansTable).where(eq(plansTable.id, planIdNum)).limit(1).catch(() => [null]);
     const planFeatures = dbPlan?.features ?? [];
     sendSubscriptionConfirmation({
