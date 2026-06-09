@@ -9,6 +9,8 @@ import {
   Globe, Shield, HeadphonesIcon, CheckCheck, Minus, Phone, Home, Ship, Briefcase, MapPin
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useCurrency";
+import { PlanFinder } from "@/components/PlanFinder";
+import { trackViewContent, trackAddToCart, trackPurchase } from "@/lib/analytics";
 
 type Plan = {
   id: number;
@@ -121,7 +123,12 @@ export default function Plans() {
   useEffect(() => {
     fetch(`${getApiBase()}/api/plans`)
       .then((r) => r.json())
-      .then((data) => { setPlans(Array.isArray(data) ? data : []); setLoading(false); })
+      .then((data) => {
+        const loaded: Plan[] = Array.isArray(data) ? data : [];
+        setPlans(loaded);
+        setLoading(false);
+        trackViewContent({ planName: "Starlink Plans Page", planId: 0, price: 0 });
+      })
       .catch(() => setLoading(false));
   }, []);
 
@@ -146,6 +153,12 @@ export default function Plans() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
+          trackPurchase({
+            orderId: reference ?? `ref-${Date.now()}`,
+            planName: data.subscription?.planName ?? "Starlink Plan",
+            planId: parseInt(planId ?? "0", 10),
+            value: parseFloat(String(data.subscription?.price ?? 0)),
+          });
           setToastMsg({ type: "success", text: `Subscription activated! Welcome to ${data.subscription?.planName ?? "Starlink"}.` });
           setTimeout(() => navigate("/dashboard"), 3000);
         } else {
@@ -169,6 +182,8 @@ export default function Plans() {
   const showAviation = activeCategory === "all" || activeCategory === "aviation";
 
   const handleGetStarted = async (plan: Plan) => {
+    const cost = totalCost(plan);
+    trackAddToCart({ planName: plan.name, planId: plan.id, price: cost.firstMonth });
     navigate(`/checkout?planId=${plan.id}`);
   };
 
@@ -214,8 +229,19 @@ export default function Plans() {
           </p>
         </div>
 
-        {/* Category filter */}
-        <div className="flex flex-wrap gap-2 justify-center mb-12">
+        {/* Category filter + Plan Finder */}
+        <div className="flex flex-wrap gap-2 justify-center items-center mb-12">
+          <PlanFinder
+            plans={plans}
+            onSelectPlan={(id) => {
+              const plan = plans.find((p) => p.id === id);
+              if (plan) {
+                const cost = totalCost(plan);
+                trackAddToCart({ planName: plan.name, planId: plan.id, price: cost.firstMonth });
+              }
+              navigate(`/checkout?planId=${id}`);
+            }}
+          />
           {allCategories.map((cat) => (
             <button
               key={cat}
@@ -230,6 +256,7 @@ export default function Plans() {
             </button>
           ))}
         </div>
+
 
         {/* Plan cards */}
         {loading ? (

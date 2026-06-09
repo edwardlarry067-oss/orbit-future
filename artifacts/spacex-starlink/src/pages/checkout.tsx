@@ -19,6 +19,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getApiBase } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
 
 const checkoutSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -124,6 +125,19 @@ export default function Checkout() {
     if (emailValue && emailValue.includes("@")) fetchWallet(emailValue);
   }, [emailValue, fetchWallet]);
 
+  useEffect(() => {
+    if (plan && planId) {
+      const p = plan as any;
+      const monthly = parseFloat(String(p.priceMonthly ?? 0));
+      const hw = parseFloat(String(p.hardwarePrice ?? 0));
+      trackInitiateCheckout({
+        planName: (plan as any).name ?? "Starlink Plan",
+        planId,
+        price: monthly + hw,
+      });
+    }
+  }, [plan?.id]);
+
   const priceMonthly = plan ? parseFloat(String((plan as any).priceMonthly ?? 0)) : 0;
   const hardwarePrice = plan ? parseFloat(String((plan as any).hardwarePrice ?? 0)) : 0;
   const firstMonthTotal = priceMonthly + hardwarePrice;
@@ -165,6 +179,12 @@ export default function Checkout() {
           }
         } else {
           setSuccess(true);
+          trackPurchase({
+            orderId: `wallet-${Date.now()}`,
+            planName: (plan as any)?.name ?? "Starlink Plan",
+            planId: plan?.id ?? 0,
+            value: firstMonthTotal,
+          });
           setTimeout(() => navigate("/dashboard"), 2500);
         }
       }

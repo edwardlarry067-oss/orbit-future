@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { initAuth } from "@/lib/auth";
+import { initAnalytics } from "@/lib/analytics";
 
 // Eagerly loaded (above-the-fold critical)
 import Home from "@/pages/home";
@@ -37,6 +38,7 @@ const AdminUsers = lazy(() => import("@/pages/admin/users"));
 const AdminTickets = lazy(() => import("@/pages/admin/tickets"));
 
 initAuth();
+initAnalytics();
 
 const queryClient = new QueryClient({
   defaultOptions: {

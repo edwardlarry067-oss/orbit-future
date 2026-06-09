@@ -454,7 +454,10 @@ export default function Home() {
               Trusted by Customers Worldwide
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
-              From remote homesteads to cargo vessels — real customers, real results.
+              From remote homesteads to cargo vessels — representative customer experiences from OrbitFuture users worldwide.
+            </p>
+            <p className="text-gray-600 text-[11px] mt-3 max-w-lg mx-auto leading-relaxed">
+              Reviews represent illustrative use cases. Names and identifying details are representative of typical customer profiles.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

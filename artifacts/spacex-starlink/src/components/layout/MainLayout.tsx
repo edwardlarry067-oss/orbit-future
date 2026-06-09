@@ -37,6 +37,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col relative dark">
+      {/* Skip to main content — accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-black focus:text-xs focus:font-bold focus:uppercase focus:tracking-widest focus:rounded-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <header className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-xl border-b border-white/8 shadow-[0_1px_0_rgba(255,255,255,0.04)]">
         {/* Top status bar */}
         <div className="hidden md:flex bg-[#040404] border-b border-white/5 h-7 items-center px-8 justify-between">
@@ -115,13 +122,19 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
-          <button className="lg:hidden text-white p-2 -mr-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+          <button
+            className="lg:hidden text-white p-2 -mr-1"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav"
+          >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-black/98 backdrop-blur-xl border-b border-white/10 px-4 py-4 space-y-1">
+          <div id="mobile-nav" className="lg:hidden bg-black/98 backdrop-blur-xl border-b border-white/10 px-4 py-4 space-y-1" role="navigation" aria-label="Mobile navigation">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}
@@ -175,7 +188,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="flex-1 pt-14 flex flex-col relative z-10">
+      <main id="main-content" className="flex-1 pt-14 flex flex-col relative z-10" tabIndex={-1}>
         {children}
       </main>
 
