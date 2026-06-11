@@ -26,7 +26,12 @@ import { PricingDebugPanel } from "@/components/PricingDebugPanel";
 const checkoutSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  address: z.string().min(5, "Please provide your shipping address"),
+  phone: z.string().min(7, "Enter a valid phone number"),
+  street: z.string().min(5, "Enter your street address"),
+  city: z.string().min(2, "Enter your city"),
+  state: z.string().min(2, "Enter your state or LGA"),
+  postal: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 function CheckoutProgress({ step }: { step: 1 | 2 | 3 }) {
@@ -87,7 +92,7 @@ export default function Checkout() {
 
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
-    defaultValues: { name: "", email: "", address: "" },
+    defaultValues: { name: "", email: "", phone: "", street: "", city: "", state: "", postal: "", notes: "" },
     mode: "onTouched",
   });
 
@@ -95,7 +100,8 @@ export default function Checkout() {
     if (user) {
       form.setValue("name", user.name);
       form.setValue("email", user.email);
-      if (user.address) form.setValue("address", user.address);
+      if (user.phone) form.setValue("phone", user.phone);
+      if (user.address) form.setValue("street", user.address);
     }
   }, [user, form]);
 
@@ -172,6 +178,8 @@ export default function Checkout() {
     setError("");
     setPaying(true);
 
+    const fullAddress = [data.street, data.city, data.state, data.postal].filter(Boolean).join(", ");
+
     try {
       if (paymentMethod === "paystack") {
         const res = await fetch(`${getApiBase()}/api/paystack-plan-pay`, {
@@ -181,7 +189,9 @@ export default function Checkout() {
             planId: apiPlan.id,
             email: data.email,
             name: data.name,
-            address: data.address,
+            phone: data.phone,
+            address: fullAddress,
+            notes: data.notes,
             currency: "NGN",
           }),
         });
@@ -201,7 +211,9 @@ export default function Checkout() {
             planId: apiPlan.id,
             email: data.email,
             name: data.name,
-            address: data.address,
+            phone: data.phone,
+            address: fullAddress,
+            notes: data.notes,
           }),
         });
         const json = await res.json();
@@ -393,15 +405,29 @@ export default function Checkout() {
               <CardContent className="pt-6">
                 <Form {...form}>
                   <form id="checkout-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                    <FormField control={form.control} name="name" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Your full name" className="bg-card h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
+                    {/* Row: Full Name + Phone */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Full Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your full name" className="bg-card h-12" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="phone" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Phone Number</FormLabel>
+                          <FormControl>
+                            <Input type="tel" placeholder="+234 800 000 0000" className="bg-card h-12" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    {/* Email */}
                     <FormField control={form.control} name="email" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Email Address</FormLabel>
@@ -417,11 +443,61 @@ export default function Checkout() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name="address" render={({ field }) => (
+
+                    {/* Street address */}
+                    <FormField control={form.control} name="street" render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Installation / Shipping Address</FormLabel>
+                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Street Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="Street address, City, Country" className="bg-card h-12" {...field} />
+                          <Input placeholder="House number & street name" className="bg-card h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    {/* Row: City + State/LGA */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="city" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">City</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Lagos" className="bg-card h-12" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="state" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">State / LGA</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Lagos State" className="bg-card h-12" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    {/* Postal code (optional) */}
+                    <FormField control={form.control} name="postal" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">
+                          Postal / ZIP Code <span className="text-gray-600 normal-case font-normal">(optional)</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 100001" className="bg-card h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    {/* Delivery notes (optional) */}
+                    <FormField control={form.control} name="notes" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="uppercase text-xs font-bold tracking-wider text-muted-foreground">
+                          Delivery Notes <span className="text-gray-600 normal-case font-normal">(optional)</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Gate code, landmark, best time to call…" className="bg-card h-12" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
