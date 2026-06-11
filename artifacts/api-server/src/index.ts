@@ -46,7 +46,7 @@ async function seedIfEmpty() {
         features: ["50 GB priority data/month", "In-motion use", "Land & sea coverage", "Add-on to Roam plan", "No extra hardware needed"],
         popular: false,
         active: true,
-        localPrices: { NGN: { monthly: 25000, hardware: 0 } },
+        localPrices: { NGN: { monthly: 25000, hardware: 120000 } },
       },
       {
         name: "Starlink Priority (40 GB)",

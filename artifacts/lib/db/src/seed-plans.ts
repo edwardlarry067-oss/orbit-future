@@ -58,7 +58,7 @@ const REAL_STARLINK_PLANS = [
     speed: "5–50 Mbps",
     priceMonthly: "50",
     hardwarePrice: "0",
-    localPrices: { NGN: { monthly: 25000, hardware: 0 } },
+    localPrices: { NGN: { monthly: 25000, hardware: 120000 } },
     description: "50 GB of high-speed priority mobile data. Perfect add-on for Roam subscribers on the move.",
     features: JSON.stringify([
       "50 GB priority data/month",
