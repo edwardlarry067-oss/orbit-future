@@ -5,11 +5,9 @@ export function setAuthTokenGetter(getter: () => string | null) {
 }
 
 export function getApiBase(): string {
-  if (typeof window !== "undefined") {
-    const meta = (window as any).__VITE_API_URL__;
-    // Ignore the unreplaced Vite placeholder or empty values — fall back to relative URL
-    if (meta && meta !== "%VITE_API_URL%") return meta.replace(/\/$/, "");
-  }
+  // Always use relative URLs so the frontend hits the same domain.
+  // Vercel rewrites /api/* to the Replit backend via vercel.json.
+  // Replit dev server proxies /api to localhost:3001 via vite.config.ts.
   return "";
 }
 
