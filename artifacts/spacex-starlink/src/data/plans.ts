@@ -66,7 +66,7 @@ export const PLANS: readonly Plan[] = [
     description: "50 GB of high-speed priority mobile data. Perfect add-on for Roam subscribers on the move.",
     category: "roam",
     monthlyPrice: 25_000,
-    hardwareFee: 0,
+    hardwareFee: 120_000,
     usdMonthly: 50,
     usdHardware: 0,
     speed: "5–50 Mbps",
