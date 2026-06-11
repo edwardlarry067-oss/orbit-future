@@ -7,6 +7,10 @@ interface SubscriptionConfirmationData {
   planCategory: string;
   planSpeed: string;
   priceMonthly: number;
+  hardwareFee?: number;
+  currency?: string;
+  address?: string;
+  phone?: string;
   features: string[];
   subscriptionId: number;
 }
@@ -141,47 +145,105 @@ function emailWrapper(content: string): string {
 }
 
 function confirmationHtml(data: SubscriptionConfirmationData): string {
+  const cur = data.currency ?? "NGN";
+  const monthly = data.priceMonthly;
+  const hardware = data.hardwareFee ?? 0;
+  const total = monthly + hardware;
+
   const featuresHtml = data.features
     .map((f) => `<tr><td style="padding:6px 0;color:#a0aec0;font-size:14px;"><span style="color:${BRAND_COLOR};margin-right:8px;">✦</span>${f}</td></tr>`)
     .join("");
 
+  const lineItem = (label: string, value: string, valueColor = "#ffffff", badge = "") => `
+    <tr>
+      <td style="padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:1px;">${label}</span>
+        ${badge ? `<span style="display:inline-block;margin-left:8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.25);border-radius:4px;padding:1px 6px;">${badge}</span>` : ""}
+        <span style="float:right;font-size:14px;color:${valueColor};font-weight:700;">${value}</span>
+      </td>
+    </tr>`;
+
+  const deliverySection = data.address ? `
+    <!-- Delivery Address -->
+    <tr><td style="padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
+        <tr><td style="padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">📦 Delivery Details</p>
+        </td></tr>
+        <tr><td style="padding-top:16px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+                <span style="font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Ship To</span>
+                <span style="font-size:14px;color:#e2e8f0;font-weight:600;">${data.customerName}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+                <span style="font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Address</span>
+                <span style="font-size:14px;color:#e2e8f0;">${data.address}</span>
+              </td>
+            </tr>
+            ${data.phone ? `<tr>
+              <td style="padding:8px 0;">
+                <span style="font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Phone</span>
+                <span style="font-size:14px;color:#e2e8f0;">${data.phone}</span>
+              </td>
+            </tr>` : ""}
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>` : "";
+
   return emailWrapper(`
     <!-- Hero -->
-    <tr><td style="background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 100%);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;margin-bottom:24px;" class="email-card">
-      <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:${BRAND_COLOR};text-transform:uppercase;">✅ Subscription Confirmed</p>
+    <tr><td style="background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 100%);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;" class="email-card">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:3px;color:${BRAND_COLOR};text-transform:uppercase;">✅ Order Confirmed</p>
       <h1 class="hero-title" style="margin:0 0 16px;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">You're connected<br/>to the future.</h1>
       <p style="margin:0;font-size:16px;color:#a0aec0;line-height:1.6;">
-        Welcome, <strong style="color:#ffffff;">${data.customerName}</strong>. Your <strong style="color:#ffffff;">${data.planName}</strong> subscription is now active.
-        You're joining a global constellation of satellite internet users.
+        Hi <strong style="color:#ffffff;">${data.customerName}</strong> — your <strong style="color:#ffffff;">${data.planName}</strong> order is confirmed and your hardware is being prepared for shipment.
       </p>
     </td></tr>
 
-    <!-- Plan Details -->
+    <!-- Order Receipt -->
     <tr><td style="padding-top:24px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
-        <tr>
-          <td style="padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);">
-            <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">Your Plan</p>
-            <p style="margin:0;font-size:22px;font-weight:900;color:#ffffff;">${data.planName}</p>
-            <p style="margin:4px 0 0;font-size:14px;color:#a0aec0;text-transform:capitalize;">${data.planCategory} · ${data.planSpeed}</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding-top:20px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);">
-            <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">Monthly Rate</p>
-            <p style="margin:0;font-size:28px;font-weight:900;color:#ffffff;">$${data.priceMonthly}<span style="font-size:16px;color:#a0aec0;font-weight:400;">/mo</span></p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding-top:20px;">
-            <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">Key Features</p>
-            <table width="100%" cellpadding="0" cellspacing="0">${featuresHtml}</table>
-          </td>
-        </tr>
+        <tr><td style="padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">🧾 Order Receipt</p>
+          <p style="margin:6px 0 0;font-size:18px;font-weight:900;color:#ffffff;">${data.planName}</p>
+          <p style="margin:4px 0 0;font-size:13px;color:#a0aec0;text-transform:capitalize;">${data.planCategory} · ${data.planSpeed}</p>
+        </td></tr>
+        <tr><td style="padding-top:4px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${lineItem("Monthly Service", `${cur} ${monthly.toLocaleString()}/mo`)}
+            ${hardware > 0 ? lineItem("Hardware Kit", `${cur} ${hardware.toLocaleString()}`, "#fbbf24", "One-Time") : ""}
+            <tr>
+              <td style="padding:14px 0 0;">
+                <span style="font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:1px;">${hardware > 0 ? "First Payment Total" : "Due Today"}</span>
+                <span style="float:right;font-size:20px;color:#10b981;font-weight:900;">${cur} ${total.toLocaleString()}</span>
+              </td>
+            </tr>
+            ${hardware > 0 ? `<tr><td><p style="margin:6px 0 0;font-size:11px;color:#4a5568;text-align:right;">Then ${cur} ${monthly.toLocaleString()}/mo from month 2. Hardware is a one-time charge.</p></td></tr>` : ""}
+          </table>
+        </td></tr>
       </table>
     </td></tr>
 
-    <!-- Next Steps -->
+    ${deliverySection}
+
+    <!-- Plan Features -->
+    <tr><td style="padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
+        <tr><td style="padding-bottom:16px;">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:${BRAND_COLOR};text-transform:uppercase;">What's Included</p>
+        </td></tr>
+        <tr><td>
+          <table width="100%" cellpadding="0" cellspacing="0">${featuresHtml}</table>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <!-- What Happens Next -->
     <tr><td style="padding-top:24px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;" class="email-card">
         <tr><td style="padding-bottom:16px;">
@@ -190,16 +252,15 @@ function confirmationHtml(data: SubscriptionConfirmationData): string {
         <tr><td>
           <table width="100%" cellpadding="0" cellspacing="0">
             ${[
-              "Your hardware kit will be shipped within 3–5 business days",
-              "You'll receive a shipping confirmation email with tracking info",
-              "Follow the plug & play setup guide included in your kit",
-              "Contact our 24/7 support team if you need installation help",
-              "You're online — enjoy high-speed satellite internet anywhere",
-            ].map((step, i) => `
+              { n: "1", text: "Hardware kit prepared & dispatched within 3–5 business days" },
+              { n: "2", text: "Shipping confirmation sent to this email with live tracking" },
+              { n: "3", text: "Kit arrives — plug in, point at the sky, connect in minutes" },
+              { n: "4", text: "24/7 ORBITFUTURE support available for installation help" },
+            ].map(({ n, text }) => `
               <tr>
                 <td style="padding:8px 0;">
-                  <span style="display:inline-block;background:rgba(0,212,255,0.1);color:${BRAND_COLOR};font-size:12px;font-weight:700;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;margin-right:12px;">${i + 1}</span>
-                  <span style="font-size:14px;color:#e2e8f0;">${step}</span>
+                  <span style="display:inline-block;background:rgba(0,212,255,0.1);color:${BRAND_COLOR};font-size:12px;font-weight:700;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;margin-right:12px;">${n}</span>
+                  <span style="font-size:14px;color:#e2e8f0;">${text}</span>
                 </td>
               </tr>
             `).join("")}
@@ -208,21 +269,31 @@ function confirmationHtml(data: SubscriptionConfirmationData): string {
       </table>
     </td></tr>
 
-    <!-- Reference -->
+    <!-- Reference + CTA -->
     <tr><td style="padding-top:24px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:16px 20px;">
         <tr>
           <td>
             <p style="margin:0;font-size:12px;color:#a0aec0;">
-              Subscription ID: <span style="color:${BRAND_COLOR};font-family:monospace;font-weight:700;">#ORB-${String(data.subscriptionId).padStart(6, "0")}</span>
+              Order ID: <span style="color:${BRAND_COLOR};font-family:monospace;font-weight:700;">#ORB-${String(data.subscriptionId).padStart(6, "0")}</span>
               &nbsp;·&nbsp; Keep this for your records
             </p>
           </td>
           <td align="right">
-            <a href="${APP_URL}/dashboard" style="font-size:12px;color:${BRAND_COLOR};text-decoration:none;font-weight:700;">View Dashboard →</a>
+            <a href="${APP_URL}/dashboard" style="font-size:12px;color:${BRAND_COLOR};text-decoration:none;font-weight:700;">Track Order →</a>
           </td>
         </tr>
       </table>
+    </td></tr>
+
+    <!-- Support CTA -->
+    <tr><td style="padding-top:28px;text-align:center;">
+      <a href="${APP_URL}/dashboard" style="display:inline-block;background:${BRAND_COLOR};color:#000000;font-size:13px;font-weight:900;letter-spacing:2px;text-decoration:none;padding:14px 36px;border-radius:6px;text-transform:uppercase;">
+        View Your Order →
+      </a>
+      <p style="margin:16px 0 0;font-size:12px;color:#4a5568;">
+        Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND_COLOR};">${SUPPORT_EMAIL}</a>
+      </p>
     </td></tr>
   `);
 }

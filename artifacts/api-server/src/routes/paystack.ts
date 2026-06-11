@@ -237,11 +237,13 @@ const PLAN_USD_PRICES: Record<number, { monthly: number; hardware: number }> = {
 // ── POST /api/paystack-plan-pay ───────────────────────────────────────────────
 router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
   try {
-    const { planId, email, name, address, currency: requestedCurrency } = req.body as {
+    const { planId, email, name, phone, address, notes, currency: requestedCurrency } = req.body as {
       planId: number;
       email: string;
       name: string;
+      phone?: string;
       address?: string;
+      notes?: string;
       currency?: string;
     };
 
@@ -328,7 +330,9 @@ router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
         planCategory,
         customerName: name.trim(),
         customerEmail: email.trim(),
+        phone: phone?.trim() ?? "",
         address: address?.trim() ?? "",
+        notes: notes?.trim() ?? "",
         hardwarePrice: String(chargeHardware),
         currency,
       },
@@ -349,11 +353,12 @@ router.post("/paystack-plan-pay", async (req, res): Promise<void> => {
 // ── POST /api/paystack-plan-verify ────────────────────────────────────────────
 router.post("/paystack-plan-verify", async (req, res): Promise<void> => {
   try {
-    const { reference, plan_id, email, name, address } = req.body as {
+    const { reference, plan_id, email, name, phone, address } = req.body as {
       reference: string;
       plan_id?: string;
       email?: string;
       name?: string;
+      phone?: string;
       address?: string;
     };
 
@@ -372,12 +377,15 @@ router.post("/paystack-plan-verify", async (req, res): Promise<void> => {
     const planIdNum = parseInt(plan_id ?? meta.planId ?? "0") || 0;
     const customerEmail = email ?? meta.customerEmail ?? result.data.customer?.email ?? "";
     const customerName = name ?? meta.customerName ?? "";
+    const customerPhone = phone ?? meta.phone ?? "";
     const customerAddress = address ?? meta.address ?? "";
     const planName = meta.planName ?? PLAN_PRICES[planIdNum]?.name ?? "Starlink Plan";
     const planSpeed = meta.planSpeed ?? PLAN_PRICES[planIdNum]?.speed ?? "";
     const planCategory = meta.planCategory ?? "";
     const amountPaid = (result.data.amount ?? 0) / 100;
     const currency = result.data.currency ?? DEFAULT_CURRENCY;
+    const hardwareFee = parseFloat(meta.hardwarePrice ?? "0") || 0;
+    const monthlyFee = amountPaid - hardwareFee;
 
     const [existingSub] = await db
       .select()
@@ -434,7 +442,11 @@ router.post("/paystack-plan-verify", async (req, res): Promise<void> => {
             planName,
             planCategory: planCategory || dbPlan?.category || "",
             planSpeed,
-            priceMonthly: amountPaid,
+            priceMonthly: hardwareFee > 0 ? monthlyFee : amountPaid,
+            hardwareFee: hardwareFee > 0 ? hardwareFee : undefined,
+            currency,
+            address: customerAddress || undefined,
+            phone: customerPhone || undefined,
             features: planFeatures,
             subscriptionId: sub.id,
           }).catch(() => {});
@@ -566,11 +578,14 @@ router.post("/paystack-webhook", async (req, res): Promise<void> => {
     const planIdNum = parseInt(meta.planId ?? "0") || 0;
     const customerEmail = meta.customerEmail ?? data.customer?.email ?? "";
     const customerName = meta.customerName ?? "";
+    const customerPhone = meta.phone ?? "";
     const customerAddress = meta.address ?? "";
     const planName = meta.planName ?? PLAN_PRICES[planIdNum]?.name ?? "Starlink Plan";
     const planSpeed = meta.planSpeed ?? PLAN_PRICES[planIdNum]?.speed ?? "";
     const planCategory = meta.planCategory ?? "";
     const amountPaid = (data.amount ?? 0) / 100;
+    const webhookHardwareFee = parseFloat(meta.hardwarePrice ?? "0") || 0;
+    const webhookMonthlyFee = amountPaid - webhookHardwareFee;
 
     if (!planIdNum || !customerEmail) {
       req.log?.warn({ reference, planIdNum, customerEmail }, "Webhook: missing planId or email — skipped");
@@ -641,7 +656,11 @@ router.post("/paystack-webhook", async (req, res): Promise<void> => {
       planName,
       planCategory: planCategory || dbPlan?.category || "",
       planSpeed,
-      priceMonthly: amountPaid,
+      priceMonthly: webhookHardwareFee > 0 ? webhookMonthlyFee : amountPaid,
+      hardwareFee: webhookHardwareFee > 0 ? webhookHardwareFee : undefined,
+      currency: eventCurrency,
+      address: customerAddress || undefined,
+      phone: customerPhone || undefined,
       features: planFeatures,
       subscriptionId: sub.id,
     }).catch(() => {});
