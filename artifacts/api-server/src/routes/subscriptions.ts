@@ -112,6 +112,23 @@ router.get("/subscriptions/:id", async (req, res): Promise<void> => {
       return;
     }
 
+    // Require auth — determine if caller is admin or a regular user
+    const auth = req.headers.authorization as string | undefined;
+    if (!auth?.startsWith("Bearer ")) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    let callerIsAdmin = false;
+    let callerEmail: string | null = null;
+    try {
+      const decoded = jwt.verify(auth.slice(7), JWT_SECRET) as Record<string, unknown>;
+      if (decoded.role === "admin") callerIsAdmin = true;
+      else if (typeof decoded.email === "string") callerEmail = decoded.email.toLowerCase();
+    } catch {
+      res.status(401).json({ error: "Invalid or expired token" });
+      return;
+    }
+
     const [row] = await db
       .select({ sub: subscriptionsTable, plan: plansTable })
       .from(subscriptionsTable)
@@ -122,6 +139,13 @@ router.get("/subscriptions/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Subscription not found" });
       return;
     }
+
+    // Non-admins may only read their own subscriptions
+    if (!callerIsAdmin && row.sub.email.toLowerCase() !== callerEmail) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
     res.json(formatSub(row.sub, row.plan));
   } catch (err) {
     req.log.error({ err }, "Failed to get subscription");

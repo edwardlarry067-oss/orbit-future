@@ -43,21 +43,22 @@ export default function Wallet() {
     if (!loading && !user) navigate("/login?redirect=/wallet");
   }, [user, loading, navigate]);
 
-  const refreshWallet = useCallback((email: string) => {
-    fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}`)
-      .then((r) => r.json())
-      .then(setWallet)
+  const refreshWallet = useCallback((email: string, authToken: string) => {
+    const headers = { Authorization: `Bearer ${authToken}` };
+    fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}`, { headers })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setWallet(data); })
       .catch(() => {});
-    fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}/transactions`)
-      .then((r) => r.json())
-      .then((data) => { setTransactions(data.transactions || []); setTxLoading(false); })
+    fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}/transactions`, { headers })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { setTransactions(data?.transactions || []); setTxLoading(false); })
       .catch(() => setTxLoading(false));
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    refreshWallet(user.email);
-  }, [user, refreshWallet]);
+    if (!user || !token) return;
+    refreshWallet(user.email, token);
+  }, [user, token, refreshWallet]);
 
   // Handle Paystack return after token purchase
   useEffect(() => {
@@ -78,7 +79,7 @@ export default function Wallet() {
       .then((data) => {
         if (data.success) {
           setToastMsg({ type: "success", text: `+${data.tokensAdded} tokens added to your wallet!` });
-          refreshWallet(user.email);
+          refreshWallet(user.email, token);
         } else {
           setToastMsg({ type: "error", text: data.error || "Verification failed." });
         }

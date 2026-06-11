@@ -35624,9 +35624,9 @@ var require_jws = __commonJS({
 var require_decode = __commonJS({
   "../node_modules/.pnpm/jsonwebtoken@9.0.3/node_modules/jsonwebtoken/decode.js"(exports, module) {
     var jws = require_jws();
-    module.exports = function(jwt7, options) {
+    module.exports = function(jwt8, options) {
       options = options || {};
-      var decoded = jws.decode(jwt7, options);
+      var decoded = jws.decode(jwt8, options);
       if (!decoded) {
         return null;
       }
@@ -40194,11 +40194,11 @@ function isValidIP(ip, version2) {
   }
   return false;
 }
-function isValidJWT(jwt7, alg) {
-  if (!jwtRegex.test(jwt7))
+function isValidJWT(jwt8, alg) {
+  if (!jwtRegex.test(jwt8))
     return false;
   try {
-    const [header] = jwt7.split(".");
+    const [header] = jwt8.split(".");
     if (!header)
       return false;
     const base64 = header.replace(/-/g, "+").replace(/_/g, "/").padEnd(header.length + (4 - header.length % 4) % 4, "=");
@@ -52888,9 +52888,28 @@ router3.get("/subscriptions/:id", async (req, res) => {
       res.status(400).json({ error: "Invalid ID" });
       return;
     }
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith("Bearer ")) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    let callerIsAdmin = false;
+    let callerEmail = null;
+    try {
+      const decoded = import_jsonwebtoken2.default.verify(auth.slice(7), JWT_SECRET);
+      if (decoded.role === "admin") callerIsAdmin = true;
+      else if (typeof decoded.email === "string") callerEmail = decoded.email.toLowerCase();
+    } catch {
+      res.status(401).json({ error: "Invalid or expired token" });
+      return;
+    }
     const [row] = await db.select({ sub: subscriptionsTable, plan: plansTable }).from(subscriptionsTable).leftJoin(plansTable, eq(subscriptionsTable.planId, plansTable.id)).where(eq(subscriptionsTable.id, id));
     if (!row) {
       res.status(404).json({ error: "Subscription not found" });
+      return;
+    }
+    if (!callerIsAdmin && row.sub.email.toLowerCase() !== callerEmail) {
+      res.status(403).json({ error: "Forbidden" });
       return;
     }
     res.json(formatSub(row.sub, row.plan));
@@ -53709,7 +53728,20 @@ var admin_default = router5;
 
 // src/routes/wallet.ts
 var import_express6 = __toESM(require_express2(), 1);
+var import_jsonwebtoken4 = __toESM(require_jsonwebtoken(), 1);
 var router6 = (0, import_express6.Router)();
+function resolveCallerEmail(req) {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) return { email: null, isAdmin: false, unauthorized: true };
+  try {
+    const decoded = import_jsonwebtoken4.default.verify(auth.slice(7), JWT_SECRET);
+    if (decoded.role === "admin") return { email: null, isAdmin: true, unauthorized: false };
+    if (typeof decoded.email === "string") return { email: decoded.email.toLowerCase(), isAdmin: false, unauthorized: false };
+    return { email: null, isAdmin: false, unauthorized: true };
+  } catch {
+    return { email: null, isAdmin: false, unauthorized: true };
+  }
+}
 async function getOrCreateWallet(email) {
   const existing = await db.select().from(walletsTable).where(eq(walletsTable.email, email)).limit(1);
   if (existing[0]) return existing[0];
@@ -53745,6 +53777,15 @@ router6.get("/wallet/:email", async (req, res) => {
       res.status(400).json({ error: "Email is required" });
       return;
     }
+    const caller = resolveCallerEmail(req);
+    if (caller.unauthorized) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (!caller.isAdmin && caller.email !== email.toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
     const wallet = await getOrCreateWallet(email);
     res.json(formatWallet(wallet));
   } catch (err) {
@@ -53755,6 +53796,15 @@ router6.get("/wallet/:email", async (req, res) => {
 router6.get("/wallet/:email/transactions", async (req, res) => {
   try {
     const { email } = req.params;
+    const caller = resolveCallerEmail(req);
+    if (caller.unauthorized) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (!caller.isAdmin && caller.email !== email.toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const offset = (page - 1) * limit;
@@ -53892,17 +53942,13 @@ var wallet_default = router6;
 
 // src/routes/auth.ts
 var import_express7 = __toESM(require_express2(), 1);
-var import_jsonwebtoken4 = __toESM(require_jsonwebtoken(), 1);
+var import_jsonwebtoken5 = __toESM(require_jsonwebtoken(), 1);
 import { createHash } from "node:crypto";
 var router7 = (0, import_express7.Router)();
 var JWT_EXPIRES = "30d";
 var rateLimitStore = /* @__PURE__ */ new Map();
 function rateLimit(maxAttempts, windowMs) {
   return (req, res, next) => {
-    const bypassHeader = req.headers["x-test-bypass"];
-    if (bypassHeader && bypassHeader === (process.env["SESSION_SECRET"] ?? "")) {
-      return next();
-    }
     const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? "unknown";
     const key = `${ip}:${req.path}`;
     const now = Date.now();
@@ -53931,7 +53977,7 @@ function hashPassword(password) {
   return createHash("sha256").update(password + JWT_SECRET).digest("hex");
 }
 function signToken(payload) {
-  return import_jsonwebtoken4.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  return import_jsonwebtoken5.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 function sanitizeString(input) {
   return input.trim().replace(/[<>]/g, "");
@@ -53946,7 +53992,7 @@ function requireAuth(req, res, next) {
     return;
   }
   try {
-    const decoded = import_jsonwebtoken4.default.verify(auth.slice(7), JWT_SECRET);
+    const decoded = import_jsonwebtoken5.default.verify(auth.slice(7), JWT_SECRET);
     req.user = decoded;
     next();
   } catch {
@@ -55292,14 +55338,14 @@ var track_default = router13;
 
 // src/routes/otp.ts
 var import_express14 = __toESM(require_express2(), 1);
-var import_jsonwebtoken5 = __toESM(require_jsonwebtoken(), 1);
+var import_jsonwebtoken6 = __toESM(require_jsonwebtoken(), 1);
 var router14 = (0, import_express14.Router)();
 var JWT_EXPIRES2 = "30d";
 function generateOtp() {
   return String(Math.floor(1e5 + Math.random() * 9e5));
 }
 function signToken2(payload) {
-  return import_jsonwebtoken5.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES2 });
+  return import_jsonwebtoken6.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES2 });
 }
 var otpRateLimit = /* @__PURE__ */ new Map();
 function checkOtpRateLimit(key, max, windowMs) {
@@ -55630,7 +55676,7 @@ var billing_default = router15;
 
 // src/routes/tracking.ts
 var import_express16 = __toESM(require_express2(), 1);
-var import_jsonwebtoken6 = __toESM(require_jsonwebtoken(), 1);
+var import_jsonwebtoken7 = __toESM(require_jsonwebtoken(), 1);
 var router16 = (0, import_express16.Router)();
 var sseClients = /* @__PURE__ */ new Map();
 function broadcastTrackingUpdate(subscriptionId, data) {
@@ -55655,7 +55701,7 @@ router16.get("/subscriptions/:id/tracking-stream", (req, res) => {
   const token = req.query.token;
   if (token) {
     try {
-      import_jsonwebtoken6.default.verify(token, JWT_SECRET);
+      import_jsonwebtoken7.default.verify(token, JWT_SECRET);
     } catch {
       res.status(401).end();
       return;
@@ -55777,7 +55823,7 @@ router16.get("/subscriptions/:id/tracking", async (req, res) => {
     let userEmail = null;
     if (auth?.startsWith("Bearer ")) {
       try {
-        const decoded = import_jsonwebtoken6.default.verify(auth.slice(7), JWT_SECRET);
+        const decoded = import_jsonwebtoken7.default.verify(auth.slice(7), JWT_SECRET);
         userEmail = decoded.email ?? null;
       } catch {
       }
@@ -55931,7 +55977,7 @@ async function seedIfEmpty() {
         features: ["50 GB priority data/month", "In-motion use", "Land & sea coverage", "Add-on to Roam plan", "No extra hardware needed"],
         popular: false,
         active: true,
-        localPrices: { NGN: { monthly: 25e3, hardware: 0 } }
+        localPrices: { NGN: { monthly: 25e3, hardware: 12e4 } }
       },
       {
         name: "Starlink Priority (40 GB)",

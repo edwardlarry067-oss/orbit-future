@@ -100,17 +100,19 @@ export default function Checkout() {
   }, [user, form]);
 
   const fetchWallet = useCallback(async (email: string) => {
-    if (!email || !email.includes("@")) return;
+    if (!email || !email.includes("@") || !token) return;
     setWalletLoading(true);
     try {
-      const res = await fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}`);
+      const res = await fetch(`${getApiBase()}/api/wallet/${encodeURIComponent(email)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) {
         const data = await res.json();
         setWalletBalance(data.balance);
       }
     } catch {}
     setWalletLoading(false);
-  }, []);
+  }, [token]);
 
   const emailValue = form.watch("email");
   useEffect(() => {

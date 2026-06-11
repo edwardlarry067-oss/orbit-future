@@ -2,9 +2,23 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { walletsTable, walletTransactionsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { adminAuth } from "../middlewares/adminAuth";
+import { adminAuth, JWT_SECRET } from "../middlewares/adminAuth";
+import jwt from "jsonwebtoken";
 
 const router = Router();
+
+function resolveCallerEmail(req: any): { email: string | null; isAdmin: boolean; unauthorized: boolean } {
+  const auth = req.headers.authorization as string | undefined;
+  if (!auth?.startsWith("Bearer ")) return { email: null, isAdmin: false, unauthorized: true };
+  try {
+    const decoded = jwt.verify(auth.slice(7), JWT_SECRET) as Record<string, unknown>;
+    if (decoded.role === "admin") return { email: null, isAdmin: true, unauthorized: false };
+    if (typeof decoded.email === "string") return { email: decoded.email.toLowerCase(), isAdmin: false, unauthorized: false };
+    return { email: null, isAdmin: false, unauthorized: true };
+  } catch {
+    return { email: null, isAdmin: false, unauthorized: true };
+  }
+}
 
 async function getOrCreateWallet(email: string) {
   const existing = await db
@@ -47,12 +61,21 @@ function formatTransaction(tx: typeof walletTransactionsTable.$inferSelect) {
   };
 }
 
-// GET /api/wallet/:email — get or create wallet
+// GET /api/wallet/:email — get or create wallet (auth required; user may only query own email)
 router.get("/wallet/:email", async (req, res): Promise<void> => {
   try {
     const { email } = req.params;
     if (!email) {
       res.status(400).json({ error: "Email is required" });
+      return;
+    }
+    const caller = resolveCallerEmail(req);
+    if (caller.unauthorized) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (!caller.isAdmin && caller.email !== email.toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
       return;
     }
     const wallet = await getOrCreateWallet(email);
@@ -63,10 +86,19 @@ router.get("/wallet/:email", async (req, res): Promise<void> => {
   }
 });
 
-// GET /api/wallet/:email/transactions — transaction history
+// GET /api/wallet/:email/transactions — transaction history (auth required; user may only query own email)
 router.get("/wallet/:email/transactions", async (req, res): Promise<void> => {
   try {
     const { email } = req.params;
+    const caller = resolveCallerEmail(req);
+    if (caller.unauthorized) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (!caller.isAdmin && caller.email !== email.toLowerCase()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const offset = (page - 1) * limit;
