@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, LayoutDashboard, Globe, Mail, MessageCircle, Coins, LogOut, User, Shield, Lock, HeadphonesIcon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { CountrySelector } from "@/components/CountrySelector";
 import { getApiBase } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -89,6 +90,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="hidden lg:flex items-center gap-2">
+            <CountrySelector />
             {user ? (
               <>
                 <Link href="/wallet">
@@ -180,6 +182,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   Check Availability & Order
                 </Button>
               </Link>
+            </div>
+            <div className="pt-2 pb-1 px-1">
+              <CountrySelector />
             </div>
             <div className="flex items-center justify-center gap-2 pt-2">
               <span className="text-[10px] text-emerald-500 font-bold">● All Systems Operational</span>
