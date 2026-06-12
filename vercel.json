@@ -1,6 +1,8 @@
 {
   "version": 2,
   "framework": null,
+  "installCommand": "echo 'Pre-built static files — no install needed'",
+  "buildCommand": "echo 'Pre-built static files — no build needed'",
   "outputDirectory": "artifacts/spacex-starlink/dist",
   "rewrites": [
     {
